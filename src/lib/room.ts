@@ -11,18 +11,6 @@ const COLORS = ['#e0245e', '#f0a71b', '#2f9e6b', '#3b5bff', '#a54cff', '#ff6a3d'
 const MAX_PLAYERS = 8;
 const rand32 = () => (Math.random() * 2 ** 32) >>> 0;
 
-/** 조각을 판 둘레에 흩뿌린 초기 뭉치 (조각 하나 = 뭉치 하나, id = 조각 번호) */
-function scatter(cols: number, rows: number, W: number, H: number, seed: number): Record<string, RoomGroup> {
-  const pw = W / cols, ph = H / rows; let a = seed >>> 0; const rnd = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  const g: Record<string, RoomGroup> = {}; const m = Math.max(pw, ph) * 1.2; // 여백 폭
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    const i = r * cols + c; const side = Math.floor(rnd() * 4); let tx = 0, ty = 0;
-    if (side === 0) { tx = -m - rnd() * m * 2; ty = -m + rnd() * (H + 2 * m); } else if (side === 1) { tx = W + m + rnd() * m * 2; ty = -m + rnd() * (H + 2 * m); } else if (side === 2) { tx = -m * 2 + rnd() * (W + 4 * m); ty = -m - rnd() * m * 1.6; } else { tx = -m * 2 + rnd() * (W + 4 * m); ty = H + m + rnd() * m * 1.6; }
-    g[String(i)] = { dx: tx - c * pw, dy: ty - r * ph, idx: [i] };
-  }
-  return g;
-}
-
 export class Room extends DurableObject {
   state: RoomState | null = null; holders = new Map<string, string>(); saveT: ReturnType<typeof setTimeout> | null = null;
   async load() { if (!this.state) this.state = (await this.ctx.storage.get<RoomState>('state')) ?? null; return this.state; }
@@ -36,10 +24,10 @@ export class Room extends DurableObject {
       // 혼자 하던 판을 가져온 경우: 같은 시드·격자에 잠긴 조각과 뭉치를 그대로, 트레이에 있던 조각은 흩뿌림
       const st0 = b.state && Number.isInteger(b.state.seed) && b.state.cols === g.cols && b.state.rows === g.rows ? b.state : null;
       const seed = st0 ? (st0.seed >>> 0) : rand32(); const total = g.cols * g.rows;
-      let groups = scatter(g.cols, g.rows, w.w, w.h, seed ^ 0x51ed); let locked: number[] = [];
+      let groups: Record<string, RoomGroup> = {}; let locked: number[] = [];
       if (st0) { const placed = new Set<number>(); locked = (st0.locked as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < total); locked.forEach((i) => placed.add(i)); const gs: Record<string, RoomGroup> = {};
         for (const sg of (st0.groups as { dx: number; dy: number; idx: number[] }[]) ?? []) { const idx = sg.idx.filter((i) => Number.isInteger(i) && i >= 0 && i < total && !placed.has(i)); if (!idx.length) continue; idx.forEach((i) => placed.add(i)); gs[String(idx[0])] = { dx: +sg.dx || 0, dy: +sg.dy || 0, idx }; }
-        for (const [k, sg] of Object.entries(groups)) if (!placed.has(Number(k))) gs[k] = sg; groups = gs; }
+        groups = gs; }
       this.state = { id: b.id, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0), lang: String(b.lang || 'ko').slice(0, 2) };
       await this.ctx.storage.put('state', this.state); await this.ctx.storage.setAlarm(Date.now() + 48 * 3600e3);
       return Response.json({ id: this.state.id });
@@ -61,6 +49,8 @@ export class Room extends DurableObject {
     const att = ws.deserializeAttachment() as Att; const tol = Math.min(st.W / st.cols, st.H / st.rows) * 0.4;
     switch (m.t) {
       case 'hello': { att.nick = String(m.nick || '').slice(0, 12) || `#${att.id.slice(0, 3)}`; ws.serializeAttachment(att); ws.send(JSON.stringify({ t: 'init', state: st, you: att, players: this.players(), holders: Object.fromEntries(this.holders) })); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color } }, ws); return; }
+      case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { ws.send(JSON.stringify({ t: 'deny', g: String(i) })); return; } const g = String(i); st.groups[g] = { dx: +m.dx || 0, dy: +m.dy || 0, idx: [i] }; this.holders.set(g, att.id); this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
+      case 'untake': { const g = String(m.g); const gr = st.groups[g]; if (!gr || gr.idx.length !== 1 || this.holders.get(g) !== att.id) return; delete st.groups[g]; this.holders.delete(g); this.broadcast({ t: 'untake', g }, ws); this.scheduleSave(); return; }
       case 'cur': this.broadcast({ t: 'cur', id: att.id, x: m.x, y: m.y }, ws); return;
       case 'grab': { const g = String(m.g); if (!st.groups[g]) return; const h = this.holders.get(g); if (h && h !== att.id) { ws.send(JSON.stringify({ t: 'deny', g })); return; } this.holders.set(g, att.id); this.broadcast({ t: 'grab', id: att.id, g }, ws); return; }
       case 'mv': { const g = String(m.g); if (this.holders.get(g) !== att.id || !st.groups[g]) return; st.groups[g].dx = +m.dx; st.groups[g].dy = +m.dy; this.broadcast({ t: 'mv', g, dx: +m.dx, dy: +m.dy }, ws); return; }

@@ -25,8 +25,9 @@ const shelves = shelvesFor(lang);
       <span class="src-text"><b>{t.pick}</b><span>{t.drop}</span><span class="src-go">{t.privacy}</span></span>
     </label>
   </div>
+  <section class="resume" id="jg-resume" hidden><h2 class="gal-h">{U.play.resumeTitle}</h2><div class="resume-list" id="jg-resume-list"></div></section>
   <h2 class="gal-h">{t.gallery}</h2>
-  <div id="jg-gallery">{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-row">{sh.items.map((p) => <Box p={p} />)}</div></div>)}</div>
+  <div id="jg-gallery">{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-row">{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div></div>)}</div>
 </section>
 
 <div class="modal" id="jg-setup" hidden>
@@ -36,7 +37,7 @@ const shelves = shelvesFor(lang);
     <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
     <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
-    <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
+    <div class="row"><button class="btn primary" id="jg-resume-btn" hidden>{U.play.resume}</button><button class="btn primary" id="jg-start">{t.start}</button></div>
     <p class="muted best" id="jg-best"></p>
   </div>
 </div>
@@ -50,6 +51,7 @@ const shelves = shelvesFor(lang);
       <span class="sp"></span>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false">▢</button>
+      <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false">▦</button>
       <button type="button" class="ib" id="jg-zin" title={t.zoomIn}>＋</button>
       <button type="button" class="ib" id="jg-zout" title={t.zoomOut}>－</button>
       <button type="button" class="ib" id="jg-fit" title={t.fit}>⤢</button>
@@ -59,6 +61,7 @@ const shelves = shelvesFor(lang);
     <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
       <div class="done" id="jg-done" hidden><span>🎉 {t.done}</span><b id="jg-done-time"></b><button type="button" class="btn primary sm" id="jg-toresult">{t.viewResult}</button></div>
     </div>
+    <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}>🎨 {U.play.sortColor}</button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}>🔀</button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
   </div>
 </section>
@@ -112,9 +115,15 @@ const shelves = shelvesFor(lang);
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
   .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
 
+  .resume { margin-top: 26px; } .resume-list { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }
+  .resume-list :global(.rs-wrap) { position: relative; flex: none; }
+  .resume-list :global(.rs) { width: 200px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); overflow: hidden; cursor: pointer; text-align: left; padding: 0; font: inherit; color: var(--ink); transition: transform .2s var(--ease), box-shadow .2s; } .resume-list :global(.rs:hover) { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(15,18,34,.5); }
+  .resume-list :global(.rs img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); display: block; } .resume-list :global(.rs .rs-t) { padding: 8px 10px 2px; font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .resume-list :global(.rs .rs-s) { padding: 0 10px 10px; color: var(--muted); font-size: .8rem; }
+  .resume-list :global(.rs .bar) { height: 4px; background: var(--line); } .resume-list :global(.rs .bar i) { display: block; height: 100%; background: var(--accent); }
+  .resume-list :global(.rs-del) { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(15,18,34,.6); color: #fff; cursor: pointer; font-size: .8rem; }
   /* 플레이 */
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
-  .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--paper); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
+  .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--bg-2); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
   .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } }
   .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
@@ -125,7 +134,11 @@ const shelves = shelvesFor(lang);
   .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
   .done { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--bg); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(233,168,32,.25); white-space: nowrap; z-index: 3; font-weight: 600; }
   .done b { font-variant-numeric: tabular-nums; color: var(--accent); }
-  .tray { flex: none; height: 104px; display: flex; gap: 8px; align-items: center; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; background: var(--paper); border-top: 1px solid var(--line); touch-action: pan-x; scrollbar-width: thin; }
+  .tray-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; background: var(--bg-2); border-top: 1px solid var(--line); }
+  .piles { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; } .piles::-webkit-scrollbar { display: none; }
+  .piles :global(.pile-tab) { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .78rem; font-weight: 700; color: var(--ink-2); cursor: pointer; white-space: nowrap; font-family: inherit; transition: transform .15s var(--ease); } .piles :global(.pile-tab[aria-pressed="true"]) { background: var(--ink); color: #fff; border-color: var(--ink); } .piles :global(.pile-tab.over) { background: var(--accent); color: #fff; border-color: var(--accent); transform: scale(1.08); } .piles :global(.pile-tab small) { opacity: .7; font-weight: 500; margin-left: 4px; }
+  .tb { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .78rem; font-weight: 600; cursor: pointer; }
+  .tray { flex: none; height: 104px; display: flex; gap: 8px; align-items: center; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; background: var(--bg-2); touch-action: pan-x; scrollbar-width: thin; }
   .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
   .tray :global(.tp.lift) { visibility: hidden; }
@@ -140,13 +153,15 @@ const shelves = shelvesFor(lang);
 
 <script>
   import { JIGSAW } from '../i18n/jigsaw';
-  import { gridFor, seeded, makeCut, renderPiece, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
   import { DAILY_POOL, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
   import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak } from '../lib/store';
   import { share, toast } from '../lib/share';
+  import { saves, images, hasIDB, type SaveData } from '../lib/db';
+  import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
-  const T = JIGSAW[LANG]; const scenes = initScenes();
+  const T = JIGSAW[LANG], U = UI[LANG].play; const scenes = initScenes();
   scenes.onChange((n) => { if (n === 'title') history.replaceState(null, '', location.pathname); });
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -159,37 +174,43 @@ const shelves = shelvesFor(lang);
   ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
-  type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; seed?: number; day?: string; fixedN?: number };
+  type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; blob?: Blob; seed?: number; day?: string; fixedN?: number; photoId?: string };
+  let pendingSave: SaveData | null = null; // 선택한 그림·조각 수에 저장된 판이 있으면 여기에
   let src: Source | null = null, wantN = 48, img: ImageBitmap | null = null, imgW = 0, imgH = 0;
   const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
   const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
   const MAXSIDE = 2400;
-  async function loadSource(s: Source) {
-    src = s; img = null; setup.hidden = false; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
+  async function loadSource(s: Source, auto = false) {
+    src = s; img = null; pendingSave = null; $('jg-resume-btn').hidden = true; setup.hidden = auto; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
     document.querySelectorAll('#jg-gallery .box3d').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
-    const blobUrl = s.file ? URL.createObjectURL(s.file) : s.url!; thumb.src = blobUrl;
+    const file = s.file ?? s.blob; const blobUrl = file ? URL.createObjectURL(file) : s.url!; thumb.src = blobUrl;
     try {
       let bmp: ImageBitmap | HTMLImageElement;
-      if (s.file && 'createImageBitmap' in window) { try { bmp = await createImageBitmap(s.file, { imageOrientation: 'from-image' } as any); } catch { bmp = await loadImg(blobUrl); } } else bmp = await loadImg(blobUrl);
+      if (file && 'createImageBitmap' in window) { try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' } as any); } catch { bmp = await loadImg(blobUrl); } } else bmp = await loadImg(blobUrl);
       const w = 'naturalWidth' in bmp ? bmp.naturalWidth : bmp.width, h = 'naturalHeight' in bmp ? bmp.naturalHeight : bmp.height;
       const sc = Math.min(1, MAXSIDE / Math.max(w, h)); const cv = document.createElement('canvas'); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc); cv.getContext('2d')!.drawImage(bmp, 0, 0, cv.width, cv.height);
       img = await createImageBitmap(cv); imgW = cv.width; imgH = cv.height;
+      if (s.kind === 'photo' && s.file && hasIDB()) { s.photoId = `photo-${Date.now().toString(36)}`; cv.toBlob((b) => { if (b) images.put(s.photoId!, b).catch(() => {}); }, 'image/webp', 0.85); }
       if (s.fixedN) { wantN = s.fixedN; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', Number(b.dataset.n) === wantN)); ($('jg-custom') as HTMLInputElement).value = ''; }
-      updateGrid();
+      updateGrid(); await checkSave();
+      if (auto) { if (pendingSave) setup.hidden = false; else start(); }
     } catch { toast(T.imgFail); setup.hidden = true; src = null; }
   }
-  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); const b = getBest(bestKey(g.cols * g.rows)); $('jg-best').textContent = b ? T.best(fmt(b)) : T.noRecord; }
+  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); const b = getBest(bestKey(g.cols * g.rows)); $('jg-best').textContent = b ? T.best(fmt(b)) : T.noRecord; checkSave(); }
+  const saveId = () => { if (src!.kind === 'daily') return `daily:${src!.day}`; if (src!.kind === 'photo') return `photo:${src!.photoId}`; const g = gridFor(wantN, imgW / imgH); return `${src!.key}:${g.cols * g.rows}`; };
+  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo') { $('jg-resume-btn').hidden = true; $('jg-start').textContent = T.start; return; } try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} $('jg-resume-btn').hidden = !pendingSave; $('jg-start').textContent = pendingSave ? U.startOver : T.start; }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.webp`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
-  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box3d').forEach((b) => b.addEventListener('click', () => { const p = WORKS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.webp` }); }));
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
   // ── 게임 상태 — 느슨한 조각은 모두 "뭉치(Group)"에 속한다. 뭉치의 (dx,dy)는 제자리 대비 오프셋이라 뭉치 안 조각들은 격자 관계를 그대로 유지한다
   type Group = { id: number; dx: number; dy: number; pieces: Piece[] };
-  type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean };
+  type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; pile: number; hue: number; lum: number };
+  let piles: string[] = [], activePile = 0; // piles[0] = 전체(기본)
+  let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
   let complete = false, completeAlpha = 0, gid = 0;
@@ -209,31 +230,98 @@ const shelves = shelvesFor(lang);
   // 트레이 썸네일은 보일 때만 그린다 (1000조각 대비)
   const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = (el as any).__p as Piece; if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; const k = 72 / Math.max(p.bmp.w, p.bmp.h); cv.width = Math.round(p.bmp.w * k); cv.height = Math.round(p.bmp.h * k); cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
 
-  async function start() {
+  let cutSeed = 0;
+  async function start(resume?: SaveData) {
     if (!img || !src) return toast(T.noImg);
+    const rs = resume ?? null;
     const myGen = ++gen;
-    const g = gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
-    const rand = seeded(src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0);
-    cut = makeCut(imgW, imgH, g.cols, g.rows, rand);
+    const g = rs ? { cols: rs.cols, rows: rs.rows } : gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
+    cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
+    cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
+    if (!rs && hasIDB()) try { await saves.del(saveId()); } catch {}
     closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-done').hidden = true; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
-    scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = 0; running = false;
+    scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
     const bmpScale = Math.min(1, 2400 / Math.max(imgW, imgH));
     let i = 0;
     for (let r = 0; r < g.rows; r++) { grid[r] = []; for (let c = 0; c < g.cols; c++) {
-      const p: Piece = { r, c, bmp: renderPiece(cut, r, c, img, bmpScale), g: null, locked: false }; pieces.push(p); grid[r][c] = p;
+      const bmp = renderPiece(cut, r, c, img, bmpScale); const [hue, lum] = avgColor(bmp.canvas);
+      const p: Piece = { r, c, bmp, g: null, locked: false, pile: 0, hue, lum }; pieces.push(p); grid[r][c] = p;
       if (++i % 60 === 0 && total > 150) { $('jg-loading').textContent = `${T.loading} ${i}/${total}`; await new Promise((res) => setTimeout(res)); if (myGen !== gen) return; }
     } }
-    order = [...pieces].sort(() => Math.random() - 0.5);
+    if (rs) {
+      const lc = lockedLayer.getContext('2d')!; for (const i of rs.locked) { const p = pieces[i]; p.locked = true; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); } lockedN = rs.locked.length;
+      for (const sg of rs.groups) { const gr: Group = { id: ++gid, dx: sg.dx, dy: sg.dy, pieces: [] }; for (const i of sg.idx) { pieces[i].g = gr; gr.pieces.push(pieces[i]); } groups.push(gr); }
+      order = rs.tray.map((i) => pieces[i]); rs.pile.forEach((pl, i) => { pieces[i].pile = pl; });
+    } else order = [...pieces].sort(() => Math.random() - 0.5);
     const frag = document.createDocumentFragment();
-    for (const p of order) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; (el as any).__p = p; frag.appendChild(el); bindTray(el, p); trayIO.observe(el); }
+    for (const p of order) { if (p.locked || p.g) continue; const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; (el as any).__p = p; frag.appendChild(el); bindTray(el, p); trayIO.observe(el); }
     tray.appendChild(frag);
-    applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now(); running = true; clearInterval(timer); timer = window.setInterval(tick, 250);
+    renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
   }
   function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
   function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
+
+  // ── 색 평균 (트레이 색상 정렬용)
+  const cc = document.createElement('canvas'); cc.width = 4; cc.height = 4; const cctx = cc.getContext('2d', { willReadFrequently: true })!;
+  function avgColor(cv: HTMLCanvasElement): [number, number] { cctx.clearRect(0, 0, 4, 4); cctx.drawImage(cv, 0, 0, 4, 4); const d = cctx.getImageData(0, 0, 4, 4).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 100) continue; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } if (!n) return [0, 0]; r /= n * 255; g /= n * 255; b /= n * 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0; if (mx !== mn) { const dd = mx - mn; h = mx === r ? ((g - b) / dd + (g < b ? 6 : 0)) : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4; h /= 6; } const sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)); return [sat < 0.12 ? -1 + l : h, l]; }
+
+  // ── 판 위 조각 윤곽선 (켜면 한 번 그려 캐시)
+  function outlineCanvas() { if (outlineLayer) return outlineLayer; if (pieces.length < total) { const e = document.createElement('canvas'); e.width = e.height = 1; return e; } const cv = document.createElement('canvas'); const k = Math.min(1, 1600 / Math.max(cut.W, cut.H)); cv.width = Math.ceil(cut.W * k); cv.height = Math.ceil(cut.H * k); const c = cv.getContext('2d')!; c.scale(k, k); c.lineWidth = Math.max(1.5, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.28)'; for (const p of pieces) c.stroke(piecePath(cut, p.r, p.c)); outlineLayer = cv; return cv; }
+  $('jg-outline').addEventListener('click', () => { outline = !outline; $('jg-outline').setAttribute('aria-pressed', String(outline)); draw(); });
+
+  // ── 더미(트레이 탭)
+  function renderPiles() {
+    const box = $('jg-piles'); box.innerHTML = '';
+    const counts = piles.map(() => 0); for (const p of pieces) if (!p.locked && !p.g) counts[p.pile] = (counts[p.pile] ?? 0) + 1;
+    piles.forEach((name, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pile-tab'; b.dataset.pile = String(i); b.setAttribute('aria-pressed', String(i === activePile)); b.innerHTML = `${i === 0 ? U.pileAll : name}<small>${counts[i] ?? 0}</small>`; b.addEventListener('click', () => { activePile = i; renderPiles(); applyEdgeFilter(); }); box.appendChild(b); });
+    if (piles.length < 8) { const add = document.createElement('button'); add.type = 'button'; add.className = 'pile-tab'; add.textContent = U.pileNew; add.addEventListener('click', () => { piles.push(U.pileName(piles.length)); activePile = piles.length - 1; renderPiles(); applyEdgeFilter(); scheduleSave(); }); box.appendChild(add); }
+  }
+  function moveToPile(p: Piece, pile: number) { p.pile = pile; renderPiles(); applyEdgeFilter(); scheduleSave(); toast(U.toPile(pile === 0 ? U.pileAll : piles[pile])); }
+  const pileTabAt = (x: number, y: number) => (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>('.pile-tab[data-pile]') ?? null;
+  let overTab: HTMLElement | null = null;
+  function hoverTab(x: number, y: number) { const t = pileTabAt(x, y); if (t !== overTab) { overTab?.classList.remove('over'); overTab = t; t?.classList.add('over'); } }
+  function sortTray(mode: 'color' | 'shuffle') {
+    const vis = order.filter((p) => !p.locked && !p.g);
+    if (mode === 'shuffle') vis.sort(() => Math.random() - 0.5); else vis.sort((a, b) => a.hue - b.hue || a.lum - b.lum);
+    order = vis; for (const p of vis) if (p.el) tray.appendChild(p.el); tray.scrollLeft = 0; scheduleSave();
+  }
+  $('jg-sort').addEventListener('click', () => sortTray('color')); $('jg-shuffle').addEventListener('click', () => sortTray('shuffle'));
+
+  // ── 진행 저장 (IndexedDB, 기기 안). 놓을 때마다 예약, 화면 이탈 시 즉시
+  let saveT = 0;
+  function scheduleSave() { if (!hasIDB() || !running) return; clearTimeout(saveT); saveT = window.setTimeout(saveNow, 700); }
+  async function saveNow() {
+    if (!hasIDB() || !src || !cut || complete || !pieces.length) return;
+    const idx = new Map(pieces.map((p, i) => [p, i]));
+    const tc = document.createElement('canvas'); const k = 200 / Math.max(cut.W, cut.H); tc.width = Math.round(cut.W * k); tc.height = Math.round(cut.H * k); const tctx = tc.getContext('2d')!; tctx.fillStyle = '#e6e8ee'; tctx.fillRect(0, 0, tc.width, tc.height); tctx.globalAlpha = 0.25; tctx.drawImage(img!, 0, 0, tc.width, tc.height); tctx.globalAlpha = 1; tctx.drawImage(lockedLayer, 0, 0, tc.width, tc.height);
+    const data: SaveData = { id: saveId(), v: 1, kind: src.kind, key: src.kind === 'photo' ? src.photoId! : src.key, name: src.name, day: src.day, seed: cutSeed, cols: cut.cols, rows: cut.rows, total, imgW, imgH, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), tray: order.filter((p) => !p.locked && !p.g).map((p) => idx.get(p)!), pile: pieces.map((p) => p.pile), piles, elapsed: performance.now() - t0, moves, savedAt: Date.now(), thumb: tc.toDataURL('image/webp', 0.6), done: lockedN };
+    try { await saves.put(data); } catch {}
+  }
+  addEventListener('pagehide', () => { if (running) saveNow(); }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) saveNow(); });
+  // 하던 퍼즐 목록 (선택 화면)
+  async function listSaves() {
+    const box = $('jg-resume-list'), sec = $('jg-resume'); if (!hasIDB()) return; let list: SaveData[] = []; try { list = await saves.all(); } catch {}
+    box.innerHTML = ''; sec.hidden = !list.length;
+    for (const sv of list.slice(0, 12)) {
+      const wrap = document.createElement('div'); wrap.className = 'rs-wrap';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'rs';
+      const im = document.createElement('img'); im.src = sv.thumb; im.alt = ''; const t = document.createElement('div'); t.className = 'rs-t'; t.textContent = sv.name; const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmt(sv.elapsed / 1000)}`); const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
+      b.append(im, bar, t, st); b.addEventListener('click', () => resumeSave(sv));
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕'; del.addEventListener('click', async (e) => { e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} listSaves(); });
+      wrap.append(b, del); box.appendChild(wrap);
+    }
+  }
+  async function resumeSave(sv: SaveData) {
+    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} listSaves(); return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false); setup.hidden = true; }
+    else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp`, seed: sv.seed, day: sv.day, fixedN: sv.total }, false); setup.hidden = true; }
+    else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp` }, false); setup.hidden = true; }
+    if (!img) return; setup.hidden = true; start(sv);
+  }
+  listSaves(); scenes.onChange((n) => { if (n === 'title') listSaves(); });
+  $('jg-resume-btn').addEventListener('click', () => { if (pendingSave) start(pendingSave); });
 
   // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
   type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void };
@@ -249,6 +337,7 @@ const shelves = shelvesFor(lang);
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(0, 0, cut.W, cut.H);
     if (showHint && img) { ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = 'rgba(59,91,255,.55)'; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
+    if (outline && !complete) ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H);
     ctx.drawImage(lockedLayer, 0, 0);
     if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     // 화면 밖 조각은 건너뜀
@@ -278,7 +367,7 @@ const shelves = shelvesFor(lang);
     if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { snap(g, 0, 0, () => lockGroup(g)); return; }
     const other = findNeighbor(g, tol);
     if (other) { snap(g, other.dx, other.dy, () => merge(g, other)); return; }
-    draw();
+    draw(); scheduleSave();
   }
   function findNeighbor(g: Group, tol: number): Group | null {
     for (const p of g.pieces) for (const [dr, dc] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) { const n = grid[p.r + dr]?.[p.c + dc]; if (!n || n.locked || !n.g || n.g === g) continue; if (Math.abs(n.g.dx - g.dx) < tol && Math.abs(n.g.dy - g.dy) < tol) return n.g; }
@@ -292,14 +381,14 @@ const shelves = shelvesFor(lang);
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
     if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { snap(into, 0, 0, () => lockGroup(into)); return; }
     let n: Group | null; while ((n = findNeighbor(into, tol))) { for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
-    draw();
+    draw(); scheduleSave();
   }
   function lockGroup(g: Group) {
     const lc = lockedLayer.getContext('2d')!;
     for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); }
     const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1);
-    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw();
-    if (lockedN === total) finish();
+    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw(); renderPiles();
+    if (lockedN === total) finish(); else scheduleSave();
   }
   // 딸깍 소리 (WebAudio, 아주 짧게). 첫 사용자 제스처 뒤에만 재생됨
   let ac: AudioContext | null = null;
@@ -335,15 +424,15 @@ const shelves = shelvesFor(lang);
   $('jg-fit').addEventListener('click', fit);
   $('jg-hint').addEventListener('click', () => { showHint = !showHint; $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
-  function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = edgeOnly && !isEdge(p); }
+  function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
-  $('jg-quit').addEventListener('click', () => { running = false; clearInterval(timer); gen++; scenes.go('title'); });
+  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(); running = false; clearInterval(timer); gen++; scenes.go('title'); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
   function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; return g; }
-  function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; draw(); }
-  function dropLift(g: Group, p: Piece, cy: number, ok: boolean) { lifting = null; const r = wrap.getBoundingClientRect(); if (ok && cy < r.bottom) { p.el?.remove(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); draw(); } }
+  function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; hoverTab(cx, cy); draw(); }
+  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); draw(); } }
   function bindTray(el: HTMLElement, p: Piece) {
     let sx = 0, sy = 0, id = -1, g: Group | null = null, isMouse = false;
     el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; g = null; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
@@ -352,7 +441,7 @@ const shelves = shelvesFor(lang);
       if (!g) { const go = isMouse ? Math.hypot(dx, dy) > 6 : (dy < -8 && Math.abs(dy) > Math.abs(dx) * 0.8) || e.clientY < tray.getBoundingClientRect().top; if (!go) return; g = liftFromTray(p, e.clientX, e.clientY); }
       moveLift(g, p, e.clientX, e.clientY);
     });
-    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!g) return; const gg = g; g = null; dropLift(gg, p, e.clientY, e.type === 'pointerup'); };
+    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!g) return; const gg = g; g = null; dropLift(gg, p, e.clientX, e.clientY, e.type === 'pointerup'); };
     el.addEventListener('pointerup', done); el.addEventListener('pointercancel', done);
     // 터치(아이폰 사파리): pan-x 스크롤 판정에 pointercancel 되는 문제를 피해 터치 이벤트로 직접. 위로 6px 이상이면 스크롤을 막고 들어 올림
     let tx = 0, ty = 0, tid = -1, tg: Group | null = null;
@@ -362,14 +451,14 @@ const shelves = shelvesFor(lang);
       if (!tg) { if (dy < -6 && Math.abs(dy) > Math.abs(dx)) tg = liftFromTray(p, t.clientX, t.clientY); else return; }
       e.preventDefault(); moveLift(tg, p, t.clientX, t.clientY);
     }, { passive: false });
-    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tg) return; const gg = tg; tg = null; dropLift(gg, p, t.clientY, e.type === 'touchend'); };
+    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tg) return; const gg = tg; tg = null; dropLift(gg, p, t.clientX, t.clientY, e.type === 'touchend'); };
     el.addEventListener('touchend', tend); el.addEventListener('touchcancel', tend);
   }
 
   // ── 완성
   function finish() {
-    running = false; clearInterval(timer); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
-    complete = true; tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
+    complete = true; if (hasIDB() && src) { saves.del(saveId()).catch(() => {}); if (src.kind === 'photo' && src.photoId) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     requestAnimationFrame(() => { resize(); fit(); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     $('jg-done-time').textContent = fmt(sec); $('jg-done').hidden = false; navigator.vibrate?.([10, 40, 20]);
@@ -382,7 +471,7 @@ const shelves = shelvesFor(lang);
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/play/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
-    const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily'; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
+    const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily' || src!.day !== todayKST(); form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(720 / cut.W, 540 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
   $('jg-toresult').addEventListener('click', () => scenes.go('result'));
@@ -396,9 +485,9 @@ const shelves = shelvesFor(lang);
   // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
   { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = WORKS.find((x) => x.key === k);
     if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
-    else if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
-    else if (pt) { if (pn >= 6 && pn <= 2000) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![48, 100, 200, 300, 500, 1000].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box3d[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
-  $('jg-start').addEventListener('click', start);
-  $('jg-retry').addEventListener('click', start);
+    else if (q.get('daily') || (pt && q.get('d') === '1')) { const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL); loadSource({ kind: 'daily', key: pk.painting.key, name: `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' '), url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); history.replaceState(null, '', location.pathname); }
+    else if (pt) { if (pn >= 6 && pn <= 2000) wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === wantN)); loadSource({ kind: 'gallery', key: pt.key, name: T.paintingBy(pt.title[LI], pt.artist[LI], pt.year), url: `/jigsaw/${pt.key}.webp` }, pn >= 6 && pn <= 2000); history.replaceState(null, '', location.pathname); } }
+  $('jg-start').addEventListener('click', () => start());
+  $('jg-retry').addEventListener('click', () => start());
   $('jg-title').addEventListener('click', () => scenes.go('title'));
 </script>

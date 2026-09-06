@@ -51,21 +51,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   </div>)}
 </section>
 
-<section class="sec">
-  <div class="wrap">
-    <a class="photo" href={`${P}/play/?photo=1`} data-reveal>
-      <div class="photo-text">
-        <h2>{T.photo.title}</h2>
-        <p>{T.photo.body}</p>
-        <span class="btn primary lg">{T.photo.cta}</span>
-      </div>
-      <div class="photo-art" aria-hidden="true">
-        <span class="ph p1"></span><span class="ph p2"></span><span class="ph p3"></span>
-        <svg class="piece" viewBox="0 0 100 100"><path d="M20 20h22a10 10 0 1 1 16 0h22v22a10 10 0 1 0 0 16v22H58a10 10 0 1 1-16 0H20V58a10 10 0 1 0 0-16z"/></svg>
-      </div>
-    </a>
-  </div>
-</section>
 
 <section class="sec" id="rank" hidden>
   <div class="wrap rank-in">

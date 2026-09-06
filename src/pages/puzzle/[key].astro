@@ -1,7 +1,7 @@
 ---
 import PuzzleDetail from '../../components/PuzzleDetail.astro';
-import { PAINTINGS } from '../../lib/jigsaw';
-export function getStaticPaths() { return PAINTINGS.map((p) => ({ params: { key: p.key } })); }
+import { WORKS } from '../../data/works';
+export function getStaticPaths() { return WORKS.map((p) => ({ params: { key: p.key } })); }
 const { key } = Astro.params;
 ---
 <PuzzleDetail lang="ko" key={key!} />

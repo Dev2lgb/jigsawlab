@@ -1,6 +1,6 @@
 # 🧩 jigsawlab — 사진 한 장이 직소 퍼즐이 되는 곳
 
-직소 퍼즐 전문 사이트. 내 사진(기기 안에서만 처리)·명화 22점을 원하는 조각 수로 톱니 직소화. 오늘의 퍼즐 시간 랭킹. 회원가입 없음. ko/en/ja.
+직소 퍼즐 전문 사이트. 내 사진(기기 안에서만 처리)·퍼블릭 도메인 명화 226점(13개 진열대)을 원하는 조각 수로 톱니 직소화. 작품마다 3개 국어 그림 이야기. 오늘의 퍼즐 시간 랭킹. 회원가입 없음. ko/en/ja.
 캔통(cantong.app)의 직소 앱을 떼어 별도 사이트로 키우는 프로젝트. 라이트 테마.
 
 ## 스택
@@ -29,7 +29,9 @@
 - `src/components/Home.astro` 랜딩(히어로·하는 법·상자 진열대·내 사진·랭킹·가이드), `Jigsaw.astro` 앱 본체(/play/: 선택·조각 수 다이얼로그·플레이·결과), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
 - `src/i18n/jigsaw.ts` 3개 국어 문구 + SEO 본문, `src/i18n/ui.ts` 사이트 공통
 - `src/pages/{,en/,ja/}` — `index.astro` 홈, `play.astro` 앱, `puzzle/[key].astro` 상세(22점 정적), `s/index.astro` 공유 카드(서버), `privacy.astro`; `api/daily.ts`(서버)
-- `src/data/catalog.ts` 카테고리(진열대), `src/data/paintings.ts` 그림 소개·소장(3언어). 새 그림 = `lib/jigsaw.ts` PAINTINGS + 두 파일 + `public/jigsaw/` 이미지 3종
+- 작품 데이터: `src/data/works.ts` 가 전체 목록(WORKS·DAILY_POOL). 기존 22점 = `lib/jigsaw.ts` PAINTINGS + `paintings.ts`; AIC 204점 = `aic.json`(메타) + `worksText1~3.ts`(ko/ja 제목·3언어 소개) + `artists.ts`(작가명 표기). 카테고리 `catalog.ts`
+- 이미지: `public/jigsaw/<key>.webp`(1600) · `t-<key>.webp`(480) · `o-<key>.jpg`(OG 400²)
+- 카탈로그 확장 파이프라인 `scripts/met/`: `scan-aic.mjs`(시카고 미술관 API CC0 후보 수집 + 컨택트 시트) → 시트 보고 `select.mjs` 의 PICK 편집 → `build.mjs`(IIIF 1686px 다운로드·WebP 변환·aic.json) → 새 key 의 소개를 worksText 에 추가. Met API 는 403 스로틀이 심해 보류
 - 딥링크: `/play/?daily=1` 오늘의 퍼즐, `/play/?photo=1` 내 사진 강조, `/play/?k=<key>&n=<조각>` 그림·조각 수 프리셀렉트
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 테스트 훅: `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`

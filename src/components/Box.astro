@@ -3,7 +3,7 @@
 interface Props { p: { key: string; title: string; artist: string; year: string }; href?: string; on?: boolean; big?: boolean }
 const { p, href, on = false, big = false } = Astro.props;
 const Tag = href ? 'a' : 'button';
-const img = big ? `/jigsaw/${p.key}.jpg` : `/jigsaw/t-${p.key}.jpg`;
+const img = big ? `/jigsaw/${p.key}.webp` : `/jigsaw/t-${p.key}.webp`;
 ---
 <Tag class:list={['box3d', { on, big }]} href={href} type={href ? undefined : 'button'} data-key={p.key} title={`${p.title} — ${p.artist}, ${p.year}`} aria-label={`${p.title} — ${p.artist}`}>
   <span class="cube">

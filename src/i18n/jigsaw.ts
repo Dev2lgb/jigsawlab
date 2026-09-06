@@ -1,0 +1,108 @@
+import type { Lang } from './ui';
+export const JIGSAW = {
+  ko: {
+    title: '사진 직소 퍼즐 만들기', sub: '내 사진을 원하는 조각 수로 잘라 직소 퍼즐로. 사진은 기기 밖으로 나가지 않아요',
+    pick: '내 사진 고르기', drop: '사진을 여기에 놓거나 눌러서 선택', daily: '오늘의 퍼즐', dailyCap: (title: string, n: number) => `${title} · ${n}조각 · 시간 랭킹`, gallery: '명화로 하기', pieces: '조각 수', custom: '직접 입력', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}조각`, noImg: '먼저 사진을 고르거나 명화를 선택하세요', chosen: '선택한 그림', myPhoto: '내 사진',
+    start: '▶ START', privacy: '사진은 브라우저 안에서만 잘리고 저장·전송되지 않습니다', loading: '조각을 만드는 중…',
+    time: '시간', moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', zoomIn: '확대', zoomOut: '축소', fit: '맞춤', trayHint: '아래 조각을 위로 끌어 올려 제자리에 놓으세요. 두 손가락으로 확대·이동',
+    viewResult: '결과 보기', done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '같은 사진 다시', another: '다른 퍼즐', toTitle: '처음으로',
+    share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '내 사진으로도 만들 수 있어요 — jigsawlab', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
+    nickLabel: '닉네임', nickPh: '랭킹에 올릴 이름', submit: '랭킹 등록', registered: (r: number) => `랭킹 ${r}위에 올랐어요!`, rankTotal: (n: number) => `오늘 ${n}명 완성`, rankEmpty: '아직 아무도 없어요. 1등 자리 비었음!', rankFail: '랭킹을 못 불러왔어요', lbTitle: '오늘의 퍼즐 랭킹', unit: '초', noRecord: '아직 기록이 없어요',
+    imgFail: '이미지를 열 수 없어요. JPG·PNG·HEIC 사진인지 확인해 주세요', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
+    seo: `<p class="lead">사진 한 장을 고르고 조각 수를 정하면 톱니가 맞물리는 진짜 직소 퍼즐이 됩니다. 아래 트레이에서 조각을 끌어 올려 제자리에 끼우고, 모바일에서는 두 손가락으로 확대·이동하며 맞춰요. 사진은 기기 밖으로 나가지 않고, 내장된 명화로는 매일 같은 판을 풀어 시간을 겨루는 오늘의 퍼즐도 있습니다.</p>
+<h2>어떻게 하나요</h2>
+<ol>
+  <li><b>내 사진 고르기</b>를 눌러 갤러리에서 사진을 고르거나, PC에서는 파일을 끌어다 놓습니다. 아이폰 HEIC 사진은 브라우저가 열 수 있으면 그대로 쓰이고, 열 수 없으면 안내가 뜹니다. 사진을 고르는 대신 <b>명화로 하기</b>에서 고흐·호쿠사이·페르메이르·클림트·모네·신윤복 작품 중 하나를 골라도 됩니다.</li>
+  <li><b>조각 수</b>를 고릅니다. 12·24·48·96·150·200 중 하나를 누르거나 직접 숫자를 넣으면, 사진의 가로세로 비율에 맞춰 격자를 계산해 그 근처 개수로 잘립니다. 조각마다 톱니 모양이 무작위로 정해져 같은 사진도 매번 다른 판이 됩니다.</li>
+  <li>START를 누르면 위에 빈 판, 아래에 조각 트레이가 나옵니다. 트레이는 가로로 넘겨 볼 수 있고, 조각을 <b>위로 끌어 올리면</b> 판으로 옮겨집니다. 제자리 근처에 놓으면 딸깍 소리 없이 끼워지며 잠기고, 아니면 판 위에 놓인 채로 남아 다시 옮길 수 있습니다.</li>
+  <li>모바일에서는 <b>두 손가락으로 확대·축소하고 빈 곳을 끌어 이동</b>합니다. PC에서는 마우스 휠로 확대하고 빈 곳을 드래그해 이동하며, 오른쪽 위 버튼으로도 확대·축소·맞춤이 됩니다. <b>밑그림</b>을 켜면 완성 그림이 판에 흐리게 깔려 어디에 놓을지 힌트가 됩니다.</li>
+  <li>모든 조각이 잠기면 완성입니다. 걸린 시간과 놓은 횟수가 나오고, 같은 사진·같은 조각 수의 최고 기록이 이 브라우저에 저장됩니다. 결과는 링크로 공유할 수 있고, 오늘의 퍼즐이면 닉네임만 넣어 시간 랭킹에 올릴 수 있습니다.</li>
+</ol>
+<h2>사진은 어디에도 올라가지 않습니다</h2>
+<p>고른 사진은 브라우저가 읽어 화면 안에서 자르고 그립니다. jigsawlab 서버로 전송되지 않고 저장도 되지 않아서, 가족 사진이나 아이 사진, 아직 공개하지 않은 사진으로도 마음 놓고 만들 수 있습니다. 그래서 내 사진으로 만든 퍼즐은 링크로 다른 사람에게 보낼 수 없고, 대신 결과(조각 수·시간)만 공유됩니다. 친구와 같은 판을 겨루고 싶다면 오늘의 퍼즐을 쓰세요.</p>
+<h2>오늘의 퍼즐</h2>
+<p>내장된 퍼블릭 도메인 명화 스물두 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 완성 시간이 짧은 순으로 랭킹이 매겨지고, 닉네임만 넣으면 등록됩니다. 자정(한국 시간)에 새 그림으로 바뀌며, 지난 기록은 그대로 남습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
+<h2>조각 수 고르는 요령</h2>
+<p>12~24조각은 3~5분짜리 가벼운 판으로 아이들과 하기 좋고, 48조각은 10분 안쪽으로 끝나는 표준 크기입니다. 96조각부터는 조각이 화면에서 작아져 확대·축소를 쓰게 되고, 150~200조각은 PC나 태블릿에서 30분 이상 붙잡는 본격 퍼즐입니다. 하늘이나 바다처럼 색이 비슷한 면이 넓은 사진은 같은 조각 수라도 훨씬 어렵고, 얼굴·글자·경계선이 많은 사진은 쉬워집니다. 세로 사진이면 격자도 세로로 길게 잡히니 조각 수를 조금 늘려도 됩니다.</p>
+<h2>자주 묻는 질문</h2>
+<h3>조각이 제자리에 안 들어가요.</h3>
+<p>조각의 중심이 제자리에서 조각 한 변의 4분의 1 안쪽에 오면 잠깁니다. 확대한 상태에서는 더 정확히 놓을 수 있으니, 잘 안 들어가면 그 부분을 확대해 보세요. 밑그림을 켜면 위치를 찾기 쉽습니다.</p>
+<h3>트레이를 넘기려는데 조각이 끌려 올라와요.</h3>
+<p>트레이는 가로로 미는 동작이 넘기기, 위로 올리는 동작이 꺼내기입니다. 옆으로 밀 때 손가락을 조금 더 수평으로 움직이면 넘겨집니다.</p>
+<h3>조각 수를 200 넘게 할 수 있나요?</h3>
+<p>직접 입력으로 최대 300까지 됩니다. 다만 폰 화면에서는 조각이 너무 작아져 200 안쪽을 권합니다. 큰 사진은 자동으로 긴 변 1600픽셀로 줄여 처리해 어떤 기기에서도 부담이 없습니다.</p>
+<h3>중간에 나가면 진행이 사라지나요?</h3>
+<p>네. 사진을 저장하지 않는 원칙 때문에 진행 상황도 저장하지 않습니다. 완성 기록만 브라우저에 남습니다. 한 번에 끝낼 수 있는 조각 수로 시작하는 게 좋습니다.</p>
+`,
+  },
+  en: {
+    title: 'Photo Jigsaw Puzzle Maker', sub: 'Turn any photo into a real jigsaw with as many pieces as you like. The photo never leaves your device',
+    pick: 'Choose my photo', drop: 'Drop a photo here or tap to choose', daily: "Today's puzzle", dailyCap: (title: string, n: number) => `${title} · ${n} pieces · time leaderboard`, gallery: 'Use a painting', pieces: 'Pieces', custom: 'Custom', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} pieces`, noImg: 'Choose a photo or a painting first', chosen: 'Selected picture', myPhoto: 'My photo',
+    start: '▶ START', privacy: 'The photo is cut inside your browser and is never saved or uploaded', loading: 'Cutting pieces…',
+    time: 'Time', moves: 'Placed', left: (n: number) => `${n} pieces left`, edgeOnly: 'Edge pieces only', hint: 'Ghost image', zoomIn: 'Zoom in', zoomOut: 'Zoom out', fit: 'Fit', trayHint: 'Drag pieces up from the tray into place. Pinch to zoom, two fingers to pan',
+    viewResult: 'See result', done: 'Complete!', resTime: 'Time', resPieces: 'Pieces', resMoves: 'Placements', best: (s: string) => `Your best: ${s}`, newBest: 'New record!', retry: 'Same photo again', another: 'Another puzzle', toTitle: 'Back to start',
+    share: 'Share result', shareTitle: (n: number, t: string) => `Finished a ${n}-piece jigsaw in ${t}! 🧩`, shareText: 'Make one from your own photo — jigsawlab Jigsaw', shareDaily: (n: number, t: string, title: string) => `Today's puzzle "${title}", ${n} pieces in ${t}! 🧩 Can you beat it?`,
+    nickLabel: 'Nickname', nickPh: 'Name for the leaderboard', submit: 'Submit', registered: (r: number) => `You're #${r} on the board!`, lbTitle: "Today's puzzle leaderboard", unit: 's', noRecord: 'No record yet',
+    imgFail: "Couldn't open that image. Please use a JPG, PNG or HEIC photo", paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
+    seo: `<p class="lead">Pick a photo, choose a piece count, and it becomes a real jigsaw with interlocking tabs. Drag pieces up from the tray into place, pinch to zoom on a phone, and finish against the clock. The photo never leaves your device, and a built-in gallery of public-domain paintings powers a daily puzzle where everyone races on the same cut.</p>
+<h2>How it works</h2>
+<ol>
+  <li>Tap <b>Choose my photo</b> to pick from your gallery, or drop a file on desktop. iPhone HEIC photos work when the browser can open them; otherwise a notice appears. You can also pick a painting instead: van Gogh, Hokusai, Vermeer, Klimt, Monet or Shin Yun-bok.</li>
+  <li>Choose the number of <b>pieces</b>: 12, 24, 48, 96, 150 or 200, or type your own. The grid is fitted to the photo's aspect ratio, so the final count lands near your number. Tab shapes are random, so the same photo cuts differently every time.</li>
+  <li>Press START. The empty board is above and the piece tray below. Swipe the tray sideways to browse, and <b>drag a piece upward</b> to lift it onto the board. Dropped near its place it snaps in and locks; dropped elsewhere it stays loose and can be moved again.</li>
+  <li>On a phone, <b>pinch to zoom and drag empty space with two fingers to pan</b>. On desktop, scroll to zoom and drag empty space to pan; the buttons at the top right also zoom and fit. Turn on <b>Ghost image</b> to see the finished picture faintly on the board as a guide.</li>
+  <li>When every piece is locked, the puzzle is complete. You get your time and placement count, and your best for that photo and piece count is saved in this browser. Share the result as a link, and on the daily puzzle enter a nickname to post your time to the leaderboard.</li>
+</ol>
+<h2>Your photo is never uploaded</h2>
+<p>The browser reads the photo and cuts and draws it on screen. Nothing is sent to a jigsawlab server or stored, which makes it safe for family photos, kids and pictures you have not published. It also means a puzzle made from your own photo cannot be sent to someone else as a link; only the result (pieces and time) is shared. To race a friend on the same puzzle, use the daily puzzle.</p>
+<h2>The daily puzzle</h2>
+<p>Each day one of 22 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. Times are ranked fastest first and a nickname is all it takes to post one. The picture changes at midnight Korean time, and past records stay on the board. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
+<h2>Choosing a piece count</h2>
+<p>Twelve to 24 pieces is a light three-to-five-minute puzzle, good with children. Forty-eight is the standard size that finishes in under ten minutes. From 96 up, pieces get small on a phone and you will use the zoom, and 150 to 200 is a proper half-hour puzzle better suited to a tablet or desktop. Photos with large areas of similar colour, such as sky or sea, are much harder at the same count, while faces, text and edges make it easier. Portrait photos get a tall grid, so you can afford a few more pieces.</p>
+<h2>Frequently asked questions</h2>
+<h3>A piece will not snap into place.</h3>
+<p>A piece locks when its centre is within a quarter of a piece width of its correct spot. Zooming in lets you place more precisely, so zoom into that area if it keeps refusing, and turn on the ghost image to find the right position.</p>
+<h3>I try to scroll the tray and a piece lifts instead.</h3>
+<p>Sideways movement scrolls the tray; upward movement lifts a piece. Keep your finger a little more horizontal when browsing.</p>
+<h3>Can I go above 200 pieces?</h3>
+<p>The custom field accepts up to 300. On a phone screen pieces become very small past 200, so that is the recommended limit. Large photos are automatically reduced to 1600 pixels on the long side so any device can handle them.</p>
+<h3>Is my progress saved if I leave?</h3>
+<p>No. Because the photo is never stored, progress is not stored either; only completed records are kept in the browser. Start with a piece count you can finish in one sitting.</p>
+`,
+  },
+  ja: {
+    title: '写真ジグソーパズル作成', sub: '自分の写真を好きなピース数の本格ジグソーに。写真は端末の外に出ません',
+    pick: '写真を選ぶ', drop: 'ここに写真をドロップ、またはタップして選択', daily: '今日のパズル', dailyCap: (title: string, n: number) => `${title} · ${n}ピース · タイムランキング`, gallery: '名画で遊ぶ', pieces: 'ピース数', custom: '自分で入力', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}ピース`, noImg: 'まず写真か名画を選んでください', chosen: '選んだ絵', myPhoto: '自分の写真',
+    start: '▶ START', privacy: '写真はブラウザの中だけで切り分けられ、保存も送信もされません', loading: 'ピースを作っています…',
+    time: 'タイム', moves: '置いた回数', left: (n: number) => `残り${n}ピース`, edgeOnly: '外周ピースのみ', hint: '下絵', zoomIn: '拡大', zoomOut: '縮小', fit: 'フィット', trayHint: '下のピースを上に引き上げてはめてください。2本指で拡大・移動',
+    viewResult: '結果を見る', done: '完成！', resTime: 'タイム', resPieces: 'ピース', resMoves: '置いた回数', best: (s: string) => `自己ベスト ${s}`, newBest: '新記録！', retry: '同じ写真でもう一度', another: '別のパズル', toTitle: 'はじめに戻る',
+    share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '自分の写真でも作れます — jigsawlab ジグソーパズル', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
+    nickLabel: 'ニックネーム', nickPh: 'ランキングに載せる名前', submit: 'ランキングに登録', registered: (r: number) => `ランキング${r}位に載りました！`, rankTotal: (n: number) => `${n} finished today`, rankEmpty: 'Nobody yet. First place is open!', rankFail: 'Could not load the board', rankTotal: (n: number) => `今日${n}人が完成`, rankEmpty: 'まだ誰もいません。1位が空いています！', rankFail: 'ランキングを読み込めませんでした', lbTitle: '今日のパズル ランキング', unit: '秒', noRecord: 'まだ記録がありません',
+    imgFail: '画像を開けませんでした。JPG・PNG・HEICの写真か確認してください', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}、${y}`,
+    seo: `<p class="lead">写真を1枚選んでピース数を決めると、凹凸がかみ合う本物のジグソーパズルになります。下のトレイからピースを引き上げてはめ、スマホでは2本指で拡大・移動しながら完成させましょう。写真は端末の外に出ず、内蔵のパブリックドメイン名画では毎日同じ盤面でタイムを競う「今日のパズル」も遊べます。</p>
+<h2>遊び方</h2>
+<ol>
+  <li><b>写真を選ぶ</b>を押してギャラリーから選ぶか、PCではファイルをドロップします。iPhoneのHEIC写真はブラウザが開ければそのまま使え、開けない場合は案内が出ます。写真の代わりに<b>名画で遊ぶ</b>からゴッホ・北斎・フェルメール・クリムト・モネ・申潤福の作品を選ぶこともできます。</li>
+  <li><b>ピース数</b>を選びます。12・24・48・96・150・200のどれかを押すか、自分で数字を入力すると、写真の縦横比に合わせて格子を計算し、その近くの数に切り分けます。ピースの凹凸はランダムなので、同じ写真でも毎回違う盤面になります。</li>
+  <li>STARTを押すと、上に空の盤、下にピースのトレイが出ます。トレイは横にスワイプして眺め、ピースを<b>上に引き上げる</b>と盤に移ります。正しい場所の近くに置けばはまってロックされ、違う場所なら盤の上に置かれたまま、あとで動かせます。</li>
+  <li>スマホでは<b>2本指で拡大・縮小し、空いた場所をドラッグして移動</b>します。PCではホイールで拡大、空いた場所をドラッグで移動、右上のボタンでも拡大・縮小・フィットができます。<b>下絵</b>をオンにすると完成図が盤にうすく表示され、置く場所のヒントになります。</li>
+  <li>すべてのピースがロックされたら完成です。タイムと置いた回数が表示され、同じ写真・同じピース数の自己ベストがこのブラウザに保存されます。結果はリンクで共有でき、今日のパズルならニックネームだけでタイムランキングに登録できます。</li>
+</ol>
+<h2>写真はどこにもアップロードされません</h2>
+<p>選んだ写真はブラウザが読み込み、画面の中で切り分けて描きます。jigsawlabのサーバーには送信されず保存もされないので、家族や子どもの写真、まだ公開していない写真でも安心して使えます。そのため、自分の写真で作ったパズルをリンクで他の人に送ることはできず、共有されるのは結果（ピース数とタイム）だけです。友達と同じ盤面で競いたいときは今日のパズルを使ってください。</p>
+<h2>今日のパズル</h2>
+<p>内蔵したパブリックドメインの名画22点から日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。完成タイムの速い順にランキングがつき、ニックネームを入れるだけで登録できます。日本時間の午前0時に新しい絵に切り替わり、過去の記録はそのまま残ります。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
+<h2>ピース数の選び方</h2>
+<p>12〜24ピースは3〜5分で終わる軽い盤面で、子どもと遊ぶのに向いています。48ピースは10分以内で終わる標準サイズ。96ピースからはスマホ画面ではピースが小さくなって拡大を使うようになり、150〜200ピースはタブレットやPCで30分以上かける本格的なパズルです。空や海のように似た色の面が広い写真は同じピース数でもかなり難しく、顔・文字・輪郭の多い写真は簡単になります。縦長の写真は格子も縦長になるので、ピース数を少し増やしても大丈夫です。</p>
+<h2>よくある質問</h2>
+<h3>ピースが正しい場所にはまりません。</h3>
+<p>ピースの中心が正しい位置からピース1辺の4分の1以内に来るとロックされます。拡大した状態のほうが正確に置けるので、はまらないときはその部分を拡大してみてください。下絵をオンにすると位置を探しやすくなります。</p>
+<h3>トレイをスクロールしたいのにピースが持ち上がります。</h3>
+<p>トレイは横に動かすとスクロール、上に動かすと取り出しです。眺めるときは指をもう少し水平に動かしてください。</p>
+<h3>200ピースより多くできますか？</h3>
+<p>自分で入力すれば最大300まで可能です。ただしスマホの画面では200を超えるとピースがとても小さくなるため、200以内をおすすめします。大きな写真は自動的に長辺1600ピクセルに縮小して処理するので、どの端末でも負担はありません。</p>
+<h3>途中でページを離れると進み具合は消えますか？</h3>
+<p>はい。写真を保存しないという方針のため、進み具合も保存しません。ブラウザに残るのは完成の記録だけです。一度で終えられるピース数から始めるのがおすすめです。</p>
+`,
+  },
+} satisfies Record<Lang, unknown>;

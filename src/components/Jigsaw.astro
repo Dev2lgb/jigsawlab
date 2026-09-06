@@ -33,6 +33,18 @@ const shelves = shelvesFor(lang);
 
 <script is:inline>if (/[?&]room=/.test(location.search)) document.documentElement.setAttribute('data-join', '1');</script>
 <div class="fullload" id="jg-fullload" role="status"><span class="spin"></span><p id="jg-fullload-txt">{U.play.joining}</p></div>
+  <div class="modal" id="jg-gate" hidden>
+    <div class="modal-bg"></div>
+    <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
+      <p class="gate-k">{U.play.gate.kicker}</p>
+      <div class="chosen"><img id="jg-gate-img" alt="" /><div><b id="jg-gate-h"></b><span class="grid-lbl" id="jg-gate-sub"></span></div></div>
+      <button type="button" class="btn primary lg gate-login" id="jg-gate-login"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></button>
+      <p class="muted gate-sub">{U.play.gate.loginSub}</p>
+      <p class="gate-or"><span>{U.play.gate.or}</span></p>
+      <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
+      <p class="muted gate-sub">{U.play.gate.guestSub}</p>
+    </div>
+  </div>
 <div class="modal" id="jg-setup" hidden>
   <div class="modal-bg" id="jg-modal-bg"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="jg-chosen-name">
@@ -67,18 +79,6 @@ const shelves = shelvesFor(lang);
     <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
     <div class="pilepick" id="jg-pilepick" hidden><p class="pp-h">{U.play.moveTo}</p><div class="pp-list" id="jg-pilepick-list"></div></div>
-    <div class="modal" id="jg-gate" hidden>
-      <div class="modal-bg"></div>
-      <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
-        <p class="gate-k">{U.play.gate.kicker}</p>
-        <div class="chosen"><img id="jg-gate-img" alt="" /><div><b id="jg-gate-h"></b><span class="grid-lbl" id="jg-gate-sub"></span></div></div>
-        <button type="button" class="btn primary lg gate-login" id="jg-gate-login"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></button>
-        <p class="muted gate-sub">{U.play.gate.loginSub}</p>
-        <p class="gate-or"><span>{U.play.gate.or}</span></p>
-        <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
-        <p class="muted gate-sub">{U.play.gate.guestSub}</p>
-      </div>
-    </div>
     <div class="modal" id="jg-pldlg" hidden>
       <div class="modal-bg" id="jg-pldlg-bg"></div>
       <div class="dialog pldlg" role="dialog" aria-modal="true" aria-labelledby="jg-pldlg-h">

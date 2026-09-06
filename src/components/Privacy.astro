@@ -4,26 +4,27 @@ import { UI, prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang);
 const body = {
-  ko: `<p>jigsawlab은 회원가입 없이 쓰는 직소 퍼즐 사이트입니다. 개인정보를 최소한으로만 다룹니다.</p>
+  ko: `<p>jigsawlab은 가입 없이 쓰는 직소 퍼즐 사이트예요. 개인정보는 최소한만 다룹니다. 시행일 2026년 9월 6일.</p>
 <h2>사진</h2><p>내 사진으로 퍼즐을 만들 때 사진은 브라우저 안에서만 잘리고 그려집니다. 서버로 전송되거나 저장되지 않습니다.</p>
 <h2>브라우저에 저장되는 것</h2><p>최고 기록, 닉네임, 오늘의 퍼즐 연속 완주 일수, 랭킹용 기기 식별자가 이 브라우저의 localStorage에만 저장됩니다. 브라우저 데이터를 지우면 함께 사라집니다.</p>
 <h2>오늘의 퍼즐 랭킹</h2><p>랭킹에 기록을 올리면 닉네임·완성 시간·놓은 횟수·기기 식별자가 서버(Cloudflare D1)에 저장됩니다. 어뷰징 방지를 위해 IP 주소를 7일간 보관한 뒤 삭제합니다.</p>
 <h2>광고와 제휴 링크</h2><p>광고(Google AdSense)와 쿠팡 파트너스 제휴 링크가 실릴 수 있습니다. 광고 제공자는 쿠키로 맞춤 광고를 보여줄 수 있으며, 제휴 링크로 구매가 이루어지면 일정 수수료를 받습니다.</p>
-<h2>문의</h2><p>운영: 캔통(cantong.app). 문의는 사이트 하단 링크로 부탁드립니다.</p>`,
+<h2>문의</h2><p>hello@jigsawlab.app 으로 보내 주세요.</p>`,
   en: `<p>jigsawlab is a jigsaw puzzle site with no sign-up. We handle as little personal data as possible.</p>
 <h2>Photos</h2><p>When you make a puzzle from your own photo, the photo is cut and drawn inside your browser only. It is never uploaded or stored.</p>
 <h2>Stored in your browser</h2><p>Best times, nickname, daily streak and a device identifier for the leaderboard are kept in this browser's localStorage only. Clearing browser data removes them.</p>
 <h2>Daily puzzle leaderboard</h2><p>If you submit a record, your nickname, time, placement count and device identifier are stored on our server (Cloudflare D1). An IP address is kept for 7 days for abuse prevention, then deleted.</p>
 <h2>Ads and affiliate links</h2><p>Ads (Google AdSense) and affiliate links may appear. Ad providers may use cookies for personalised ads; purchases through affiliate links may earn us a commission.</p>
-<h2>Contact</h2><p>Run by Cantong (cantong.app).</p>`,
+<h2>Contact</h2><p>hello@jigsawlab.app</p>`,
   ja: `<p>jigsawlab は登録不要のジグソーパズルサイトです。個人情報は最小限しか扱いません。</p>
 <h2>写真</h2><p>自分の写真でパズルを作るとき、写真はブラウザの中だけで切り分けて描かれます。サーバーに送信・保存されることはありません。</p>
 <h2>ブラウザに保存されるもの</h2><p>最高記録・ニックネーム・今日のパズルの連続日数・ランキング用の端末識別子が、このブラウザの localStorage にのみ保存されます。ブラウザのデータを消すと一緒に消えます。</p>
 <h2>今日のパズルのランキング</h2><p>記録を登録すると、ニックネーム・タイム・置いた回数・端末識別子がサーバー(Cloudflare D1)に保存されます。不正防止のため IP アドレスを7日間保持した後、削除します。</p>
 <h2>広告とアフィリエイト</h2><p>広告(Google AdSense)やアフィリエイトリンクが表示されることがあります。広告提供者は Cookie でパーソナライズ広告を表示する場合があり、アフィリエイトリンク経由の購入で手数料を受け取ることがあります。</p>
-<h2>お問い合わせ</h2><p>運営: Cantong (cantong.app)</p>`,
+<h2>お問い合わせ</h2><p>hello@jigsawlab.app</p>`,
 }[lang];
 ---
 <Base title={`${T.foot.privacyTitle} · jigsawlab`} desc={T.foot.privacyTitle} lang={lang} path={`${P}/privacy/`}>
-  <section class="scene page active seo"><h1>{T.foot.privacyTitle}</h1><div set:html={body} /><p><a href={`${P}/`}>{T.foot.toHome}</a></p></section>
+  <section class="wrap doc seo"><h1>{T.foot.privacyTitle}</h1><div set:html={body} /></section>
+  <style>.doc { padding-top: clamp(24px, 4vw, 48px); } .doc h1 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 12px; letter-spacing: -.04em; }</style>
 </Base>

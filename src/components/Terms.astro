@@ -1,0 +1,42 @@
+---
+import Base from '../layouts/Base.astro';
+import { UI, prefix, type Lang } from '../i18n/ui';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang);
+const body = {
+  ko: `<p>jigsawlab(이하 "사이트")을 이용하면 아래 약관에 동의한 것으로 봅니다. 시행일 2026년 9월 6일.</p>
+<h2>1. 서비스</h2><p>사이트는 퍼블릭 도메인 명화와 이용자의 사진으로 직소 퍼즐을 만들어 맞추는 무료 웹 서비스입니다. 가입 없이 쓸 수 있고, 진행 상황·기록·즐겨찾기는 이용자의 기기(브라우저 저장소)에만 보관됩니다. 기기를 바꾸거나 브라우저 데이터를 지우면 함께 사라지며, 사이트는 이를 복구할 수 없습니다.</p>
+<h2>2. 이용자의 사진</h2><p>내 사진으로 만든 퍼즐은 브라우저 안에서만 처리되고 서버로 전송되지 않습니다. 이용자는 자신이 권리를 가진 사진만 사용해야 하며, 타인의 저작권·초상권을 침해하는 사진 사용에 대한 책임은 이용자에게 있습니다.</p>
+<h2>3. 그림과 콘텐츠</h2><p>사이트의 명화 이미지는 퍼블릭 도메인 또는 CC0로 공개된 작품(시카고 미술관 오픈 액세스 등)입니다. 그림 소개 글, 디자인, 코드 등 사이트 자체 콘텐츠의 권리는 jigsawlab에 있으며, 개인적·비상업적 범위를 넘는 복제·배포는 사전 동의가 필요합니다.</p>
+<h2>4. 오늘의 퍼즐 랭킹</h2><p>랭킹은 기기당 하루 최고 기록 1건을 닉네임과 함께 공개합니다. 자동화 도구나 조작으로 올린 기록, 부적절한 닉네임은 예고 없이 삭제될 수 있습니다.</p>
+<h2>5. 금지 사항</h2><p>서비스의 정상 운영을 방해하는 행위, 서버에 과도한 요청을 보내는 행위, 사이트 콘텐츠를 무단 수집·재배포하는 행위는 금지됩니다.</p>
+<h2>6. 광고와 제휴</h2><p>사이트에는 광고와 제휴 링크가 실릴 수 있습니다. 제휴 링크를 통한 구매에서 사이트가 수수료를 받을 수 있으며, 제휴 상품의 판매·배송·환불은 해당 판매자의 책임입니다.</p>
+<h2>7. 면책</h2><p>서비스는 "있는 그대로" 제공됩니다. 서비스 중단, 데이터 유실, 기기 성능에 따른 문제에 대해 사이트는 법이 허용하는 범위에서 책임을 지지 않습니다.</p>
+<h2>8. 약관 변경</h2><p>약관은 필요할 때 바뀔 수 있으며, 바뀐 약관은 이 페이지에 게시한 때부터 적용됩니다.</p>
+<h2>문의</h2><p>hello@jigsawlab.app</p>`,
+  en: `<p>By using jigsawlab (the "site") you agree to these terms. Effective 6 September 2026.</p>
+<h2>1. The service</h2><p>The site is a free web service for making and solving jigsaw puzzles from public-domain paintings and your own photos. No account is needed. Progress, records and favourites are kept only on your device (browser storage); they are lost if you clear browser data or change devices, and the site cannot restore them.</p>
+<h2>2. Your photos</h2><p>Puzzles made from your photos are processed inside the browser and never sent to a server. Use only photos you have rights to; you are responsible for any infringement of copyright or personality rights.</p>
+<h2>3. Paintings and content</h2><p>Painting images on the site are public domain or CC0 (for example the Art Institute of Chicago open access collection). The site's own content, including painting descriptions, design and code, belongs to jigsawlab; reproduction beyond personal, non-commercial use requires permission.</p>
+<h2>4. Daily leaderboard</h2><p>The leaderboard shows one best time per device per day with a nickname. Records submitted by automation or manipulation, and inappropriate nicknames, may be removed without notice.</p>
+<h2>5. Prohibited use</h2><p>Interfering with the service, sending excessive requests to the server, or scraping and redistributing site content is not allowed.</p>
+<h2>6. Ads and affiliate links</h2><p>The site may show ads and affiliate links. The site may earn a commission on purchases through affiliate links; sale, delivery and refunds are the seller's responsibility.</p>
+<h2>7. Disclaimer</h2><p>The service is provided "as is". To the extent permitted by law, the site is not liable for interruptions, data loss or device-related problems.</p>
+<h2>8. Changes</h2><p>These terms may change; the updated version applies from the time it is posted on this page.</p>
+<h2>Contact</h2><p>hello@jigsawlab.app</p>`,
+  ja: `<p>jigsawlab（以下「サイト」）を利用することで、以下の規約に同意したものとみなします。施行日 2026年9月6日。</p>
+<h2>1. サービス</h2><p>サイトはパブリックドメインの名画と利用者の写真からジグソーパズルを作って遊ぶ無料のウェブサービスです。登録は不要で、進行状況・記録・お気に入りは利用者の端末（ブラウザの保存領域）にのみ保存されます。端末を変えたりブラウザのデータを消すと失われ、サイトはこれを復元できません。</p>
+<h2>2. 利用者の写真</h2><p>自分の写真で作ったパズルはブラウザ内だけで処理され、サーバーには送られません。権利を持つ写真のみ使用してください。他人の著作権・肖像権を侵害する写真の使用については利用者が責任を負います。</p>
+<h2>3. 絵とコンテンツ</h2><p>サイトの名画画像はパブリックドメインまたはCC0で公開された作品（シカゴ美術館オープンアクセスなど）です。絵の解説文、デザイン、コードなどサイト独自のコンテンツの権利はjigsawlabにあり、個人的・非商業的な範囲を超える複製・配布には事前の同意が必要です。</p>
+<h2>4. 今日のパズルのランキング</h2><p>ランキングは端末ごとに1日1件の最高記録をニックネームとともに公開します。自動化ツールや不正操作による記録、不適切なニックネームは予告なく削除されることがあります。</p>
+<h2>5. 禁止事項</h2><p>サービスの正常な運営を妨げる行為、サーバーへの過度なリクエスト、サイトのコンテンツの無断収集・再配布は禁止します。</p>
+<h2>6. 広告とアフィリエイト</h2><p>サイトには広告やアフィリエイトリンクが掲載されることがあります。アフィリエイトリンク経由の購入でサイトが手数料を受け取ることがあり、商品の販売・配送・返品は販売者の責任です。</p>
+<h2>7. 免責</h2><p>サービスは「現状のまま」提供されます。サービスの中断、データの消失、端末の性能に起因する問題について、サイトは法律が許す範囲で責任を負いません。</p>
+<h2>8. 規約の変更</h2><p>規約は必要に応じて変更されることがあり、変更後の規約はこのページに掲載した時点から適用されます。</p>
+<h2>お問い合わせ</h2><p>hello@jigsawlab.app</p>`,
+}[lang];
+---
+<Base title={`${T.foot.termsTitle} · jigsawlab`} desc={T.foot.termsTitle} lang={lang} alts={{ ko: '/terms/', en: '/en/terms/', ja: '/ja/terms/' }} path={`${P}/terms/`}>
+  <section class="wrap doc seo"><h1>{T.foot.termsTitle}</h1><div set:html={body} /></section>
+  <style>.doc { padding-top: clamp(24px, 4vw, 48px); } .doc h1 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 12px; letter-spacing: -.04em; }</style>
+</Base>

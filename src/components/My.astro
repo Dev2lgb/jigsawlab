@@ -1,0 +1,67 @@
+---
+// 내 퍼즐 — 하던 퍼즐(IndexedDB) · 완성한 퍼즐(localStorage) · 즐겨찾기. 전부 이 기기 안
+import Base from '../layouts/Base.astro';
+import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { WORKS } from '../data/works';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my;
+const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
+---
+<Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={{ ko: '/my/', en: '/en/my/', ja: '/ja/my/' }} path={`${P}/my/`} noindex>
+  <div class="wrap my">
+    <div class="my-head"><h1>{M.title}</h1><p class="muted">{M.onDevice}</p></div>
+    <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
+    <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
+    <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
+  </div>
+  <script is:inline define:vars={{ meta }}>window.__meta = JSON.parse(meta);</script>
+  <style>
+    .my { padding-top: clamp(24px, 4vw, 48px); } .my-head { margin-bottom: 8px; } .my-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; } .my-head p { margin: 6px 0 0; }
+    .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+    .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
+    .cards :global(.mc) { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); overflow: hidden; color: var(--ink); text-decoration: none; transition: transform .2s var(--ease), box-shadow .2s; }
+    .cards :global(.mc:hover) { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(15,18,34,.5); text-decoration: none; }
+    .cards :global(.mc img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); display: block; }
+    .cards :global(.mc .bar) { height: 4px; background: var(--line); } .cards :global(.mc .bar i) { display: block; height: 100%; background: var(--accent); }
+    .cards :global(.mc .t) { padding: 10px 12px 2px; font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .cards :global(.mc .s) { padding: 0 12px 12px; color: var(--muted); font-size: .8rem; }
+    .cards :global(.mc .s b) { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .cards :global(.mc .x) { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(15,18,34,.6); color: #fff; cursor: pointer; font-size: .8rem; }
+    .cards :global(.mc .badge) { position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 999px; background: var(--gold); color: #fff; font-size: .72rem; font-weight: 800; }
+  </style>
+  <script>
+    import { saves, images, hasIDB, type SaveData } from '../lib/db';
+    import { getDone } from '../lib/store';
+    import { favs, toggleFav } from '../lib/fav';
+    import { UI, type Lang } from '../i18n/ui';
+    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, M = UI[LANG].my, P = LANG === 'ko' ? '' : `/${LANG}`;
+    const meta = (window as any).__meta as Record<string, [string, string, string]>;
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const $ = (id: string) => document.getElementById(id)!;
+    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
+      const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
+      const im = document.createElement('img'); im.src = o.img; im.alt = ''; im.loading = 'lazy'; a.appendChild(im);
+      if (o.bar !== undefined) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = `<i style="width:${o.bar}%"></i>`; a.appendChild(b); }
+      const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.append(t, s);
+      if (o.badge) { const b = document.createElement('span'); b.className = 'badge'; b.textContent = o.badge; a.appendChild(b); }
+      if (o.onDel) { const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '✕'; x.title = M.del; x.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); o.onDel!(); }); a.appendChild(x); }
+      return a;
+    };
+    async function renderProg() {
+      const box = $('l-prog'); box.innerHTML = ''; let list: SaveData[] = []; if (hasIDB()) try { list = await saves.all(); } catch {}
+      $('e-prog').hidden = !!list.length; $('c-prog').textContent = list.length ? String(list.length) : '';
+      for (const sv of list) box.appendChild(card({ href: `${P}/play/?resume=${encodeURIComponent(sv.id)}`, img: sv.thumb, title: sv.name, sub: `<b>${Math.round((sv.done / sv.total) * 100)}%</b> · ${M.pieces(sv.total)} · ${fmt(sv.elapsed / 1000)}`, bar: (sv.done / sv.total) * 100, onDel: async () => { try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} renderProg(); } }));
+    }
+    function renderDone() {
+      const box = $('l-done'); box.innerHTML = ''; const list = getDone();
+      $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto ? undefined : `${P}/puzzle/${d.key}/`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmt(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
+    }
+    function renderFav() {
+      const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);
+      $('e-fav').hidden = !!list.length; $('c-fav').textContent = list.length ? String(list.length) : '';
+      for (const k of list) { const m = meta[k]; box.appendChild(card({ href: `${P}/puzzle/${k}/`, img: `/jigsaw/t-${k}.webp`, title: m[0], sub: `${m[1]} · ${m[2]}`, onDel: () => { toggleFav(k); renderFav(); } })); }
+    }
+    renderProg(); renderDone(); renderFav();
+  </script>
+</Base>

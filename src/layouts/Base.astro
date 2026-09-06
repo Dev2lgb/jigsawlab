@@ -10,6 +10,7 @@ const nav = [
   { href: `${P}/play/?daily=1`, label: T.nav.daily },
   { href: `${P}/#catalog`, label: T.nav.catalog },
   { href: `${P}/play/?photo=1`, label: T.nav.photo },
+  { href: `${P}/my/`, label: T.nav.my },
   { href: `${P}/about/`, label: T.nav.about },
 ];
 const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
@@ -43,10 +44,19 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     <a class="mark" href={`${P}/`} aria-label="jigsawlab">jigsawlab</a>
     <nav class="nav" aria-label="main">{nav.map((n) => <a href={n.href}>{n.label}</a>)}</nav>
     <div class="right">
-      <div class="langs" role="group" aria-label="language">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l}>{l.toUpperCase()}</a>)}</div>
+      <div class="langs" role="group" aria-label="language">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}>{l.toUpperCase()}</a>)}</div>
       <a class="btn primary sm play-btn" href={`${P}/play/`}>{T.nav.play}</a>
+      <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="menu"><span></span><span></span><span></span></button>
     </div>
   </header>
+  <div class="menu" id="menu" hidden>
+    <div class="menu-bg" id="menu-bg"></div>
+    <nav class="menu-sheet" aria-label="menu">
+      {nav.map((n) => <a href={n.href}>{n.label}</a>)}
+      <a class="btn primary" href={`${P}/play/`}>{T.nav.play}</a>
+      <div class="menu-langs">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}>{UI[l].langName}</a>)}</div>
+    </nav>
+  </div>
   <main id="main"><slot /></main>
   <footer class="foot">
     <div class="wrap foot-in">
@@ -55,10 +65,12 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
         <a href={`${P}/play/?daily=1`}>{T.nav.daily}</a>
         <a href={`${P}/#catalog`}>{T.nav.catalog}</a>
         <a href={`${P}/play/?photo=1`}>{T.nav.photo}</a>
+        <a href={`${P}/my/`}>{T.nav.my}</a>
         <a href={`${P}/about/`}>{T.nav.about}</a>
+        <a href={`${P}/terms/`}>{T.foot.terms}</a>
         <a href={`${P}/privacy/`}>{T.foot.privacy}</a>
       </div>
-      <div class="foot-meta"><span>{T.foot.rights}</span><a href="https://cantong.app" rel="noopener">{T.foot.madeBy}</a><span>© 2026 jigsawlab</span></div>
+      <div class="foot-meta"><span>{T.foot.rights}</span><a href="mailto:hello@jigsawlab.app">hello@jigsawlab.app</a><span>© 2026 jigsawlab</span></div>
     </div>
   </footer>
   <script>
@@ -67,6 +79,13 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) els.forEach((e) => e.classList.add('in'));
     else { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { (e.target as HTMLElement).classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }); els.forEach((e) => io.observe(e)); }
     const top = document.getElementById('top')!; const onS = () => top.classList.toggle('scrolled', scrollY > 8); onS(); addEventListener('scroll', onS, { passive: true });
+    // 모바일 메뉴
+    const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
+    const setMenu = (o: boolean) => { menu.hidden = !o; mb.setAttribute('aria-expanded', String(o)); document.documentElement.style.overflow = o ? 'hidden' : ''; };
+    mb.addEventListener('click', () => setMenu(menu.hidden)); document.getElementById('menu-bg')!.addEventListener('click', () => setMenu(false)); addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    // 언어: 직접 고르면 기억, 첫 방문이면 브라우저 언어로
+    document.querySelectorAll<HTMLAnchorElement>('a[data-lang]').forEach((a) => a.addEventListener('click', () => { try { localStorage.setItem('lang', a.dataset.lang!); } catch {} }));
+    try { const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang'); const want = saved || (navigator.language || '').slice(0, 2); if (['ko', 'en', 'ja'].includes(want) && want !== pageLang && !saved) { localStorage.setItem('lang', want); const path = location.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/'; location.replace((want === 'ko' ? '' : '/' + want) + path + location.search); } } catch {}
   </script>
 </body>
 </html>
@@ -76,10 +95,11 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   @font-face { font-family: 'BM HANNA Pro'; src: url('/fonts/BMHANNAPro.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+0020-007E, U+1100-11FF, U+3131-318E, U+AC00-D7A3; }
   :root {
     --bg: #ffffff; --bg-2: #f5f6f8; --bg-3: #eceef2; --board: #e6e8ee; --ink: #0f1222; --ink-2: #3a3f55; --muted: #6b7188; --line: #e3e6ec; --line-2: #d2d6df;
-    --accent: #3b5bff; --accent-deep: #2b47e0; --accent-soft: #eaeeff; --accent-glow: rgba(59,91,255,.35); --gold: #f0a71b; --gold-soft: #fff4dc;
+    --accent: #14172a; --accent-deep: #000000; --accent-soft: #eceef2; --accent-glow: rgba(15,18,34,.35); --gold: #f0a71b; --gold-soft: #fff4dc;
     --box: #f7f2e7; --box-2: #eee6d3; --box-3: #d9cfb5; --box-frame: #b08d55;
     --top-h: 68px; --r: 24px; --r-sm: 14px; --max: 1440px; --gutter: clamp(20px, 4vw, 64px);
-    --font: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+    --font: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+    --head: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
     --brand: 'Syne', var(--font);
     --ease: cubic-bezier(.2, .8, .2, 1);
     color-scheme: light;
@@ -88,10 +108,11 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; min-height: 100dvh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+  a { color: var(--ink); text-decoration: none; } a:hover { text-decoration: underline; }
   button, input { font: inherit; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-  h1, h2, h3 { margin: 0; line-height: 1.15; letter-spacing: -0.025em; font-weight: 800; }
+  h1, h2, h3 { margin: 0; line-height: 1.15; letter-spacing: -0.01em; font-weight: 800; font-family: var(--head); }
+  .seo h3, .field label { font-family: var(--font); }
   img { max-width: 100%; }
   html[data-play="on"] { overflow: hidden; } html[data-play="on"] .foot { display: none; }
   .wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
@@ -103,7 +124,15 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .nav { display: flex; gap: 2px; justify-self: center; } .nav a { color: var(--ink-2); font-weight: 600; font-size: .95rem; padding: 9px 14px; border-radius: 999px; transition: background .15s, color .15s; } .nav a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
   .right { display: flex; align-items: center; gap: 10px; }
   .langs { display: flex; padding: 3px; border-radius: 999px; background: var(--bg-3); } .langs a { color: var(--muted); font-size: .74rem; font-weight: 700; padding: 5px 9px; border-radius: 999px; letter-spacing: .02em; } .langs a[aria-current] { color: var(--ink); background: var(--bg); box-shadow: 0 1px 3px rgba(15,18,34,.15); } .langs a:hover { text-decoration: none; color: var(--ink); }
-  @media (max-width: 860px) { .top { grid-template-columns: auto 1fr; gap: 12px; --top-h: 60px; } .nav { display: none; } .right { justify-self: end; } }
+  .menu-btn { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; } .menu-btn span { display: block; width: 18px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease), opacity .2s; }
+  .menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); } .menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; } .menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .menu { position: fixed; inset: 0; z-index: 19; } .menu-bg { position: absolute; inset: 0; background: rgba(15,18,34,.35); }
+  .menu-sheet { position: absolute; left: 0; right: 0; top: var(--top-h); background: var(--bg); padding: 12px 20px 24px; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid var(--line); border-radius: 0 0 24px 24px; animation: sheet .25s var(--ease); }
+  @keyframes sheet { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+  .menu-sheet > a:not(.btn) { padding: 14px 6px; font-size: 1.15rem; font-weight: 700; border-bottom: 1px solid var(--line-soft); } .menu-sheet .btn { margin-top: 14px; }
+  .menu-langs { display: flex; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }
+  @media (max-width: 860px) { .top { grid-template-columns: auto 1fr; gap: 12px; --top-h: 60px; } .nav { display: none; } .right { justify-self: end; } .langs { display: none; } .menu-btn { display: flex; } }
+  @media (min-width: 861px) { .menu { display: none !important; } }
   @media (max-width: 640px) { html[data-play="on"] .top { display: none; } html[data-play="on"] { --top-h: 0px; } .top .play-btn { display: none; } }
   #main { flex: 1; display: flex; flex-direction: column; }
 
@@ -131,7 +160,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   /* 부품 */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px 22px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--bg); color: var(--ink); font-weight: 700; cursor: pointer; transition: transform .15s var(--ease), box-shadow .2s, background .15s; white-space: nowrap; }
   .btn:hover { background: var(--bg-2); text-decoration: none; transform: translateY(-1px); } .btn:active { transform: translateY(0); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 10px 24px -10px var(--accent-glow); } .btn.primary:hover { background: var(--accent-deep); box-shadow: 0 14px 30px -10px var(--accent-glow); }
+  .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: 0 10px 24px -12px rgba(15,18,34,.6); } .btn.primary:hover { background: #000; box-shadow: 0 14px 30px -12px rgba(15,18,34,.6); }
   .btn.ghost { background: transparent; border-color: transparent; } .btn.ghost:hover { background: var(--bg-3); }
   .btn.lg { min-height: 58px; padding: 12px 30px; font-size: 1.08rem; } .btn.sm { min-height: 38px; padding: 4px 16px; font-size: .9rem; }
   .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; }
@@ -160,7 +189,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .box3d img { display: block; width: 100%; flex: 1; min-height: 0; object-fit: cover; border: 2px solid var(--box-frame); background: var(--board); }
   .box3d .bf { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 4%; } .box3d .bf .logo { font-family: var(--brand); font-size: .55rem; font-weight: 800; color: var(--ink); letter-spacing: -.01em; } .box3d .bf small { font-size: .58rem; color: #7a715e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .boxw { position: relative; display: inline-block; flex: none; } .boxw.big { display: block; }
-  .fav { position: absolute; top: 2px; right: -6px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: #e0245e; font-size: 1.05rem; line-height: 1; cursor: pointer; display: grid; place-items: center; box-shadow: 0 4px 12px -6px rgba(15,18,34,.5); opacity: 0; transition: opacity .15s, transform .15s var(--ease); z-index: 2; }
+  .fav { position: absolute; top: 2px; right: -6px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: #d0345c; font-size: 1.05rem; line-height: 1; cursor: pointer; display: grid; place-items: center; box-shadow: 0 4px 12px -6px rgba(15,18,34,.5); opacity: 0; transition: opacity .15s, transform .15s var(--ease); z-index: 2; }
   .boxw:hover .fav, .fav[aria-pressed="true"], .fav:focus-visible { opacity: 1; } .fav:hover { transform: scale(1.12); } @media (hover: none) { .fav { opacity: .9; } }
   .boxw.big .fav { width: 44px; height: 44px; font-size: 1.4rem; top: 10px; right: 6px; opacity: 1; }
   .search { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--bg); min-width: 240px; } .search input { border: 0; outline: 0; background: none; font: inherit; width: 100%; min-width: 0; } .search svg { color: var(--muted); flex: none; }

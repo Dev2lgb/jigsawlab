@@ -69,6 +69,7 @@ const shelves = shelvesFor(lang);
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false"><Fragment set:html={icon('eye', 18)} /></button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false"><Fragment set:html={icon('edge', 18)} /></button>
       <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false"><Fragment set:html={icon('grid', 18)} /></button>
+      <button type="button" class="ib" id="jg-cloud" title={U.play.cloudSave} hidden><Fragment set:html={icon('cloud', 18)} /></button>
       <button type="button" class="ib" id="jg-restart" title={U.play.startOver}><Fragment set:html={icon('rotate', 18)} /></button>
       <button type="button" class="ib" id="jg-quit" title={t.toTitle}><Fragment set:html={icon('x', 18)} /></button>
     </div>
@@ -317,7 +318,7 @@ const shelves = shelvesFor(lang);
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
-    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -338,6 +339,7 @@ const shelves = shelvesFor(lang);
     for (const p of order) { if (p.locked || p.g) continue; frag.appendChild(trayEl(p)); }
     tray.appendChild(frag);
     renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
+    if (!room && src.kind !== 'photo') me().then((u) => { if (u && running && !room && gen === myGen) $('jg-cloud').hidden = false; });
   }
   function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; (el as any).__p = p; bindTray(el, p); trayIO.observe(el); return el; }
   function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
@@ -382,12 +384,12 @@ const shelves = shelvesFor(lang);
   // ── 진행 저장 (IndexedDB, 기기 안). 놓을 때마다 예약, 화면 이탈 시 즉시
   let saveT = 0;
   function scheduleSave() { if (!hasIDB() || !running || room) return; clearTimeout(saveT); saveT = window.setTimeout(saveNow, 700); }
-  async function saveNow(flush = false) {
-    if (!hasIDB() || !src || !cut || complete || !pieces.length || room) return;
+  async function saveNow(flush = false): Promise<boolean> {
+    if (!hasIDB() || !src || !cut || complete || !pieces.length || room) return false;
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const tc = document.createElement('canvas'); const k = 200 / Math.max(cut.W, cut.H); tc.width = Math.round(cut.W * k); tc.height = Math.round(cut.H * k); const tctx = tc.getContext('2d')!; tctx.fillStyle = '#e6e8ee'; tctx.fillRect(0, 0, tc.width, tc.height); tctx.globalAlpha = 0.25; tctx.drawImage(img!, 0, 0, tc.width, tc.height); tctx.globalAlpha = 1; tctx.drawImage(lockedLayer, 0, 0, tc.width, tc.height);
     const data: SaveData = { id: saveId(), v: 1, kind: src.kind, key: src.kind === 'photo' ? src.photoId! : src.key, name: src.name, day: src.day, seed: cutSeed, cols: cut.cols, rows: cut.rows, total, imgW, imgH, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), tray: order.filter((p) => !p.locked && !p.g).map((p) => idx.get(p)!), pile: pieces.map((p) => p.pile), piles, elapsed: performance.now() - t0, moves, savedAt: Date.now(), thumb: tc.toDataURL('image/webp', 0.6), done: lockedN };
-    try { await saves.put(data); } catch {} syncSave(data, flush);
+    try { await saves.put(data); } catch {} if (flush) return syncSave(data); return false;
   }
   addEventListener('pagehide', () => { if (running) saveNow(true); }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) saveNow(true); });
   // 하던 퍼즐 목록 (선택 화면)
@@ -545,6 +547,7 @@ const shelves = shelvesFor(lang);
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} dropRemote(saveId()); pendingSave = null; start(); });
+  $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
   $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; history.replaceState(null, '', location.pathname); } scenes.go('title'); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 

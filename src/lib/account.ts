@@ -28,11 +28,8 @@ export async function mergeLocalDone() { if (ss.get('auth:merged')) return; cons
 export type SaveMeta = Pick<SaveData, 'id' | 'kind' | 'key' | 'name' | 'day' | 'total' | 'done' | 'elapsed' | 'savedAt' | 'thumb'>;
 export async function fetchSync(): Promise<{ done: any[]; saves: SaveMeta[] } | null> { if (!(await me())) return null; const r = await fetch('/api/sync', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
 export async function fetchSave(id: string): Promise<SaveData | null> { const r = await fetch(`/api/sync?save=${encodeURIComponent(id)}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
-let lastSaveAt = 0, saveTimer = 0;
-/** 하던 퍼즐 업로드. 자주 부르면 60초에 한 번만 (화면 이탈·나가기 때는 즉시). 무료 티어 요청 수 절약 */
-export async function syncSave(data: SaveData, now = false) {
-  if (data.kind === 'photo' || !(await me())) return;
-  const go = () => { lastSaveAt = Date.now(); saveTimer = 0; post({ action: 'save', data }); };
-  clearTimeout(saveTimer); if (now || Date.now() - lastSaveAt > 60_000) go(); else saveTimer = window.setTimeout(go, 60_000 - (Date.now() - lastSaveAt));
+/** 하던 퍼즐 업로드. 주기 저장은 안 하고, 저장 버튼·나가기·화면 이탈 때만 (무료 티어 요청 수 절약). 기기 안 IndexedDB 저장은 별도로 계속 됨 */
+export async function syncSave(data: SaveData): Promise<boolean> {
+  if (data.kind === 'photo' || !(await me())) return false; const r = await post({ action: 'save', data }); return !!r?.ok;
 }
-export async function syncDelSave(id: string) { clearTimeout(saveTimer); if (!(await me())) return; await post({ action: 'delsave', id }); }
+export async function syncDelSave(id: string) { if (!(await me())) return; await post({ action: 'delsave', id }); }

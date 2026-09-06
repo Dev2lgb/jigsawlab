@@ -1,0 +1,377 @@
+---
+// 직소 퍼즐 앱 본체 — 홈 화면(오늘의 퍼즐·내 사진·명화) → 조각 수 다이얼로그 → 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과
+import { JIGSAW } from '../i18n/jigsaw';
+import { UI, prefix, type Lang } from '../i18n/ui';
+import { PAINTINGS, DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { CATEGORIES } from '../data/catalog';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const t = JIGSAW[lang], li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang);
+const PRESETS = [12, 24, 48, 96, 150, 200];
+const day = todayKST(), daily = dailyPick(day, PAINTINGS);
+const byKey = Object.fromEntries(PAINTINGS.map((p) => [p.key, { key: p.key, artist: p.artist[li], title: p.title[li], year: p.year }]));
+const shelves = CATEGORIES.map((c) => ({ id: c.id, name: c.name[li], items: c.keys.map((k) => byKey[k]).filter(Boolean) }));
+const shareLabel = UI[lang].name;
+---
+<section class="scene page active" data-scene="title">
+  <h1 class="title-h">{t.title}</h1>
+  <p class="title-sub">{t.sub}</p>
+
+  <button type="button" class="hero" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day} aria-label={`${t.daily} · ${daily.painting.title[li]}`}>
+    <canvas class="hero-cv" id="hero-cv" width="720" height="560"></canvas>
+    <span class="hero-cap"><b>{t.daily}</b><span id="hero-name">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span></span>
+  </button>
+
+  <label class="drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden /><span class="drop-ic" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg>
+    </span><b>{t.pick}</b><span class="muted">{t.drop}</span></label>
+
+  <h2 class="gal-h">{t.gallery}</h2>
+  <div id="jg-gallery">{shelves.map((sh) => <section class="shelf"><h3>{sh.name}<span class="count">{sh.items.length}</span></h3><div class="boxes">{sh.items.map((p) => <button type="button" class="box" data-key={p.key} title={t.paintingBy(p.title, p.artist, p.year)}>
+      <span class="spine" aria-hidden="true"><span>{p.title}</span></span>
+      <span class="front"><span class="box-top"><small>{p.year}</small><b>{p.title}</b></span><img src={`/jigsaw/t-${p.key}.jpg`} alt={p.title} loading="lazy" width="240" height="190" /><span class="box-foot"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
+    </button>)}</div></section>)}</div>
+  <p class="privacy muted">{t.privacy}</p>
+
+  <div class="card lb-card"><h2 class="lb-h">{t.lbTitle}</h2><p class="muted" id="jg-r-total"></p><ol class="lb" id="jg-rank"><li class="empty">…</li></ol></div>
+</section>
+
+<div class="modal" id="jg-setup" hidden>
+  <div class="modal-bg" id="jg-modal-bg"></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="jg-chosen-name">
+    <button type="button" class="close" id="jg-close" aria-label={t.toTitle}>✕</button>
+    <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
+    <p class="lbl">{t.pieces}</p>
+    <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="300" placeholder={t.custom} /></div>
+    <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
+    <p class="muted best" id="jg-best"></p>
+  </div>
+</div>
+
+<section class="scene play" data-scene="play">
+  <div class="play-wrap">
+    <div class="hud">
+      <span class="chip">⏱ <b id="jg-time">0:00</b></span>
+      <span class="chip" id="jg-left"></span>
+      <span class="sp"></span>
+      <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
+      <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false">▢</button>
+      <button type="button" class="ib" id="jg-zin" title={t.zoomIn}>＋</button>
+      <button type="button" class="ib" id="jg-zout" title={t.zoomOut}>－</button>
+      <button type="button" class="ib" id="jg-fit" title={t.fit}>⤢</button>
+      <button type="button" class="ib" id="jg-quit" title={t.toTitle}>✕</button>
+    </div>
+    <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
+      <div class="done" id="jg-done" hidden><span>🎉 {t.done}</span><b id="jg-done-time"></b><button type="button" class="btn primary sm" id="jg-toresult">{t.viewResult}</button></div>
+    </div>
+    <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
+  </div>
+</section>
+
+<section class="scene page result" data-scene="result">
+  <h2 class="title-h">🎉 {t.done}</h2>
+  <p class="muted" id="jg-res-name"></p>
+  <canvas class="res-img" id="jg-res-img" width="320" height="240"></canvas>
+  <div class="res"><div><small>{t.resTime}</small><b id="jg-res-time">0:00</b></div><div><small>{t.resPieces}</small><b id="jg-res-n">0</b></div><div><small>{t.resMoves}</small><b id="jg-res-m">0</b></div></div>
+  <p class="best-line" id="jg-res-best"></p>
+  <div class="row">
+    <button class="btn primary" id="jg-retry">{t.retry}</button>
+    <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
+    <button class="btn" id="jg-title">{t.toTitle}</button>
+  </div>
+  <form class="card submit" id="jg-submit" hidden>
+    <div class="field"><label for="jg-nick">{t.nickLabel}</label><input class="input" id="jg-nick" maxlength="12" placeholder={t.nickPh} /></div>
+    <button class="btn primary" type="submit">{t.submit}</button>
+  </form>
+</section>
+
+<style>
+  .title-h { font-size: clamp(1.7rem, 4.5vw, 2.4rem); font-weight: 700; margin: 4px 0 6px; }
+  .title-sub { margin: 0 0 22px; color: var(--muted); font-size: 1.05rem; max-width: 34em; }
+  /* 오늘의 퍼즐 — 실제 오늘 컷으로 조각 몇 개가 빠져 있는 그림 */
+  .hero { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--white); cursor: pointer; text-align: left; overflow: hidden; color: var(--ink); }
+  .hero:hover { border-color: var(--accent); } .hero:hover .hero-cap b { color: var(--accent); }
+  .hero-cv { display: block; width: 100%; height: auto; background: var(--board); }
+  .hero-cap { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 12px 16px; } .hero-cap b { font-size: 1.05rem; } .hero-cap span { color: var(--muted); font-size: .92rem; }
+  .drop { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; border: 1.5px dashed var(--line); border-radius: 18px; background: var(--white); cursor: pointer; flex-wrap: wrap; }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop-ic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); flex: none; } .drop b { font-size: 1.02rem; } .drop .muted { font-size: .9rem; flex-basis: 100%; }
+  @media (min-width: 560px) { .drop .muted { flex-basis: auto; margin-left: auto; } }
+  .gal-h { font-size: 1.05rem; font-weight: 600; margin: 26px 0 10px; color: var(--muted); }
+  /* 퍼즐 상자 진열대 */
+  .shelf { margin: 0 0 22px; } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf .count { color: var(--muted); font-weight: 400; font-size: .85rem; }
+  .boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }
+  .box { position: relative; display: block; padding: 0 0 0 12px; border: 0; background: none; cursor: pointer; text-align: left; color: var(--ink); perspective: 700px; -webkit-tap-highlight-color: transparent; }
+  .box .front { display: block; border-radius: 3px 6px 6px 3px; background: linear-gradient(170deg, #fbf8f1, #efe9dc); box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 12px 22px -10px rgba(23,26,36,.45), 1px 1px 0 rgba(23,26,36,.08); padding: 7px 8px 6px; transform: rotateY(-9deg); transform-origin: left center; transition: transform .18s ease, box-shadow .18s ease; }
+  .box .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; border-radius: 3px 0 0 3px; background: linear-gradient(90deg, #cfc6b3, #e2dbcb); box-shadow: inset -1px 0 0 rgba(23,26,36,.08); transform-origin: right center; transform: rotateY(38deg) translateX(1px); overflow: hidden; }
+  .box .spine span { position: absolute; left: 50%; top: 8px; transform: translateX(-50%) rotate(90deg); transform-origin: top left; white-space: nowrap; font-size: .55rem; color: #6b6352; letter-spacing: .02em; top: 8px; margin-left: 2px; }
+  .box:hover .front, .box.on .front { transform: rotateY(-4deg) translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 18px 26px -12px rgba(23,26,36,.5), 0 0 0 2px var(--accent); }
+  .box-top { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; min-height: 1.1em; } .box-top small { font-size: .7rem; color: #7a715e; font-variant-numeric: tabular-nums; } .box-top b { flex: 1; text-align: center; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .box img { display: block; width: 100%; aspect-ratio: 5 / 4; height: auto; object-fit: cover; border: 2px solid #b08a4f; outline: 1px solid rgba(255,255,255,.7); outline-offset: -3px; background: var(--board); }
+  .box-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 6px 0 0; } .box-foot .logo { font-size: .58rem; font-weight: 700; color: var(--accent); letter-spacing: -.01em; } .box-foot small { font-size: .62rem; color: #7a715e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .privacy { margin: 14px 0 0; font-size: .85rem; }
+  .lb-card { margin-top: 26px; } .lb-h { font-size: 1.05rem; margin: 0 0 2px; } .lb-card .muted { margin: 0 0 8px; font-size: .9rem; }
+  .lb { list-style: none; margin: 0; padding: 0; } .lb li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line-soft); } .lb li.empty { color: var(--muted); border: 0; }
+  .lb .rank { width: 24px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; } .lb .nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lb .score { font-weight: 600; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 400; }
+  .lb li:nth-child(1) .rank { color: var(--gold); }
+
+  /* 조각 수 다이얼로그 */
+  .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-bg { position: absolute; inset: 0; background: rgba(23,26,36,.45); }
+  .dialog { position: relative; width: min(92vw, 420px); max-height: 92%; overflow: auto; padding: 20px; background: var(--white); border-radius: 18px; box-shadow: 0 20px 60px rgba(23,26,36,.25); animation: pop .16s ease-out; }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--white); cursor: pointer; }
+  .chosen { display: flex; align-items: center; gap: 12px; margin: 0 32px 4px 0; } .chosen img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--board); flex: none; } .chosen div { display: flex; flex-direction: column; } .grid-lbl { color: var(--accent); font-weight: 600; }
+  .lbl { color: var(--muted); font-size: .85rem; font-weight: 600; margin: 14px 0 6px; }
+  .pieces { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pieces button { border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); font-weight: 600; padding: 6px 13px; cursor: pointer; } .pieces button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .custom { width: 96px; min-height: 36px; padding: 4px 10px; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
+  .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
+
+  /* 플레이 */
+  .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--paper); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
+  .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
+  @media (max-width: 480px) { .hud { gap: 4px; padding: 6px 8px; } .hud .chip { font-size: .78rem; padding: 3px 8px; } .ib { width: 32px; height: 32px; } }
+  .ib { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--white); color: var(--ink); font-size: 1rem; cursor: pointer; display: grid; place-items: center; } .ib[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
+  .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .boardwrap canvas.drag { cursor: grabbing; }
+  .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
+  .done { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--white); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(233,168,32,.25); white-space: nowrap; z-index: 3; font-weight: 600; }
+  .done b { font-variant-numeric: tabular-nums; color: var(--accent); }
+  .tray { flex: none; height: 104px; display: flex; gap: 8px; align-items: center; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; background: var(--paper); border-top: 1px solid var(--line); touch-action: pan-x; scrollbar-width: thin; }
+  .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--white); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
+  .tray :global(.tp.lift) { visibility: hidden; }
+
+  /* 결과 */
+  .result { text-align: center; }
+  .res-img { display: block; max-width: min(92vw, 360px); max-height: 270px; width: auto; height: auto; margin: 14px auto 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--board); }
+  .res { display: flex; gap: 22px; justify-content: center; margin: 12px 0 4px; } .res div { display: flex; flex-direction: column; align-items: center; } .res small { color: var(--muted); font-size: .8rem; } .res b { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+  .best-line { margin: 4px 0 10px; color: var(--gold); font-weight: 600; min-height: 1.4em; }
+  .submit { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; width: 100%; max-width: 440px; margin: 18px auto 0; text-align: left; } .submit .field { flex: 1; min-width: 150px; }
+</style>
+
+<script>
+  import { JIGSAW } from '../i18n/jigsaw';
+  import { gridFor, seeded, makeCut, renderPiece, piecePath, PAINTINGS, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { initScenes } from '../lib/scene';
+  import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak } from '../lib/store';
+  import { share, toast } from '../lib/share';
+  const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
+  const T = JIGSAW[LANG]; const scenes = initScenes();
+  const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+
+  // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
+  const dailyBtn = $('jg-daily') as HTMLButtonElement;
+  const day = todayKST(), pick = dailyPick(day, PAINTINGS);
+  dailyBtn.dataset.key = pick.painting.key; dailyBtn.dataset.seed = String(pick.seed); dailyBtn.dataset.day = day;
+  $('hero-name').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
+
+  // 홈 그림: 오늘 그림을 오늘의 컷으로 자르고, 조각 몇 개를 살짝 빼둔 모습
+  async function drawHero() {
+    const cv = $('hero-cv') as HTMLCanvasElement; let im: HTMLImageElement; try { im = await loadImg(`/jigsaw/${pick.painting.key}.jpg`); } catch { return; }
+    const W = 720, H = Math.round(W * im.naturalHeight / im.naturalWidth), d = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * d; cv.height = H * d; const c = cv.getContext('2d')!; c.scale(d, d);
+    const g = gridFor(DAILY_PIECES, W / H), cut = makeCut(W, H, g.cols, g.rows, seeded(pick.seed));
+    c.drawImage(im, 0, 0, W, H);
+    const rand = seeded(pick.seed ^ 0x9e3779b9), picked: [number, number][] = [];
+    while (picked.length < 4) { const r = 1 + Math.floor(rand() * (g.rows - 2)), col = 1 + Math.floor(rand() * (g.cols - 2)); if (!picked.some(([a, b]) => Math.abs(a - r) < 2 && Math.abs(b - col) < 2)) picked.push([r, col]); }
+    const board = getComputedStyle(document.documentElement).getPropertyValue('--board').trim() || '#e7e9ef';
+    for (const [r, col] of picked) { c.save(); c.clip(piecePath(cut, r, col)); c.fillStyle = board; c.fillRect(0, 0, W, H); c.restore(); c.save(); c.lineWidth = 1; c.strokeStyle = 'rgba(23,26,36,.18)'; c.stroke(piecePath(cut, r, col)); c.restore(); }
+    for (const [r, col] of picked) {
+      const b = renderPiece(cut, r, col, im, d), cx = col * cut.pw + cut.pw / 2, cy = r * cut.ph + cut.ph / 2;
+      const dx = (rand() - 0.5) * cut.pw * 0.9, dy = (rand() - 0.5) * cut.ph * 0.9 + cut.ph * 0.35, rot = (rand() - 0.5) * 0.5;
+      c.save(); c.translate(cx + dx, cy + dy); c.rotate(rot); c.shadowColor = 'rgba(23,26,36,.45)'; c.shadowBlur = 18; c.shadowOffsetY = 8;
+      c.drawImage(b.canvas, -b.w / 2, -b.h / 2, b.w, b.h); c.restore();
+    }
+  }
+  drawHero();
+
+  // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
+  type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; seed?: number; day?: string; fixedN?: number };
+  let src: Source | null = null, wantN = 48, img: ImageBitmap | null = null, imgW = 0, imgH = 0;
+  const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
+  const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
+  const MAXSIDE = 1600;
+  async function loadSource(s: Source) {
+    src = s; img = null; setup.hidden = false; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
+    document.querySelectorAll('#jg-gallery .box').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
+    const blobUrl = s.file ? URL.createObjectURL(s.file) : s.url!; thumb.src = blobUrl;
+    try {
+      let bmp: ImageBitmap | HTMLImageElement;
+      if (s.file && 'createImageBitmap' in window) { try { bmp = await createImageBitmap(s.file, { imageOrientation: 'from-image' } as any); } catch { bmp = await loadImg(blobUrl); } } else bmp = await loadImg(blobUrl);
+      const w = 'naturalWidth' in bmp ? bmp.naturalWidth : bmp.width, h = 'naturalHeight' in bmp ? bmp.naturalHeight : bmp.height;
+      const sc = Math.min(1, MAXSIDE / Math.max(w, h)); const cv = document.createElement('canvas'); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc); cv.getContext('2d')!.drawImage(bmp, 0, 0, cv.width, cv.height);
+      img = await createImageBitmap(cv); imgW = cv.width; imgH = cv.height;
+      if (s.fixedN) { wantN = s.fixedN; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', Number(b.dataset.n) === wantN)); ($('jg-custom') as HTMLInputElement).value = ''; }
+      updateGrid();
+    } catch { toast(T.imgFail); setup.hidden = true; src = null; }
+  }
+  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); const b = getBest(bestKey(g.cols * g.rows)); $('jg-best').textContent = b ? T.best(fmt(b)) : T.noRecord; }
+  const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
+  $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
+  const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
+  dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.jpg`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
+  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box').forEach((b) => b.addEventListener('click', () => { const p = PAINTINGS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.jpg` }); }));
+  document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
+  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 300 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
+
+  // ── 게임 상태
+  type Piece = { r: number; c: number; x: number; y: number; bmp: PieceBitmap; locked: boolean; onBoard: boolean; el?: HTMLElement };
+  let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false;
+  let boardOrder: Piece[] = []; // 보드 위 느슨한 조각의 z 순서
+  let complete = false, completeAlpha = 0;
+  let dragging: Piece | null = null, lifting: Piece | null = null;
+  const canvas = $('jg-board') as HTMLCanvasElement, ctx = canvas.getContext('2d')!, wrap = $('jg-boardwrap'), tray = $('jg-tray');
+  const view = { s: 1, tx: 0, ty: 0 }; let fitS = 1; const dpr = () => Math.min(2, window.devicePixelRatio || 1);
+  let lastW = 0, lastH = 0;
+  function resize() { const r = wrap.getBoundingClientRect(); canvas.width = Math.round(r.width * dpr()); canvas.height = Math.round(r.height * dpr()); lastW = r.width; lastH = r.height; }
+  // 화면 크기 변화(모바일 주소창 접힘 등): 맞춤 상태였으면 다시 맞춤, 확대 중이면 보드 중심을 그대로 유지
+  function onResize() { if (!cut) return; const r = wrap.getBoundingClientRect(); if (!r.width || !r.height || (r.width === lastW && r.height === lastH)) return; const wasFit = Math.abs(view.s - fitS) < 1e-6; const cx = (lastW / 2 - view.tx) / view.s, cy = (lastH / 2 - view.ty) / view.s; resize(); const nf = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); if (wasFit) { fitS = nf; fit(); return; } view.s = Math.max(nf * 0.5, Math.min(nf * 6, view.s)); fitS = nf; view.tx = r.width / 2 - cx * view.s; view.ty = r.height / 2 - cy * view.s; draw(); }
+  function fit() { const r = wrap.getBoundingClientRect(); fitS = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); view.s = fitS; view.tx = (r.width - cut.W * fitS) / 2; view.ty = (r.height - cut.H * fitS) / 2; draw(); }
+  const toBoard = (cx: number, cy: number) => { const r = wrap.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; };
+  function zoomAt(f: number, cx: number, cy: number) { const r = wrap.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top; const ns = Math.max(fitS * 0.5, Math.min(fitS * 6, view.s * f)); const k = ns / view.s; view.tx = px - (px - view.tx) * k; view.ty = py - (py - view.ty) * k; view.s = ns; draw(); }
+
+  async function start() {
+    if (!img || !src) return toast(T.noImg);
+    const g = gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
+    const rand = seeded(src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0);
+    cut = makeCut(imgW, imgH, g.cols, g.rows, rand);
+    closeSetup(); complete = false; completeAlpha = 0; $('jg-done').hidden = true; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    scenes.go('play'); $('jg-loading').hidden = false; tray.innerHTML = ''; pieces = []; boardOrder = []; dragging = null; lifting = null; lockedN = 0; moves = 0; running = false;
+    lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
+    await new Promise((r) => setTimeout(r, 30));
+    const bmpScale = Math.min(1, 1200 / Math.max(imgW, imgH));
+    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) pieces.push({ r, c, x: c * cut.pw, y: r * cut.ph, bmp: renderPiece(cut, r, c, img, bmpScale), locked: false, onBoard: false });
+    order = [...pieces].sort(() => Math.random() - 0.5);
+    for (const p of order) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); const k = 72 / Math.max(p.bmp.w, p.bmp.h); cv.width = Math.round(p.bmp.w * k); cv.height = Math.round(p.bmp.h * k); cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height); el.appendChild(cv); p.el = el; tray.appendChild(el); bindTray(el, p); }
+    applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now(); running = true; clearInterval(timer); timer = window.setInterval(tick, 250);
+  }
+  function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
+  function updateHud() { $('jg-left').textContent = T.left(total - lockedN); }
+  let drawQueued = false;
+  function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
+  function drawNow() {
+    if (!cut) return; const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(0, 0, cut.W, cut.H);
+    if (showHint && img) { ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
+    ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = 'rgba(39,72,230,.55)'; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
+    ctx.drawImage(lockedLayer, 0, 0);
+    if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
+    for (const p of boardOrder) drawPiece(p, p === dragging ? 1.04 : 1);
+    if (lifting) drawPiece(lifting, 1.04);
+  }
+  function drawPiece(p: Piece, k: number) { const b = p.bmp; const x = p.x + b.ox, y = p.y + b.oy; if (k !== 1) { ctx.save(); ctx.shadowColor = 'rgba(23,26,36,.45)'; ctx.shadowBlur = 16 / view.s; ctx.shadowOffsetY = 6 / view.s; ctx.translate(x + b.w / 2, y + b.h / 2); ctx.scale(k, k); ctx.drawImage(b.canvas, -b.w / 2, -b.h / 2, b.w, b.h); ctx.restore(); } else ctx.drawImage(b.canvas, x, y, b.w, b.h); }
+  function hit(bx: number, by: number): Piece | null {
+    for (let i = boardOrder.length - 1; i >= 0; i--) { const p = boardOrder[i]; if (bx >= p.x && bx <= p.x + cut.pw && by >= p.y && by <= p.y + cut.ph) return p; }
+    for (let i = boardOrder.length - 1; i >= 0; i--) { const p = boardOrder[i]; if (bx >= p.x - cut.padX && bx <= p.x + cut.pw + cut.padX && by >= p.y - cut.padY && by <= p.y + cut.ph + cut.padY) return p; }
+    return null;
+  }
+  function place(p: Piece) {
+    moves++; const tol = Math.min(cut.pw, cut.ph) * 0.45;
+    if (Math.abs(p.x - p.c * cut.pw) < tol && Math.abs(p.y - p.r * cut.ph) < tol) {
+      p.x = p.c * cut.pw; p.y = p.r * cut.ph; p.locked = true; p.onBoard = false; boardOrder = boardOrder.filter((q) => q !== p);
+      const lc = lockedLayer.getContext('2d')!; lc.drawImage(p.bmp.canvas, p.x + p.bmp.ox, p.y + p.bmp.oy, p.bmp.w, p.bmp.h);
+      lockedN++; updateHud(); navigator.vibrate?.(8); if (lockedN === total) finish();
+    } else { p.onBoard = true; if (!boardOrder.includes(p)) boardOrder.push(p); }
+    p.el?.remove(); draw();
+  }
+
+  // ── 보드 포인터: 조각 드래그 / 한 손가락 이동 / 두 손가락 핀치
+  const ptrs = new Map<number, { x: number; y: number }>(); let dragOff = { x: 0, y: 0 }, pinch: { d0: number; s0: number; bx: number; by: number } | null = null;
+  const startPinch = () => { const [a, b] = [...ptrs.values()]; const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, bm = toBoard(mx, my); pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), s0: view.s, bx: bm.x, by: bm.y }; };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (ptrs.size >= 2) return;
+    canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) { if (dragging) { dragging.onBoard = true; if (!boardOrder.includes(dragging)) boardOrder.push(dragging); dragging = null; canvas.classList.remove('drag'); } startPinch(); return; }
+    const b = toBoard(e.clientX, e.clientY); const p = hit(b.x, b.y);
+    if (p) { dragging = p; dragOff = { x: b.x - p.x, y: b.y - p.y }; boardOrder = [...boardOrder.filter((q) => q !== p), p]; canvas.classList.add('drag'); draw(); }
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!ptrs.has(e.pointerId)) return; const prev = ptrs.get(e.pointerId)!; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; const r = wrap.getBoundingClientRect();
+      view.s = Math.max(fitS * 0.5, Math.min(fitS * 6, pinch.s0 * (d / pinch.d0)));
+      view.tx = (mx - r.left) - pinch.bx * view.s; view.ty = (my - r.top) - pinch.by * view.s; draw(); return;
+    }
+    if (dragging) { const b = toBoard(e.clientX, e.clientY); dragging.x = b.x - dragOff.x; dragging.y = b.y - dragOff.y; draw(); }
+    else if (ptrs.size === 1) { view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; draw(); }
+  });
+  const up = (e: PointerEvent) => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (dragging && ptrs.size === 0) { place(dragging); dragging = null; canvas.classList.remove('drag'); } };
+  for (const ev of ['touchstart', 'touchmove'] as const) canvas.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  for (const ev of ['gesturestart', 'gesturechange'] as const) canvas.addEventListener(ev, (e) => e.preventDefault());
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+  $('jg-zin').addEventListener('click', () => { const r = wrap.getBoundingClientRect(); zoomAt(1.3, r.left + r.width / 2, r.top + r.height / 2); });
+  $('jg-zout').addEventListener('click', () => { const r = wrap.getBoundingClientRect(); zoomAt(1 / 1.3, r.left + r.width / 2, r.top + r.height / 2); });
+  $('jg-fit').addEventListener('click', fit);
+  $('jg-hint').addEventListener('click', () => { showHint = !showHint; $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
+  let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
+  function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = edgeOnly && !isEdge(p); }
+  $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
+  $('jg-quit').addEventListener('click', () => { running = false; clearInterval(timer); scenes.go('title'); });
+  new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
+
+  // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기
+  function bindTray(el: HTMLElement, p: Piece) {
+    let sx = 0, sy = 0, id = -1, lifted = false, isMouse = false;
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; lifted = false; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== id) return; const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!lifted) { const go = isMouse ? Math.hypot(dx, dy) > 6 : (dy < -8 && Math.abs(dy) > Math.abs(dx) * 0.8) || e.clientY < tray.getBoundingClientRect().top; if (!go) return; lifted = true; el.classList.add('lift'); lifting = p; }
+      const b = toBoard(e.clientX, e.clientY); p.x = b.x - cut.pw / 2; p.y = b.y - cut.ph / 2; draw();
+    });
+    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!lifted) return; lifted = false; lifting = null; const r = wrap.getBoundingClientRect(); if (e.type === 'pointerup' && e.clientY < r.bottom) place(p); else { el.classList.remove('lift'); draw(); } };
+    el.addEventListener('pointerup', done); el.addEventListener('pointercancel', done);
+    // 터치(아이폰 사파리): pan-x 스크롤 판정에 pointercancel 되는 문제를 피해 터치 이벤트로 직접. 위로 6px 이상이면 스크롤을 막고 들어 올림
+    let tx = 0, ty = 0, tid = -1, tlift = false;
+    el.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; const t = e.touches[0]; tx = t.clientX; ty = t.clientY; tid = t.identifier; tlift = false; }, { passive: true });
+    el.addEventListener('touchmove', (e) => {
+      const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; const dx = t.clientX - tx, dy = t.clientY - ty;
+      if (!tlift) { if (dy < -6 && Math.abs(dy) > Math.abs(dx)) { tlift = true; el.classList.add('lift'); lifting = p; } else return; }
+      e.preventDefault(); const b = toBoard(t.clientX, t.clientY); p.x = b.x - cut.pw / 2; p.y = b.y - cut.ph / 2; draw();
+    }, { passive: false });
+    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tlift) return; tlift = false; lifting = null; const r = wrap.getBoundingClientRect(); if (e.type === 'touchend' && t.clientY < r.bottom) place(p); else { el.classList.remove('lift'); draw(); } };
+    el.addEventListener('touchend', tend); el.addEventListener('touchcancel', tend);
+  }
+
+  // ── 완성
+  function finish() {
+    running = false; clearInterval(timer); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
+    complete = true; tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    requestAnimationFrame(() => { resize(); fit(); });
+    const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
+    $('jg-done-time').textContent = fmt(sec); $('jg-done').hidden = false; navigator.vibrate?.([10, 40, 20]);
+    prepareResult(sec);
+  }
+  function prepareResult(sec: number) {
+    $('jg-res-time').textContent = fmt(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
+    const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
+    if (src!.kind === 'daily') bumpStreak(src!.day!);
+    const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? PAINTINGS.find((x) => x.key === src!.key)!.title[LI] : '';
+    sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
+    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
+    const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily'; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
+    const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(720 / cut.W, 540 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
+  }
+  $('jg-toresult').addEventListener('click', () => scenes.go('result'));
+  document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
+  // 오늘의 퍼즐 랭킹(날짜별, 기기당 최고 1건)
+  async function loadRank() { try { const rk = await api({ action: 'ranking' }); $('jg-r-total').textContent = T.rankTotal(rk.total); const ol = $('jg-rank'); ol.innerHTML = ''; if (!rk.rows.length) { ol.innerHTML = `<li class="empty">${T.rankEmpty}</li>`; return; } for (const [i, r] of (rk.rows as any[]).slice(0, 10).entries()) { const li = document.createElement('li'); const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = String(i + 1); const nick = document.createElement('span'); nick.className = 'nick'; nick.textContent = r.nick; const sc = document.createElement('span'); sc.className = 'score'; sc.innerHTML = `${fmt(r.ms / 1000)}<small> · ${Number(r.tries)}</small>`; li.append(rank, nick, sc); ol.appendChild(li); } } catch { $('jg-rank').innerHTML = `<li class="empty">${T.rankFail}</li>`; } }
+  loadRank();
+  ($('jg-submit') as HTMLFormElement).addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target as HTMLFormElement; const nick = ($('jg-nick') as HTMLInputElement).value.trim(); if (!nick) return; try { setNick(nick); const r = await api({ action: 'solve', nick, device: deviceId(), ms: Number(form.dataset.score) * 1000, tries: moves }); if (r.error) throw new Error(r.error); toast(T.registered(r.rank)); form.hidden = true; loadRank(); } catch { toast(T.rankFail); } });
+  // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
+  (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked).slice(0, n)) { p.x = p.c * cut.pw; p.y = p.r * cut.ph; place(p); } }, state: () => ({ total, lockedN, moves, board: boardOrder.length, tray: tray.children.length, loose: boardOrder.map((p) => ({ r: p.r, c: p.c, x: p.x, y: p.y })), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
+  // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
+  { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = PAINTINGS.find((x) => x.key === k);
+    if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
+    else if (pt) { if (pn >= 6 && pn <= 300) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![12, 24, 48, 96, 150, 200].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
+  $('jg-start').addEventListener('click', start);
+  $('jg-retry').addEventListener('click', start);
+  $('jg-title').addEventListener('click', () => scenes.go('title'));
+</script>

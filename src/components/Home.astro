@@ -21,11 +21,17 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
       <p class="stat" id="hero-stat" hidden><span id="hero-solved"></span><span id="hero-fast" hidden></span></p>
       <div class="cta"><a class="btn primary lg" href={`${P}/play/?daily=1`}>{T.hero.cta}</a><a class="btn lg" href={`${P}/play/?photo=1`}>{T.hero.photo}</a></div>
       <p class="note">{T.hero.sameForAll}</p>
+      <p class="streak" id="hero-streak" hidden>🔥 <span></span></p>
     </div>
     <a class="hero-art" id="hero-art" href={`${P}/play/?daily=1`} aria-label={T.hero.cta}>
       <canvas id="hero-cv" width="720" height="560"></canvas>
     </a>
   </div>
+</section>
+
+<section class="past wrap" id="past">
+  <h2 class="past-h">{T.play.past}</h2>
+  <div class="past-row" id="past-row"></div>
 </section>
 
 <section class="marq" aria-hidden="true">
@@ -94,6 +100,12 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   @keyframes float-in { from { opacity: 0; transform: perspective(1400px) rotateY(-14deg) translateY(30px); } to { opacity: 1; transform: perspective(1400px) rotateY(-6deg) rotateX(2deg); } }
   @media (max-width: 900px) { .hero-in { grid-template-columns: 1fr; min-height: 0; padding-top: 28px; } .hero-art { transform: none; } @keyframes float-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } } .hero-art:hover { transform: translateY(-2px); } }
 
+  .streak { margin: 14px 0 0; font-weight: 700; color: var(--gold); }
+  .past { padding-top: 28px; } .past-h { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px; color: var(--ink-2); }
+  .past-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; } .past-row::-webkit-scrollbar { display: none; }
+  .past-row :global(.pd) { flex: none; width: 118px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; transition: transform .2s var(--ease), box-shadow .2s; } .past-row :global(.pd:hover) { transform: translateY(-3px); box-shadow: 0 14px 26px -16px rgba(15,18,34,.5); text-decoration: none; }
+  .past-row :global(.pd img) { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); } .past-row :global(.pd .pd-d) { display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 6px 8px; font-size: .72rem; font-weight: 700; color: var(--ink-2); } .past-row :global(.pd .ok) { color: var(--accent); } .past-row :global(.pd .no) { color: var(--muted); font-weight: 500; }
+  .past-row :global(.pd.today) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   /* 흐르는 그림 띠 */
   .marq { overflow: hidden; padding: 10px 0 0; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
   .marq-track { display: flex; gap: 14px; width: max-content; animation: marq 70s linear infinite; } .marq:hover .marq-track { animation-play-state: paused; }
@@ -130,10 +142,14 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import { drawPopped } from '../lib/hero';
   import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
   import { DAILY_POOL } from '../data/works';
+  import { getStreak, getBest } from '../lib/store';
   import { UI, type Lang } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, LI = { ko: 0, en: 1, ja: 2 }[LANG], T = UI[LANG];
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
+  const P = LANG === 'ko' ? '' : `/${LANG}`;
+  { const st = getStreak(); if (st > 0) { const el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = T.play.streak(st); el.hidden = false; } }
+  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = new Date(Date.now() + 9 * 3600e3 - i * 86400e3).toISOString().slice(0, 10); const pk = dailyPick(d, DAILY_POOL); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/play/?daily=${i === 0 ? '1' : d}`; a.title = pk.painting.title[LI]; a.innerHTML = `<img src="/jigsaw/t-${pk.painting.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
   document.getElementById('hero-title')!.textContent = pick.painting.title[LI];
   document.getElementById('hero-by')!.textContent = `${pick.painting.artist[LI]} · ${pick.painting.year} · ${T.hero.pieces(DAILY_PIECES)}`;
   (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`;

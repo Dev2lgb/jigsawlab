@@ -6,6 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "binding": "ASSETS" },
   "observability": { "enabled": true },
+  "routes": [{ "pattern": "jigsawlab.app", "custom_domain": true }, { "pattern": "www.jigsawlab.app", "custom_domain": true }],
   // D1: 처음 한 번 `npx wrangler d1 create jigsawlab-db` 후 database_id 를 여기에 넣는다
   "d1_databases": [{ "binding": "DB", "database_name": "jigsawlab-db", "database_id": "de162564-bbfa-4ce0-8abf-f3609cc8190b", "migrations_dir": "migrations" }]
 }

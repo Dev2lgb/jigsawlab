@@ -6,7 +6,7 @@ import { WORK_BY_KEY } from '../data/works';
 export interface RoomGroup { dx: number; dy: number; idx: number[] }
 export interface RoomState { id: string; key: string; n: number; cols: number; rows: number; total: number; W: number; H: number; seed: number; groups: Record<string, RoomGroup>; locked: number[]; createdAt: number; doneAt?: number; lang: string }
 interface Player { id: string; nick: string; color: string; x?: number; y?: number }
-type Att = { id: string; nick: string; color: string };
+type Att = { id: string; nick: string; color: string; photo?: boolean };
 const COLORS = ['#e0245e', '#f0a71b', '#2f9e6b', '#3b5bff', '#a54cff', '#ff6a3d', '#0aa3b5', '#c2b31c'];
 const MAX_PLAYERS = 8;
 const rand32 = () => (Math.random() * 2 ** 32) >>> 0;
@@ -19,7 +19,9 @@ export class Room extends DurableObject {
     const url = new URL(req.url); const st = await this.load();
     if (req.method === 'POST' && url.pathname.endsWith('/create')) {
       if (st) return Response.json({ id: st.id, exists: true });
-      const b = await req.json<any>(); const w = WORK_BY_KEY[b.key]; if (!w) return Response.json({ error: 'key' }, { status: 400 });
+      const b = await req.json<any>();
+      // 내 사진 방: 사진은 서버에 오지 않고 크기만 받는다 (사진은 방장 브라우저 → 친구 브라우저 WebRTC 직접 전송)
+      const w = b.key === 'photo' ? { key: 'photo', w: Math.round(Number(b.w)), h: Math.round(Number(b.h)) } : WORK_BY_KEY[b.key]; if (!w || !(w.w >= 50 && w.w <= 4000 && w.h >= 50 && w.h <= 4000)) return Response.json({ error: 'key' }, { status: 400 });
       const n = Math.max(6, Math.min(2000, Number(b.n) || 48)); const g = gridFor(n, w.w / w.h);
       // 혼자 하던 판을 가져온 경우: 같은 시드·격자에 잠긴 조각과 뭉치를 그대로, 트레이에 있던 조각은 흩뿌림
       const st0 = b.state && Number.isInteger(b.state.seed) && b.state.cols === g.cols && b.state.rows === g.rows ? b.state : null;
@@ -40,7 +42,7 @@ export class Room extends DurableObject {
       const att: Att = { id, nick: '', color }; server.serializeAttachment(att); this.ctx.acceptWebSocket(server);
       return new Response(null, { status: 101, webSocket: client });
     }
-    return Response.json({ id: st.id, key: st.key, n: st.n, cols: st.cols, rows: st.rows, total: st.total, seed: st.seed, locked: st.locked.length, players: this.players().length, done: !!st.doneAt, createdAt: st.createdAt, lang: st.lang });
+    return Response.json({ id: st.id, key: st.key, photo: st.key === 'photo', w: st.W, h: st.H, n: st.n, cols: st.cols, rows: st.rows, total: st.total, seed: st.seed, locked: st.locked.length, players: this.players().length, done: !!st.doneAt, createdAt: st.createdAt, lang: st.lang });
   }
   players(): Player[] { return this.ctx.getWebSockets().map((ws) => { const a = ws.deserializeAttachment() as Att; return { id: a.id, nick: a.nick, color: a.color }; }); }
   broadcast(msg: unknown, except?: WebSocket) { const s = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) if (ws !== except) { try { ws.send(s); } catch {} } }
@@ -49,7 +51,7 @@ export class Room extends DurableObject {
     const att = ws.deserializeAttachment() as Att; const tol = Math.min(st.W / st.cols, st.H / st.rows) * 0.4;
     switch (m.t) {
       case 'nick': { const n = String(m.nick || '').trim().slice(0, 12); if (!n) return; att.nick = n; ws.serializeAttachment(att); this.broadcast({ t: 'nick', id: att.id, nick: n }); return; }
-      case 'hello': { att.nick = String(m.nick || '').slice(0, 12) || `#${att.id.slice(0, 3)}`; ws.serializeAttachment(att); ws.send(JSON.stringify({ t: 'init', state: st, you: att, players: this.players(), holders: Object.fromEntries(this.holders) })); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color } }, ws); return; }
+      case 'hello': { att.nick = String(m.nick || '').slice(0, 12) || `#${att.id.slice(0, 3)}`; att.photo = !!m.photo; ws.serializeAttachment(att); ws.send(JSON.stringify({ t: 'init', state: st, you: att, players: this.players(), holders: Object.fromEntries(this.holders) })); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color } }, ws); return; }
       case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { ws.send(JSON.stringify({ t: 'deny', g: String(i) })); return; } const g = String(i); st.groups[g] = { dx: +m.dx || 0, dy: +m.dy || 0, idx: [i] }; this.holders.set(g, att.id); this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
       case 'untake': { const g = String(m.g); const gr = st.groups[g]; if (!gr || gr.idx.length !== 1 || this.holders.get(g) !== att.id) return; delete st.groups[g]; this.holders.delete(g); this.broadcast({ t: 'untake', g }, ws); this.scheduleSave(); return; }
       case 'cur': this.broadcast({ t: 'cur', id: att.id, x: m.x, y: m.y }, ws); return;
@@ -59,6 +61,12 @@ export class Room extends DurableObject {
       case 'merge': { const g = String(m.g), into = String(m.into); const A = st.groups[g], B = st.groups[into]; if (!A || !B || g === into) return; if (Math.abs(A.dx - B.dx) > tol * 1.5 || Math.abs(A.dy - B.dy) > tol * 1.5) return; B.idx.push(...A.idx); delete st.groups[g]; this.holders.delete(g); this.holders.delete(into); this.broadcast({ t: 'merge', g, into, dx: B.dx, dy: B.dy }); this.scheduleSave(); return; }
       case 'lock': { const g = String(m.g); const A = st.groups[g]; if (!A) return; if (Math.abs(A.dx) > tol * 1.5 || Math.abs(A.dy) > tol * 1.5) return; st.locked.push(...A.idx); delete st.groups[g]; this.holders.delete(g); this.broadcast({ t: 'lock', g, idx: A.idx }); if (st.locked.length >= st.total && !st.doneAt) { st.doneAt = Date.now(); this.broadcast({ t: 'done', at: st.doneAt }); } this.scheduleSave(); return; }
       case 'ping': ws.send('{"t":"pong"}'); return;
+      // 상태 다시 받기 (사진을 늦게 받은 참가자가 판을 다시 맞출 때). 입장 알림은 다시 보내지 않음
+      case 'sync': ws.send(JSON.stringify({ t: 'init', state: st, you: att, players: this.players(), holders: Object.fromEntries(this.holders) })); return;
+      // ── 내 사진 방: WebRTC 신호 중계. 서버는 sdp/ice 를 그대로 전달만 하고 사진은 보지 않는다
+      case 'havephoto': att.photo = true; ws.serializeAttachment(att); return;
+      case 'needphoto': { const holder = this.ctx.getWebSockets().find((w) => w !== ws && (w.deserializeAttachment() as Att)?.photo); if (!holder) { ws.send('{"t":"nophoto"}'); return; } try { holder.send(JSON.stringify({ t: 'needphoto', id: att.id })); } catch { ws.send('{"t":"nophoto"}'); } return; }
+      case 'sig': { const to = String(m.to); const d = m.d; if (!d || typeof d !== 'object' || JSON.stringify(d).length > 20000) return; const dst = this.ctx.getWebSockets().find((w) => (w.deserializeAttachment() as Att)?.id === to); if (dst) try { dst.send(JSON.stringify({ t: 'sig', from: att.id, d })); } catch {} return; }
     }
   }
   async webSocketClose(ws: WebSocket) { this.dropPlayer(ws); }

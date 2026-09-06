@@ -6,6 +6,7 @@ import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 import Box from './Box.astro';
+import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
@@ -39,6 +40,7 @@ const shelves = shelvesFor(lang);
     <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
     <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
+    <p class="muted note-solo"><Fragment set:html={icon('users', 14)} /> {U.play.photoSolo}</p>
     <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
   </div>
 </div>
@@ -46,25 +48,46 @@ const shelves = shelvesFor(lang);
 <section class="scene play" data-scene="play">
   <div class="play-wrap">
     <div class="hud">
-      <span class="chip">⏱ <b id="jg-time">0:00</b></span>
+      <span class="chip"><Fragment set:html={icon('clock', 14)} /> <b id="jg-time">0:00</b></span>
       <span class="chip" id="jg-left"></span>
       <span class="hud-name muted" id="jg-hud-name"></span>
-      <button type="button" class="tb" id="jg-tosolo-invite" hidden>👥<span> {U.play.together}</span></button>
-      <span class="roombar" id="jg-roombar" hidden><span class="players" id="jg-players"></span><button type="button" class="tb" id="jg-invite">🔗<span> {U.play.invite}</span></button></span>
+      <button type="button" class="tb" id="jg-tosolo-invite" hidden><Fragment set:html={icon('users', 15)} /><span>{U.play.together}</span></button>
+      <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('send', 15)} /><span>{U.play.invite}</span></button></span>
       <span class="sp"></span>
-      <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
-      <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false">▢</button>
-      <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false">▦</button>
-      <button type="button" class="ib" id="jg-restart" title={U.play.startOver}>↺</button>
-      <button type="button" class="ib" id="jg-quit" title={t.toTitle}>✕</button>
+      <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false"><Fragment set:html={icon('eye', 18)} /></button>
+      <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false"><Fragment set:html={icon('edge', 18)} /></button>
+      <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false"><Fragment set:html={icon('grid', 18)} /></button>
+      <button type="button" class="ib" id="jg-restart" title={U.play.startOver}><Fragment set:html={icon('rotate', 18)} /></button>
+      <button type="button" class="ib" id="jg-quit" title={t.toTitle}><Fragment set:html={icon('x', 18)} /></button>
     </div>
     <div class="progress" aria-hidden="true"><i id="jg-prog"></i></div>
     <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
       <canvas class="fx" id="jg-fx"></canvas>
     </div>
-    <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}>🎨 {U.play.sortColor}</button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}>🔀</button></div>
+    <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
     <div class="pilepick" id="jg-pilepick" hidden><p class="pp-h">{U.play.moveTo}</p><div class="pp-list" id="jg-pilepick-list"></div></div>
+    <div class="modal" id="jg-gate" hidden>
+      <div class="modal-bg"></div>
+      <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
+        <p class="gate-k">{U.play.gate.kicker}</p>
+        <div class="chosen"><img id="jg-gate-img" alt="" /><div><b id="jg-gate-h"></b><span class="grid-lbl" id="jg-gate-sub"></span></div></div>
+        <a class="btn primary lg gate-login" id="jg-gate-login" href="#"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></a>
+        <p class="muted gate-sub">{U.play.gate.loginSub}</p>
+        <p class="gate-or"><span>{U.play.gate.or}</span></p>
+        <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
+        <p class="muted gate-sub">{U.play.gate.guestSub}</p>
+      </div>
+    </div>
+    <div class="modal" id="jg-pldlg" hidden>
+      <div class="modal-bg" id="jg-pldlg-bg"></div>
+      <div class="dialog pldlg" role="dialog" aria-modal="true" aria-labelledby="jg-pldlg-h">
+        <button type="button" class="close" id="jg-pldlg-close" aria-label={t.toTitle}>✕</button>
+        <h3 id="jg-pldlg-h">{U.play.players} <span class="muted" id="jg-pldlg-n"></span></h3>
+        <ul class="pl-list" id="jg-players"></ul>
+        <div class="row"><button type="button" class="btn primary" id="jg-invite2"><Fragment set:html={icon('send', 16)} /><span>{U.play.invite}</span></button></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -128,7 +151,7 @@ const shelves = shelvesFor(lang);
   .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
 
   .resume { margin-top: 26px; } .resume-list { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }
-  .resume-list :global(.rs-wrap) { position: relative; flex: none; }
+  .resume-list :global(.rs-wrap) { position: relative; flex: none; } .resume-list :global(.rs-cloud) { position: absolute; top: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(15,18,34,.6); color: #fff; font-size: .68rem; font-weight: 700; }
   .resume-list :global(.rs) { width: 200px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); overflow: hidden; cursor: pointer; text-align: left; padding: 0; font: inherit; color: var(--ink); transition: transform .2s var(--ease), box-shadow .2s; } .resume-list :global(.rs:hover) { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(15,18,34,.5); }
   .resume-list :global(.rs img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); display: block; } .resume-list :global(.rs .rs-t) { padding: 8px 10px 2px; font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .resume-list :global(.rs .rs-s) { padding: 0 10px 10px; color: var(--muted); font-size: .8rem; }
   .resume-list :global(.rs .bar) { height: 4px; background: var(--line); } .resume-list :global(.rs .bar i) { display: block; height: 100%; background: var(--accent); }
@@ -137,9 +160,22 @@ const shelves = shelvesFor(lang);
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
   .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--bg-2); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
-  .roombar { display: inline-flex; align-items: center; gap: 8px; margin-left: 8px; }
-  .players :global(.pl.me) { cursor: pointer; }
-  @media (max-width: 640px) { .roombar { margin-left: 0; gap: 4px; } .players { gap: 0; } .players :global(.pl) { padding: 0; width: 22px; height: 22px; border-radius: 50%; justify-content: center; margin-left: -6px; border: 2px solid var(--bg-2); } .players :global(.pl b) { display: none; } .players :global(.pl:first-child) { margin-left: 0; } .players :global(.pl i) { width: 100%; height: 100%; border-radius: 50%; } #jg-invite, #jg-tosolo-invite { width: 32px; height: 32px; padding: 0; border-radius: 10px; display: grid; place-items: center; font-size: .95rem; } #jg-invite :global(span), #jg-tosolo-invite :global(span) { display: none; } .hud { flex-wrap: nowrap; overflow: hidden; gap: 4px; } } .players { display: inline-flex; gap: 4px; } .players :global(.pl) { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .75rem; font-weight: 700; } .players :global(.pl b) { font-weight: 700; } .players :global(.pl i) { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .roombar { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+  #jg-players-btn, #jg-invite, #jg-tosolo-invite { display: inline-flex; align-items: center; gap: 5px; } #jg-players-btn b { font-variant-numeric: tabular-nums; }
+  :global(.ico) { flex: none; display: block; } .hud .chip { display: inline-flex; align-items: center; gap: 4px; } #jg-sort, #jg-shuffle { display: inline-flex; align-items: center; gap: 5px; }
+  .gate .gate-k { margin: 0 0 10px; font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .gate .chosen { margin-bottom: 18px; } .gate .gate-login { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; } .gate .gate-sub { margin: 8px 0 0; font-size: .8rem; line-height: 1.5; }
+  .gate .gate-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: .8rem; } .gate .gate-or::before, .gate .gate-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .gate .gate-guest { display: flex; gap: 8px; } .gate .gate-guest .input { flex: 1; min-width: 0; } .gate .gate-guest .btn { flex: none; }
+  .gate[data-noauth="1"] .gate-login, .gate[data-noauth="1"] .gate-login + .gate-sub, .gate[data-noauth="1"] .gate-or { display: none; }
+  .note-solo { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: .82rem; }
+  .pldlg h3 { margin: 0 0 12px; font-size: 1.05rem; } .pldlg h3 .muted { font-weight: 600; font-size: .9rem; }
+  .pl-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .pl-list :global(li) { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg-2); font-weight: 700; font-size: .92rem; }
+  .pl-list :global(li i) { width: 12px; height: 12px; border-radius: 50%; flex: none; } .pl-list :global(li b) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  .pl-list :global(li .rn) { flex: none; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .75rem; font-weight: 600; cursor: pointer; }
+  .pldlg .row { display: flex; justify-content: flex-end; } .pldlg .btn { display: inline-flex; align-items: center; gap: 6px; }
+  @media (max-width: 640px) { .roombar { margin-left: 0; gap: 4px; } #jg-invite, #jg-tosolo-invite, #jg-players-btn { height: 32px; padding: 0 9px; border-radius: 10px; font-size: .9rem; } #jg-invite :global(span), #jg-tosolo-invite :global(span) { display: none; } #jg-invite, #jg-tosolo-invite { width: 32px; padding: 0; justify-content: center; } .hud { flex-wrap: nowrap; overflow: hidden; gap: 4px; } }
   .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } .hud .chip:nth-child(2) { display: none; } }
   .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
   @media (max-width: 480px) { .hud { gap: 4px; padding: 6px 8px; } .hud .chip { font-size: .78rem; padding: 3px 8px; } .ib { width: 32px; height: 32px; } }
@@ -189,6 +225,8 @@ const shelves = shelvesFor(lang);
   import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak, addDone } from '../lib/store';
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
+  import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
+  import { me, syncDone, syncSave, syncDelSave, fetchSync, fetchSave, loginUrl, authAvailable, type SaveMeta } from '../lib/account';
   import { initFavUI, initSearch } from '../lib/fav';
   import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
@@ -208,6 +246,7 @@ const shelves = shelvesFor(lang);
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; blob?: Blob; seed?: number; day?: string; fixedN?: number; photoId?: string };
   let pendingSave: SaveData | null = null; // 선택한 그림·조각 수에 저장된 판이 있으면 여기에
   let src: Source | null = null, wantN = 48, img: ImageBitmap | null = null, imgW = 0, imgH = 0;
+  let photoBlob: Blob | null = null; // 내 사진(webp). 사진 방에서 친구에게 WebRTC 로 보내는 원본
   const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
   const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
   const MAXSIDE = 2400;
@@ -221,7 +260,7 @@ const shelves = shelvesFor(lang);
       const w = 'naturalWidth' in bmp ? bmp.naturalWidth : bmp.width, h = 'naturalHeight' in bmp ? bmp.naturalHeight : bmp.height;
       const sc = Math.min(1, MAXSIDE / Math.max(w, h)); const cv = document.createElement('canvas'); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc); cv.getContext('2d')!.drawImage(bmp, 0, 0, cv.width, cv.height);
       img = await createImageBitmap(cv); imgW = cv.width; imgH = cv.height;
-      if (s.kind === 'photo' && s.file && hasIDB()) { s.photoId = `photo-${Date.now().toString(36)}`; cv.toBlob((b) => { if (b) images.put(s.photoId!, b).catch(() => {}); }, 'image/webp', 0.85); }
+      if (s.kind === 'photo') { photoBlob = s.blob ?? null; if (s.file) { s.photoId = `photo-${Date.now().toString(36)}`; cv.toBlob((b) => { if (!b) return; photoBlob = b; if (hasIDB()) images.put(s.photoId!, b).catch(() => {}); }, 'image/webp', 0.85); } }
       if (s.fixedN) { wantN = s.fixedN; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', Number(b.dataset.n) === wantN)); ($('jg-custom') as HTMLInputElement).value = ''; }
       updateGrid(); await checkSave();
       if (auto) { if (pendingSave) start(pendingSave); else start(); }
@@ -229,7 +268,10 @@ const shelves = shelvesFor(lang);
   }
   function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); }
   const saveId = () => { if (src!.kind === 'daily') return `daily:${src!.day}`; if (src!.kind === 'photo') return `photo:${src!.photoId}`; const g = gridFor(wantN, imgW / imgH); return `${src!.key}:${g.cols * g.rows}`; };
-  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} }
+  // 로그인했으면 서버에 있는 하던 퍼즐 목록(메타)을 한 번 받아 두고, 로컬에 없을 때 대신 씀
+  let remoteSaves: SaveMeta[] = []; let remoteReady: Promise<void> = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
+  const dropRemote = (id: string) => { remoteSaves = remoteSaves.filter((m) => m.id !== id); syncDelSave(id); };
+  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } } }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
@@ -271,8 +313,8 @@ const shelves = shelvesFor(lang);
     const g = rs ? { cols: rs.cols, rows: rs.rows } : gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
-    if (!rs && hasIDB() && !room) try { await saves.del(saveId()); } catch {}
-    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room || src.kind === 'photo'; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
+    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -337,24 +379,25 @@ const shelves = shelvesFor(lang);
   // ── 진행 저장 (IndexedDB, 기기 안). 놓을 때마다 예약, 화면 이탈 시 즉시
   let saveT = 0;
   function scheduleSave() { if (!hasIDB() || !running || room) return; clearTimeout(saveT); saveT = window.setTimeout(saveNow, 700); }
-  async function saveNow() {
+  async function saveNow(flush = false) {
     if (!hasIDB() || !src || !cut || complete || !pieces.length || room) return;
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const tc = document.createElement('canvas'); const k = 200 / Math.max(cut.W, cut.H); tc.width = Math.round(cut.W * k); tc.height = Math.round(cut.H * k); const tctx = tc.getContext('2d')!; tctx.fillStyle = '#e6e8ee'; tctx.fillRect(0, 0, tc.width, tc.height); tctx.globalAlpha = 0.25; tctx.drawImage(img!, 0, 0, tc.width, tc.height); tctx.globalAlpha = 1; tctx.drawImage(lockedLayer, 0, 0, tc.width, tc.height);
     const data: SaveData = { id: saveId(), v: 1, kind: src.kind, key: src.kind === 'photo' ? src.photoId! : src.key, name: src.name, day: src.day, seed: cutSeed, cols: cut.cols, rows: cut.rows, total, imgW, imgH, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), tray: order.filter((p) => !p.locked && !p.g).map((p) => idx.get(p)!), pile: pieces.map((p) => p.pile), piles, elapsed: performance.now() - t0, moves, savedAt: Date.now(), thumb: tc.toDataURL('image/webp', 0.6), done: lockedN };
-    try { await saves.put(data); } catch {}
+    try { await saves.put(data); } catch {} syncSave(data, flush);
   }
-  addEventListener('pagehide', () => { if (running) saveNow(); }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) saveNow(); });
+  addEventListener('pagehide', () => { if (running) saveNow(true); }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) saveNow(true); });
   // 하던 퍼즐 목록 (선택 화면)
   async function listSaves() {
-    const box = $('jg-resume-list'), sec = $('jg-resume'); if (!hasIDB()) return; let list: SaveData[] = []; try { list = await saves.all(); } catch {}
+    const box = $('jg-resume-list'), sec = $('jg-resume'); if (!hasIDB()) return; let list: (SaveData | (SaveMeta & { remote: true }))[] = []; try { list = await saves.all(); } catch {}
+    await remoteReady; const have = new Set(list.map((x) => x.id)); for (const m of remoteSaves) if (!have.has(m.id)) list.push({ ...m, remote: true }); list.sort((a, b) => b.savedAt - a.savedAt);
     box.innerHTML = ''; sec.hidden = !list.length;
     for (const sv of list.slice(0, 12)) {
       const wrap = document.createElement('div'); wrap.className = 'rs-wrap';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'rs';
       const im = document.createElement('img'); im.src = sv.thumb; im.alt = ''; const t = document.createElement('div'); t.className = 'rs-t'; t.textContent = sv.name; const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmt(sv.elapsed / 1000)}`); const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
-      b.append(im, bar, t, st); b.addEventListener('click', () => resumeSave(sv));
-      const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕'; del.addEventListener('click', async (e) => { e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} listSaves(); });
+      if ('remote' in sv) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.cloud; b.appendChild(c); } b.append(im, bar, t, st); b.addEventListener('click', async () => { if ('remote' in sv) { const d = await fetchSave(sv.id); if (!d) { toast(U.roomGone); dropRemote(sv.id); listSaves(); return; } resumeSave(d); } else resumeSave(sv); });
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕'; del.addEventListener('click', async (e) => { e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} dropRemote(sv.id); listSaves(); });
       wrap.append(b, del); box.appendChild(wrap);
     }
   }
@@ -498,8 +541,8 @@ const shelves = shelvesFor(lang);
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
-  $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} pendingSave = null; start(); });
-  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(); running = false; clearInterval(timer); gen++; if (room) { try { room.ws?.close(); } catch {} room = null; history.replaceState(null, '', location.pathname); } scenes.go('title'); });
+  $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} dropRemote(saveId()); pendingSave = null; start(); });
+  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; history.replaceState(null, '', location.pathname); } scenes.go('title'); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
@@ -533,33 +576,99 @@ const shelves = shelvesFor(lang);
   let mvT = 0, curT = 0;
   function netMove(g: Group) { const now = performance.now(); if (now - mvT < 40) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
-  function renderPlayers() { if (!room) return; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('span'); e.className = 'pl'; e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { e.classList.add('me'); e.title = U.rename; e.addEventListener('click', () => { const n = (prompt(U.nickAsk, pl.nick) || '').trim().slice(0, 12); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); }); } box.appendChild(e); } }
+  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', () => { const n = (prompt(U.nickAsk, pl.nick) || '').trim().slice(0, 12); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); }); e.appendChild(r); } box.appendChild(e); } }
+  const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
+  $('jg-players-btn').addEventListener('click', () => openPlayers(true)); $('jg-pldlg-bg').addEventListener('click', () => openPlayers(false)); $('jg-pldlg-close').addEventListener('click', () => openPlayers(false));
   const fullLoad = (on: boolean, txt?: string) => { const e = $('jg-fullload'); e.classList.toggle('on', on); if (txt) $('jg-fullload-txt').textContent = txt; if (!on) document.documentElement.removeAttribute('data-join'); };
-  async function joinRoom(id: string) {
+  async function joinRoom(id: string, keepImage = false) {
     fullLoad(true, U.joining);
-    const bail = () => { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(U.roomGone); };
+    const bail = (msg: string = U.roomGone) => { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(msg); };
     let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
     if (!info || info.error) return bail();
-    const w = WORKS.find((x) => x.key === info.key); if (!w) return bail();
+    const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
+    // 진입 화면: 로그인(선택) 또는 닉네임만 적고 손님으로. 로그인했거나 이 방에 이미 들어온 적 있으면 건너뜀
+    const u = await me(); let entered = false; try { entered = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
+    if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
     room = { id, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
     let nick = getNick(); if (!nick) { nick = `${U.guest} ${Math.floor(Math.random() * 90 + 10)}`; setNick(nick); }
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; $('jg-hud-name').textContent = '';
-    await loadSource({ kind: 'gallery', key: w.key, name: T.paintingBy(w.title[LI], w.artist[LI], w.year), url: `/jigsaw/${w.key}.webp` }, false, true); if (!img) { room = null; return bail(); }
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'; const ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); room.ws = ws;
-    ws.addEventListener('open', () => send({ t: 'hello', nick }));
-    ws.addEventListener('close', () => { if (!room) return; if (running) toast(U.disconnected); else bail(); });
-    ws.addEventListener('message', (ev) => { let m: any; try { m = JSON.parse(ev.data); } catch { return; } if (!room) return; onRoomMsg(m); });
+    if (isPhoto) {
+      // 내 사진 방: 사진은 서버에 없다. 방장이면 메모리(또는 이 브라우저 IndexedDB)에 있고, 아니면 방장에게 WebRTC 로 받는다
+      if (!(keepImage && img && src?.kind === 'photo')) {
+        img = null; photoBlob = null; let pid = ''; try { pid = sessionStorage.getItem(`roomphoto:${id}`) ?? ''; } catch {}
+        if (pid && hasIDB()) { let blob: Blob | undefined; try { blob = await images.get(pid); } catch {} if (blob) await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob, photoId: pid }, false, true); }
+        if (!img) { src = { kind: 'photo', key: 'photo', name: T.myPhoto }; photoBlob = null; fullLoad(true, U.photoRecv); }
+      }
+    } else { await loadSource({ kind: 'gallery', key: w!.key, name: T.paintingBy(w!.title[LI], w!.artist[LI], w!.year), url: `/jigsaw/${w!.key}.webp` }, false, true); if (!img) { room = null; return bail(); } }
+    roomBail = bail; connectRoom(bail);
     history.replaceState(null, '', `${location.pathname}?room=${id}`);
   }
+  function roomGate(info: any, w: (typeof WORKS)[number] | null): Promise<string | null> {
+    return new Promise((res) => {
+      fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
+      const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = `/jigsaw/t-${w.key}.webp`; $('jg-gate-h').textContent = w ? T.paintingBy(w.title[LI], w.artist[LI], w.year) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
+      ($('jg-gate-login') as HTMLAnchorElement).href = loginUrl(location.pathname + location.search);
+      const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick(); const form = $('jg-gate-form') as HTMLFormElement;
+      const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; res(v); };
+      form.onsubmit = (e) => { e.preventDefault(); const n = inp.value.trim().slice(0, 12); if (!n) { inp.focus(); return; } done(n); };
+      g.querySelector('.modal-bg')!.addEventListener('click', () => done(null), { once: true });
+      setTimeout(() => inp.focus(), 50);
+    });
+  }
+  // ── 내 사진 방 클라이언트: 사진을 가진 쪽은 needphoto 를 받으면 보내고, 없는 쪽은 받을 때까지 판을 만들지 않는다
+  const peers = new Map<string, Peer>(); let recv: (Peer & { blob: Promise<Blob> }) | null = null, recvFrom = ''; let photoTries = 0, photoT = 0; let roomBail: ((msg?: string) => void) | null = null;
+  function photoRetry(ms: number) { clearTimeout(photoT); if (++photoTries > 12) { closePeers(); roomBail?.(U.photoFail); return; } photoT = window.setTimeout(() => { if (room && !img) requestPhoto(); }, ms); }
+  function closePeers() { for (const p of peers.values()) p.close(); peers.clear(); recv?.close(); recv = null; recvFrom = ''; clearTimeout(photoT); }
+  function requestPhoto() {
+    if (!room || img) return; recv?.close(); recvFrom = '';
+    const r = recvBlob((d) => { if (recvFrom) send({ t: 'sig', to: recvFrom, d }); }, 30_000, (got, size) => { if (size) fullLoad(true, `${U.photoRecv} ${Math.round((got / size) * 100)}%`); }); recv = r;
+    r.blob.then(async (blob) => {
+      if (!room) return; recv = null; if (recvFrom) peers.delete(recvFrom); recvFrom = '';
+      await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob }, false, true); if (!img) { photoRetry(3000); return; }
+      send({ t: 'havephoto' }); send({ t: 'sync' }); fullLoad(true, U.joining);
+    }).catch(() => { if (room && !img) photoRetry(2000); });
+    send({ t: 'needphoto' });
+  }
+  // 웹소켓 연결·하트비트·자동 재접속. 모바일 백그라운드·망 전환·NAT 타임아웃으로 소켓이 조용히 죽으면 상대 행동이 안 보이므로,
+  // 주기적으로 ping 을 보내 pong 이 없으면 끊긴 것으로 보고 다시 붙는다. 재접속하면 서버가 init 으로 전체 상태를 다시 준다
+  let wsGen = 0, wsTries = 0; let pingT = 0, pongT = 0, reconT = 0;
+  function stopWs() { wsGen++; clearInterval(pingT); clearTimeout(pongT); clearTimeout(reconT); }
+  function connectRoom(bail?: () => void) {
+    if (!room) return; const id = room.id; const gen = ++wsGen; clearTimeout(reconT);
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'; let ws: WebSocket; try { ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); } catch { retryWs(bail); return; } room.ws = ws;
+    const alive = () => !!room && gen === wsGen;
+    ws.addEventListener('open', () => { if (!alive()) return; wsTries = 0; send({ t: 'hello', nick: getNick(), photo: !!photoBlob }); clearInterval(pingT); pingT = window.setInterval(() => pingWs(), 15000); });
+    ws.addEventListener('close', () => { if (!alive()) return; clearInterval(pingT); clearTimeout(pongT); if (!room!.me && !running) return bail?.(); retryWs(bail); });
+    ws.addEventListener('message', (ev) => { if (!alive()) return; let m: any; try { m = JSON.parse(ev.data); } catch { return; } if (m.t === 'pong') { clearTimeout(pongT); pongT = 0; return; } onRoomMsg(m); });
+  }
+  function pingWs() { if (!room?.ws || room.ws.readyState !== 1 || pongT) return; send({ t: 'ping' }); pongT = window.setTimeout(() => { pongT = 0; try { room?.ws?.close(); } catch {} }, 8000); }
+  let wsDropped = false;
+  function retryWs(bail?: () => void) {
+    if (!room) return; if (wsTries === 0) toast(U.disconnected); wsDropped = true; const wait = Math.min(15000, 800 * 2 ** Math.min(wsTries++, 4)); clearTimeout(reconT);
+    reconT = window.setTimeout(async () => {
+      if (!room) return;
+      // 몇 번 실패하면 방이 아직 있는지 확인. 없어졌으면(48시간 만료 등) 그만 두드리고 제목 화면으로
+      if (wsTries >= 3) { let ok = false; try { const r = await fetch(`/api/room/${room.id}`); ok = r.ok; } catch {} if (!room) return; if (!ok) { stopWs(); closePeers(); openPlayers(false); room = null; running = false; clearInterval(timer); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(U.roomGone); return; } }
+      connectRoom(bail);
+    }, wait);
+  }
+  // 화면 복귀·온라인 복귀 시 바로 확인: 죽어 있으면 즉시 재접속, 살아 있으면 ping 으로 검사
+  const wakeWs = () => { if (!room || document.visibilityState === 'hidden') return; if (!room.ws || room.ws.readyState > 1) { wsTries = 0; clearTimeout(reconT); connectRoom(); } else if (room.ws.readyState === 1) pingWs(); };
+  document.addEventListener('visibilitychange', wakeWs); addEventListener('online', wakeWs); addEventListener('pageshow', wakeWs);
   function onRoomMsg(m: any) {
     if (!room) return;
     switch (m.t) {
       case 'init': {
-        room.me = m.you; for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {}));
+        room.me = m.you; room.players = new Map(); for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {})); room.bySid = new Map();
+        if (!img) { renderPlayers(); requestPhoto(); return; }
         const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i)) t.push(i); for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; })(), pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
-        wantN = st.total; start(rs).then(() => { renderPlayers(); fullLoad(false); }); return;
+        wantN = st.total; start(rs).then(() => { renderPlayers(); fullLoad(false); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
+      // ── 내 사진 방: 사진 전달 (WebRTC). 서버는 신호만 중계
+      case 'needphoto': { if (!photoBlob) return; peers.get(m.id)?.close(); const to = m.id; peers.set(to, sendBlob(photoBlob, (d) => send({ t: 'sig', to, d }), () => peers.delete(to))); return; }
+      case 'sig': { let p = peers.get(m.from); if (!p && recv && !recvFrom) { recvFrom = m.from; peers.set(m.from, recv); p = recv; } p?.onSig(m.d); return; }
+      case 'nophoto': { if (!img) { toast(U.photoWait); photoRetry(8000); } return; }
       case 'nick': { const pl = room.players.get(m.id); if (pl) { pl.nick = m.nick; if (room.me && m.id === room.me.id) room.me.nick = m.nick; renderPlayers(); draw(); } return; }
       case 'leave': room.players.delete(m.id); for (const [g, h] of room.holders) if (h === m.id) room.holders.delete(g); renderPlayers(); draw(); return;
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
@@ -576,17 +685,20 @@ const shelves = shelvesFor(lang);
   }
   // 혼자 하다가 친구 초대: 지금 판을 서버 방으로 올리고 그 방으로 이동
   $('jg-tosolo-invite').addEventListener('click', async (e) => {
-    if (!src || !cut || room || src.kind === 'photo') return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
+    if (!src || !cut || room) return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
-    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
+      if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
+      location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
-  $('jg-invite').addEventListener('click', async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); });
+  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
+  $('jg-invite').addEventListener('click', inviteShare); $('jg-invite2').addEventListener('click', () => { openPlayers(false); inviteShare(); });
 
   // ── 완성
   function finish() {
     running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
-    complete = true; if (hasIDB() && src && !room) { saves.del(saveId()).catch(() => {}); if (src.kind === 'photo' && src.photoId) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    complete = true; if (hasIDB() && src && !room) { saves.del(saveId()).catch(() => {}); dropRemote(saveId()); if (src.kind === 'photo' && src.photoId) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     requestAnimationFrame(() => { resize(); fit(); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]); prepareResult(sec);
@@ -597,7 +709,7 @@ const shelves = shelvesFor(lang);
     const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
     if (src!.kind === 'daily') bumpStreak(src!.day!);
     fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
-    addDone({ key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now() });
+    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now() }; addDone(entry); syncDone(entry); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/play/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
@@ -614,7 +726,7 @@ const shelves = shelvesFor(lang);
   // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
   { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = WORKS.find((x) => x.key === k);
     if (q.get('room')) { joinRoom(q.get('room')!.toLowerCase()); }
-    else if (q.get('resume')) { const id = q.get('resume')!; history.replaceState(null, '', location.pathname); saves.get(id).then((sv) => { if (sv) resumeSave(sv); }).catch(() => {}); }
+    else if (q.get('resume')) { const id = q.get('resume')!; history.replaceState(null, '', location.pathname); saves.get(id).then(async (sv) => { if (sv) return resumeSave(sv); await remoteReady; if (remoteSaves.some((m) => m.id === id)) { const d = await fetchSave(id); if (d) resumeSave(d); } }).catch(() => {}); }
     else if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
     else if (q.get('daily') || (pt && q.get('d') === '1')) { const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL); loadSource({ kind: 'daily', key: pk.painting.key, name: `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' '), url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); history.replaceState(null, '', location.pathname); }
     else if (pt) { if (pn >= 6 && pn <= 2000) wantN = pn; loadSource({ kind: 'gallery', key: pt.key, name: T.paintingBy(pt.title[LI], pt.artist[LI], pt.year), url: `/jigsaw/${pt.key}.webp` }, true); history.replaceState(null, '', location.pathname); } }

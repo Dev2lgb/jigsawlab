@@ -48,6 +48,7 @@ const shelves = shelvesFor(lang);
       <span class="chip">⏱ <b id="jg-time">0:00</b></span>
       <span class="chip" id="jg-left"></span>
       <span class="hud-name muted" id="jg-hud-name"></span>
+      <button type="button" class="tb" id="jg-tosolo-invite" hidden>👥 {U.play.together}</button>
       <span class="roombar" id="jg-roombar" hidden><span class="players" id="jg-players"></span><button type="button" class="tb" id="jg-invite">🔗 {U.play.invite}</button></span>
       <span class="sp"></span>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
@@ -262,7 +263,7 @@ const shelves = shelvesFor(lang);
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) try { await saves.del(saveId()); } catch {}
-    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-traybar').hidden = !!room; if (room) { tray.hidden = true; $('jg-edge').hidden = true; } else { tray.hidden = false; $('jg-edge').hidden = false; } tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room || src.kind === 'photo'; $('jg-traybar').hidden = !!room; if (room) { tray.hidden = true; $('jg-edge').hidden = true; } else { tray.hidden = false; $('jg-edge').hidden = false; } tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -557,6 +558,13 @@ const shelves = shelvesFor(lang);
       case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
     }
   }
+  // 혼자 하다가 친구 초대: 지금 판을 서버 방으로 올리고 그 방으로 이동
+  $('jg-tosolo-invite').addEventListener('click', async (e) => {
+    if (!src || !cut || room || src.kind === 'photo') return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true;
+    const idx = new Map(pieces.map((p, i) => [p, i]));
+    const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} location.href = `${location.pathname}?room=${d.id}`; } catch { b.disabled = false; toast(U.roomGone); }
+  });
   $('jg-invite').addEventListener('click', async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); });
 
   // ── 완성

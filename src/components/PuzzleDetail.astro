@@ -31,6 +31,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <h2 class="pick-h">{T.detail.pieces}</h2>
         <div class="presets" id="presets">{PRESETS.map((n) => <a class:list={['preset', { main: n === 48 }]} href={`${P}/play/?k=${key}&n=${n}`} data-n={n}><b>{n}</b><small></small></a>)}</div>
         <p class="best muted" id="best" data-key={key}></p>
+        <div class="together"><button type="button" class="btn lg" id="together" data-key={key}>👥 {T.play.together}</button><select class="input tn" id="together-n" aria-label={T.detail.pieces}>{PRESETS.map((n) => <option value={n} selected={n === 100}>{n}</option>)}</select><span class="muted">{T.play.togetherSub}</span></div>
       </div>
     </div>
     {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="shelf-row">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
@@ -56,6 +57,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     .preset b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; } .preset small { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; min-height: 1em; font-weight: 600; }
     .preset.main { border-color: var(--accent); background: var(--accent-soft); }
     .best { margin: 14px 0 0; font-size: .92rem; min-height: 1.4em; font-weight: 600; }
+    .together { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); } .together .muted { font-size: .9rem; flex-basis: 100%; } .tn { width: auto; min-height: 54px; border-radius: 999px; padding: 8px 36px 8px 16px; font-weight: 700; appearance: none; background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2314172a' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center; }
     .more { margin-top: clamp(40px, 6vw, 80px); } .more .shelf-row { --w: 210px; --h: 190px; --d: 44px; }
   </style>
   <script>
@@ -68,6 +70,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
+    document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = Number((document.getElementById('together-n') as HTMLSelectElement).value) || 100; b.disabled = true; b.textContent = T.play.creating; try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json(); if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${d.id}`; else throw 0; } catch { b.disabled = false; b.textContent = '👥 ' + T.play.together; } });
     if (dailyPick(todayKST(), DAILY_POOL).painting.key === key) { const a = document.getElementById('daily-cta')!; a.hidden = false; if (new URLSearchParams(location.search).get('daily') === '1') { a.scrollIntoView({ block: 'center' }); history.replaceState(null, '', location.pathname); } }
     const fill = () => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); document.querySelectorAll<HTMLAnchorElement>('.preset').forEach((a) => { const g = gridFor(Number(a.dataset.n), asp); a.querySelector('small')!.textContent = T.detail.gridOf(g.cols, g.rows); const b = getBest(`${key}:${g.cols * g.rows}`); if (b) a.title = T.detail.best(fmt(b)); }); };
     img.complete ? fill() : img.addEventListener('load', fill);

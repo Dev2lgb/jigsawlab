@@ -33,6 +33,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <p class="best muted" id="best" data-key={key}></p>
         <div class="go"><a class="btn primary lg" id="go-solo" href={`${P}/play/?k=${key}&n=48`}>{T.detail.start}</a><button type="button" class="btn lg" id="together" data-key={key}>👥 {T.play.together}</button></div>
         <p class="muted together-sub">{T.play.togetherSub}</p>
+        <div class="fullload" id="fullload" role="status"><span class="spin"></span><p>{T.play.creating}</p></div>
       </div>
     </div>
     {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="shelf-row">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
@@ -58,6 +59,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     .preset b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; } .preset small { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; min-height: 1em; font-weight: 600; }
     .preset[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; } .preset[aria-pressed="true"] small { color: rgba(255,255,255,.7); }
     .best { margin: 14px 0 0; font-size: .92rem; min-height: 1.4em; font-weight: 600; }
+    .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); } .fullload.on { display: flex; }
+    .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
     .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; } .together-sub { margin: 10px 0 0; font-size: .88rem; }
     .more { margin-top: clamp(40px, 6vw, 80px); } .more .shelf-row { --w: 210px; --h: 190px; --d: 44px; }
   </style>
@@ -71,8 +74,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
-    addEventListener('pageshow', () => { const b = document.getElementById('together') as HTMLButtonElement; b.disabled = false; b.textContent = '👥 ' + T.play.together; });
-    document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = picked; b.disabled = true; b.textContent = T.play.creating; try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json(); if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${d.id}`; else throw 0; } catch { b.disabled = false; b.textContent = '👥 ' + T.play.together; } });
+    const fl = document.getElementById('fullload')!;
+    addEventListener('pageshow', () => { const b = document.getElementById('together') as HTMLButtonElement; b.disabled = false; fl.classList.remove('on'); });
+    document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = picked; b.disabled = true; fl.classList.add('on'); try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json(); if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${d.id}`; else throw 0; } catch { b.disabled = false; fl.classList.remove('on'); } });
     if (dailyPick(todayKST(), DAILY_POOL).painting.key === key) { const a = document.getElementById('daily-cta')!; a.hidden = false; if (new URLSearchParams(location.search).get('daily') === '1') { a.scrollIntoView({ block: 'center' }); history.replaceState(null, '', location.pathname); } }
     const P = LANG === 'ko' ? '' : `/${LANG}`; let picked = Number(localStorage.getItem('pieces') || 48) || 48; if (![48, 100, 200, 300, 500, 1000].includes(picked)) picked = 48;
     const solo = document.getElementById('go-solo') as HTMLAnchorElement; const bestEl = document.getElementById('best')!;

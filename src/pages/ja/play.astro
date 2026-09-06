@@ -4,6 +4,6 @@ import Jigsaw from '../../components/Jigsaw.astro';
 import { JIGSAW } from '../../i18n/jigsaw';
 const t = JIGSAW.ja;
 ---
-<Base title={`${t.title} · jigsawlab`} desc={t.sub} lang="ja" alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path="/ja/play/">
+<Base ads={false} title={`${t.title} · jigsawlab`} desc={t.sub} lang="ja" alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path="/ja/play/">
   <Jigsaw lang="ja" />
 </Base>

@@ -52,9 +52,6 @@ const shelves = shelvesFor(lang);
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false">▢</button>
       <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false">▦</button>
-      <button type="button" class="ib" id="jg-zin" title={t.zoomIn}>＋</button>
-      <button type="button" class="ib" id="jg-zout" title={t.zoomOut}>－</button>
-      <button type="button" class="ib" id="jg-fit" title={t.fit}>⤢</button>
       <button type="button" class="ib" id="jg-restart" title={U.play.startOver}>↺</button>
       <button type="button" class="ib" id="jg-quit" title={t.toTitle}>✕</button>
     </div>
@@ -463,9 +460,7 @@ const shelves = shelvesFor(lang);
   for (const ev of ['gesturestart', 'gesturechange'] as const) canvas.addEventListener(ev, (e) => e.preventDefault());
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
-  $('jg-zin').addEventListener('click', () => { const r = wrap.getBoundingClientRect(); zoomAt(1.3, r.left + r.width / 2, r.top + r.height / 2); });
-  $('jg-zout').addEventListener('click', () => { const r = wrap.getBoundingClientRect(); zoomAt(1 / 1.3, r.left + r.width / 2, r.top + r.height / 2); });
-  $('jg-fit').addEventListener('click', fit);
+  canvas.addEventListener('dblclick', (e) => { const b = toBoard(e.clientX, e.clientY); if (!hit(b.x, b.y)) fit(); });
   $('jg-hint').addEventListener('click', () => { showHint = !showHint; $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }

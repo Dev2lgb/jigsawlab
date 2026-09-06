@@ -16,10 +16,10 @@ const shelves = shelvesFor(lang);
   <h1 class="pick-title">{t.title}</h1>
   <p class="pick-sub">{t.sub}</p>
   <div class="sources">
-    <button type="button" class="src daily" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day}>
+    <a class="src daily" id="jg-daily" href={`${P}/puzzle/${daily.painting.key}/?daily=1`} data-key={daily.painting.key}>
       <img id="daily-thumb" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" width="240" height="190" />
       <span class="src-text"><b>{t.daily}</b><span id="daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
-    </button>
+    </a>
     <label class="src drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden />
       <span class="drop-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg></span>
       <span class="src-text"><b>{t.pick}</b><span>{t.drop}</span><span class="src-go">{t.privacy}</span></span>
@@ -89,7 +89,7 @@ const shelves = shelvesFor(lang);
   .pick-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0 0 6px; letter-spacing: -.035em; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
   .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 700px) { .sources { grid-template-columns: 1fr; } }
-  .src { display: flex; align-items: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; font: inherit; transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; } .src:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -28px rgba(15,18,34,.5); }
+  .src { display: flex; align-items: center; text-decoration: none; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; font: inherit; transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; } .src:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -28px rgba(15,18,34,.5); }
   .src:hover, .src.pulse { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .src.drop { border-style: dashed; } .src.drop.over { background: var(--accent-soft); border-color: var(--accent); }
   .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line-soft); }
@@ -169,9 +169,9 @@ const shelves = shelvesFor(lang);
   const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
-  const dailyBtn = $('jg-daily') as HTMLButtonElement;
+  const dailyBtn = $('jg-daily') as HTMLAnchorElement;
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
-  dailyBtn.dataset.key = pick.painting.key; dailyBtn.dataset.seed = String(pick.seed); dailyBtn.dataset.day = day;
+  dailyBtn.dataset.key = pick.painting.key; dailyBtn.href = `${LANG === 'ko' ? '' : '/' + LANG}/puzzle/${pick.painting.key}/?daily=1`;
   ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
@@ -203,7 +203,6 @@ const shelves = shelvesFor(lang);
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
-  dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.webp`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 

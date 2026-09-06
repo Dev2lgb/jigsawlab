@@ -32,8 +32,15 @@ export class Room extends DurableObject {
     if (req.method === 'POST' && url.pathname.endsWith('/create')) {
       if (st) return Response.json({ id: st.id, exists: true });
       const b = await req.json<any>(); const w = WORK_BY_KEY[b.key]; if (!w) return Response.json({ error: 'key' }, { status: 400 });
-      const n = Math.max(6, Math.min(2000, Number(b.n) || 48)); const g = gridFor(n, w.w / w.h); const seed = rand32();
-      this.state = { id: b.id, key: w.key, n, cols: g.cols, rows: g.rows, total: g.cols * g.rows, W: w.w, H: w.h, seed, groups: scatter(g.cols, g.rows, w.w, w.h, seed ^ 0x51ed), locked: [], createdAt: Date.now(), lang: String(b.lang || 'ko').slice(0, 2) };
+      const n = Math.max(6, Math.min(2000, Number(b.n) || 48)); const g = gridFor(n, w.w / w.h);
+      // 혼자 하던 판을 가져온 경우: 같은 시드·격자에 잠긴 조각과 뭉치를 그대로, 트레이에 있던 조각은 흩뿌림
+      const st0 = b.state && Number.isInteger(b.state.seed) && b.state.cols === g.cols && b.state.rows === g.rows ? b.state : null;
+      const seed = st0 ? (st0.seed >>> 0) : rand32(); const total = g.cols * g.rows;
+      let groups = scatter(g.cols, g.rows, w.w, w.h, seed ^ 0x51ed); let locked: number[] = [];
+      if (st0) { const placed = new Set<number>(); locked = (st0.locked as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < total); locked.forEach((i) => placed.add(i)); const gs: Record<string, RoomGroup> = {};
+        for (const sg of (st0.groups as { dx: number; dy: number; idx: number[] }[]) ?? []) { const idx = sg.idx.filter((i) => Number.isInteger(i) && i >= 0 && i < total && !placed.has(i)); if (!idx.length) continue; idx.forEach((i) => placed.add(i)); gs[String(idx[0])] = { dx: +sg.dx || 0, dy: +sg.dy || 0, idx }; }
+        for (const [k, sg] of Object.entries(groups)) if (!placed.has(Number(k))) gs[k] = sg; groups = gs; }
+      this.state = { id: b.id, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0), lang: String(b.lang || 'ko').slice(0, 2) };
       await this.ctx.storage.put('state', this.state); await this.ctx.storage.setAlarm(Date.now() + 48 * 3600e3);
       return Response.json({ id: this.state.id });
     }

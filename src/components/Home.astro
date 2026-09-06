@@ -18,6 +18,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
       <h1 set:html={T.hero.h1.replace('\n', '<br />')} />
       <p class="sub">{T.hero.sub}</p>
       <ul class="feats">{T.hero.feats.map((f) => <li>{f}</li>)}</ul>
+      <div class="nums"><div><b data-n={total}>{total}</b><span>{T.hero.statPuzzles}</span></div><div id="num-solved" hidden><b data-n="0">0</b><span>{T.hero.statSolved}</span></div></div>
       <div class="cta"><a class="btn primary lg" href="#catalog">{T.hero.pick}</a><a class="btn lg" href={`${P}/play/?photo=1`}>{T.hero.photo}</a></div>
       <p class="streak" id="hero-streak" hidden>🔥 <span></span></p>
     </div>
@@ -88,6 +89,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .sub { margin: 18px 0 0; color: var(--ink-2); font-size: clamp(1rem, 1.5vw, 1.18rem); max-width: 34em; }
   .feats { list-style: none; margin: 26px 0 0; padding: 18px 0 0; border-top: 1px solid rgba(15,18,34,.18); display: grid; grid-template-columns: repeat(2, auto); justify-content: start; column-gap: clamp(20px, 3vw, 44px); row-gap: 10px; } .feats li { position: relative; padding-left: 16px; font-size: .95rem; font-weight: 600; color: var(--ink); } .feats li::before { content: ''; position: absolute; left: 0; top: .55em; width: 7px; height: 7px; background: var(--ink); }
   @media (max-width: 560px) { .feats { grid-template-columns: 1fr; } }
+  .nums { display: flex; gap: clamp(24px, 4vw, 48px); margin: 24px 0 0; } .nums div { display: flex; flex-direction: column; } .nums b { font-family: var(--head); font-size: clamp(1.9rem, 3.4vw, 2.8rem); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; } .nums span { color: var(--muted); font-size: .85rem; font-weight: 600; margin-top: 6px; }
   .hero-side { display: flex; flex-direction: column; gap: 14px; align-items: center; }
   .today-link { color: var(--ink-2); font-size: .9rem; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(15,18,34,.3); } .today-link:hover { color: var(--ink); text-decoration-color: var(--ink); } .today-link .stat { color: var(--ink); }
   .today { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px; padding: 6px 14px 6px 10px; border-radius: 999px; background: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.9); backdrop-filter: blur(8px); color: var(--ink-2); font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -99,7 +101,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .hero-art:hover { transform: perspective(1400px) rotateY(0deg) rotateX(0deg) translateY(-4px); box-shadow: 0 50px 90px -30px rgba(15,18,34,.5), 0 0 0 1px rgba(15,18,34,.06); }
   .hero-art canvas { display: block; width: 100%; height: auto; border-radius: calc(var(--r) - 8px); background: var(--board); }
   /* 등장 시퀀스: 텍스트가 순서대로, 그림은 마지막에 떠오름 */
-  .hero-text > * { animation: rise .8s var(--ease) both; } .hero-text > :nth-child(1) { animation-delay: .05s; } .hero-text > :nth-child(2) { animation-delay: .15s; } .hero-text > :nth-child(3) { animation-delay: .25s; } .hero-text > :nth-child(4) { animation-delay: .35s; } .hero-text > :nth-child(5) { animation-delay: .45s; }
+  .hero-text > * { animation: rise .8s var(--ease) both; } .hero-text > :nth-child(1) { animation-delay: .05s; } .hero-text > :nth-child(2) { animation-delay: .15s; } .hero-text > :nth-child(3) { animation-delay: .25s; } .hero-text > :nth-child(4) { animation-delay: .32s; } .hero-text > :nth-child(5) { animation-delay: .4s; } .hero-text > :nth-child(6) { animation-delay: .48s; }
   .hero-side { animation: float-in 1s var(--ease) .25s both; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
   @keyframes float-in { from { opacity: 0; transform: perspective(1400px) rotateY(-14deg) translateY(30px); } to { opacity: 1; transform: perspective(1400px) rotateY(-6deg) rotateX(2deg); } }
@@ -161,6 +163,9 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.painting.title[LI]); }
   (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`;
   drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);
+  const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
+  document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
+  fetch('/api/stats').then((r) => r.json()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
   (async () => {
     try {
       const r = await fetch('/api/daily', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'ranking' }) }); const rk = await r.json();

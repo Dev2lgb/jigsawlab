@@ -121,7 +121,8 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 
   /* 헤더 */
-  .top { height: calc(var(--hd) + var(--hd-gap)); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 28px; padding: var(--hd-gap) max(var(--gutter), calc((100% - var(--max)) / 2)) 0; position: sticky; top: 0; z-index: 20; }
+  .top { height: calc(var(--hd) + var(--hd-gap)); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 28px; padding: 0 max(var(--gutter), calc((100% - var(--max)) / 2)); position: sticky; top: 0; z-index: 20; transition: padding-top .5s var(--ease); }
+  .top.scrolled { padding-top: var(--hd-gap); }
   .top::before { content: ''; position: absolute; z-index: -1; left: 0; right: 0; top: 0; bottom: 0; background: rgba(255,255,255,.72); backdrop-filter: saturate(1.5) blur(16px); -webkit-backdrop-filter: saturate(1.5) blur(16px); border-radius: 0; box-shadow: 0 0 0 0 rgba(15,18,34,0); border: 1px solid transparent; transition: left .5s var(--ease), right .5s var(--ease), top .5s var(--ease), border-radius .5s var(--ease), box-shadow .5s var(--ease), background .5s, border-color .5s; }
   .top.scrolled::before { left: calc(max(var(--gutter), (100% - var(--max)) / 2) - 18px); right: calc(max(var(--gutter), (100% - var(--max)) / 2) - 18px); top: var(--hd-gap); border-radius: 22px; background: rgba(255,255,255,.82); border-color: rgba(255,255,255,.9); box-shadow: 0 18px 40px -20px rgba(15,18,34,.4), 0 1px 2px rgba(15,18,34,.08); }
   #main > :first-child { margin-top: calc((var(--hd) + var(--hd-gap)) * -1); padding-top: calc(var(--hd) + var(--hd-gap) + clamp(20px, 3vw, 40px)); }

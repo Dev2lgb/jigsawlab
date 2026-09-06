@@ -523,6 +523,7 @@ const shelves = shelvesFor(lang);
     $('jg-res-time').textContent = fmt(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
     const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
     if (src!.kind === 'daily') bumpStreak(src!.day!);
+    fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
     addDone({ key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now() });
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;

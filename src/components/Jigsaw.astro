@@ -7,7 +7,7 @@ import { shelvesFor } from '../lib/catalogView';
 import Box from './Box.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
-const PRESETS = [12, 24, 48, 96, 150, 200];
+const PRESETS = [48, 100, 200, 300, 500, 1000];
 const day = todayKST(), daily = dailyPick(day, PAINTINGS);
 const shelves = shelvesFor(lang);
 ---
@@ -34,7 +34,7 @@ const shelves = shelvesFor(lang);
     <button type="button" class="close" id="jg-close" aria-label={t.toTitle}>✕</button>
     <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
-    <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="300" placeholder={t.custom} /></div>
+    <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
     <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
     <p class="muted best" id="jg-best"></p>
   </div>
@@ -161,7 +161,7 @@ const shelves = shelvesFor(lang);
   let src: Source | null = null, wantN = 48, img: ImageBitmap | null = null, imgW = 0, imgH = 0;
   const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
   const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
-  const MAXSIDE = 1600;
+  const MAXSIDE = 2400;
   async function loadSource(s: Source) {
     src = s; img = null; setup.hidden = false; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
     document.querySelectorAll('#jg-gallery .box3d').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
@@ -183,91 +183,147 @@ const shelves = shelvesFor(lang);
   dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.jpg`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
   document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box3d').forEach((b) => b.addEventListener('click', () => { const p = PAINTINGS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.jpg` }); }));
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
-  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 300 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
+  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
-  // ── 게임 상태
-  type Piece = { r: number; c: number; x: number; y: number; bmp: PieceBitmap; locked: boolean; onBoard: boolean; el?: HTMLElement };
-  let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false;
-  let boardOrder: Piece[] = []; // 보드 위 느슨한 조각의 z 순서
-  let complete = false, completeAlpha = 0;
-  let dragging: Piece | null = null, lifting: Piece | null = null;
+  // ── 게임 상태 — 느슨한 조각은 모두 "뭉치(Group)"에 속한다. 뭉치의 (dx,dy)는 제자리 대비 오프셋이라 뭉치 안 조각들은 격자 관계를 그대로 유지한다
+  type Group = { id: number; dx: number; dy: number; pieces: Piece[] };
+  type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean };
+  let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
+  let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
+  let complete = false, completeAlpha = 0, gid = 0;
+  let dragging: Group | null = null, lifting: Group | null = null;
   const canvas = $('jg-board') as HTMLCanvasElement, ctx = canvas.getContext('2d')!, wrap = $('jg-boardwrap'), tray = $('jg-tray');
   const view = { s: 1, tx: 0, ty: 0 }; let fitS = 1; const dpr = () => Math.min(2, window.devicePixelRatio || 1);
+  const maxS = () => Math.max(fitS * 6, 220 / Math.min(cut.pw, cut.ph)), minS = () => fitS * 0.5; // 1000조각도 조각 하나가 220px 로 보일 때까지 확대
   let lastW = 0, lastH = 0;
+  const px = (p: Piece) => p.c * cut.pw + (p.g?.dx ?? 0), py = (p: Piece) => p.r * cut.ph + (p.g?.dy ?? 0);
   function resize() { const r = wrap.getBoundingClientRect(); canvas.width = Math.round(r.width * dpr()); canvas.height = Math.round(r.height * dpr()); lastW = r.width; lastH = r.height; }
   // 화면 크기 변화(모바일 주소창 접힘 등): 맞춤 상태였으면 다시 맞춤, 확대 중이면 보드 중심을 그대로 유지
-  function onResize() { if (!cut) return; const r = wrap.getBoundingClientRect(); if (!r.width || !r.height || (r.width === lastW && r.height === lastH)) return; const wasFit = Math.abs(view.s - fitS) < 1e-6; const cx = (lastW / 2 - view.tx) / view.s, cy = (lastH / 2 - view.ty) / view.s; resize(); const nf = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); if (wasFit) { fitS = nf; fit(); return; } view.s = Math.max(nf * 0.5, Math.min(nf * 6, view.s)); fitS = nf; view.tx = r.width / 2 - cx * view.s; view.ty = r.height / 2 - cy * view.s; draw(); }
+  function onResize() { if (!cut) return; const r = wrap.getBoundingClientRect(); if (!r.width || !r.height || (r.width === lastW && r.height === lastH)) return; const wasFit = Math.abs(view.s - fitS) < 1e-6; const cx = (lastW / 2 - view.tx) / view.s, cy = (lastH / 2 - view.ty) / view.s; resize(); const nf = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); if (wasFit) { fitS = nf; fit(); return; } fitS = nf; view.s = Math.max(minS(), Math.min(maxS(), view.s)); view.tx = r.width / 2 - cx * view.s; view.ty = r.height / 2 - cy * view.s; draw(); }
   function fit() { const r = wrap.getBoundingClientRect(); fitS = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); view.s = fitS; view.tx = (r.width - cut.W * fitS) / 2; view.ty = (r.height - cut.H * fitS) / 2; draw(); }
   const toBoard = (cx: number, cy: number) => { const r = wrap.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; };
-  function zoomAt(f: number, cx: number, cy: number) { const r = wrap.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top; const ns = Math.max(fitS * 0.5, Math.min(fitS * 6, view.s * f)); const k = ns / view.s; view.tx = px - (px - view.tx) * k; view.ty = py - (py - view.ty) * k; view.s = ns; draw(); }
+  function zoomAt(f: number, cx: number, cy: number) { const r = wrap.getBoundingClientRect(); const pxx = cx - r.left, pyy = cy - r.top; const ns = Math.max(minS(), Math.min(maxS(), view.s * f)); const k = ns / view.s; view.tx = pxx - (pxx - view.tx) * k; view.ty = pyy - (pyy - view.ty) * k; view.s = ns; draw(); }
+
+  // 트레이 썸네일은 보일 때만 그린다 (1000조각 대비)
+  const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = (el as any).__p as Piece; if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; const k = 72 / Math.max(p.bmp.w, p.bmp.h); cv.width = Math.round(p.bmp.w * k); cv.height = Math.round(p.bmp.h * k); cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
 
   async function start() {
     if (!img || !src) return toast(T.noImg);
+    const myGen = ++gen;
     const g = gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
     const rand = seeded(src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0);
     cut = makeCut(imgW, imgH, g.cols, g.rows, rand);
     closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-done').hidden = true; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
-    scenes.go('play'); $('jg-loading').hidden = false; tray.innerHTML = ''; pieces = []; boardOrder = []; dragging = null; lifting = null; lockedN = 0; moves = 0; running = false;
+    scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = 0; running = false;
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
+    resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
-    const bmpScale = Math.min(1, 1200 / Math.max(imgW, imgH));
-    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) pieces.push({ r, c, x: c * cut.pw, y: r * cut.ph, bmp: renderPiece(cut, r, c, img, bmpScale), locked: false, onBoard: false });
+    const bmpScale = Math.min(1, 2400 / Math.max(imgW, imgH));
+    let i = 0;
+    for (let r = 0; r < g.rows; r++) { grid[r] = []; for (let c = 0; c < g.cols; c++) {
+      const p: Piece = { r, c, bmp: renderPiece(cut, r, c, img, bmpScale), g: null, locked: false }; pieces.push(p); grid[r][c] = p;
+      if (++i % 60 === 0 && total > 150) { $('jg-loading').textContent = `${T.loading} ${i}/${total}`; await new Promise((res) => setTimeout(res)); if (myGen !== gen) return; }
+    } }
     order = [...pieces].sort(() => Math.random() - 0.5);
-    for (const p of order) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); const k = 72 / Math.max(p.bmp.w, p.bmp.h); cv.width = Math.round(p.bmp.w * k); cv.height = Math.round(p.bmp.h * k); cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height); el.appendChild(cv); p.el = el; tray.appendChild(el); bindTray(el, p); }
+    const frag = document.createDocumentFragment();
+    for (const p of order) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; (el as any).__p = p; frag.appendChild(el); bindTray(el, p); trayIO.observe(el); }
+    tray.appendChild(frag);
     applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now(); running = true; clearInterval(timer); timer = window.setInterval(tick, 250);
   }
   function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
   function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
+
+  // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
+  type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void };
+  const tweens = new Map<Group, Tween>();
   let drawQueued = false;
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
+  const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
   function drawNow() {
-    if (!cut) return; const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!cut) return; const now = performance.now(); const finished: Group[] = [];
+    for (const [g, tw] of tweens) { const t = Math.min(1, (now - tw.t0) / tw.dur), e = easeOut(t); g.dx = tw.x0 + (tw.x1 - tw.x0) * e; g.dy = tw.y0 + (tw.y1 - tw.y0) * e; if (t >= 1) finished.push(g); }
+    const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(0, 0, cut.W, cut.H);
     if (showHint && img) { ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
-    ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = 'rgba(39,72,230,.55)'; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
+    ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = 'rgba(59,91,255,.55)'; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
     ctx.drawImage(lockedLayer, 0, 0);
     if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
-    for (const p of boardOrder) drawPiece(p, p === dragging ? 1.04 : 1);
-    if (lifting) drawPiece(lifting, 1.04);
+    // 화면 밖 조각은 건너뜀
+    const r = wrap.getBoundingClientRect(); const vx0 = -view.tx / view.s, vy0 = -view.ty / view.s, vx1 = (r.width - view.tx) / view.s, vy1 = (r.height - view.ty) / view.s;
+    for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
+    for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
+    if (tweens.size) draw();
   }
-  function drawPiece(p: Piece, k: number) { const b = p.bmp; const x = p.x + b.ox, y = p.y + b.oy; if (k !== 1) { ctx.save(); ctx.shadowColor = 'rgba(23,26,36,.45)'; ctx.shadowBlur = 16 / view.s; ctx.shadowOffsetY = 6 / view.s; ctx.translate(x + b.w / 2, y + b.h / 2); ctx.scale(k, k); ctx.drawImage(b.canvas, -b.w / 2, -b.h / 2, b.w, b.h); ctx.restore(); } else ctx.drawImage(b.canvas, x, y, b.w, b.h); }
-  function hit(bx: number, by: number): Piece | null {
-    for (let i = boardOrder.length - 1; i >= 0; i--) { const p = boardOrder[i]; if (bx >= p.x && bx <= p.x + cut.pw && by >= p.y && by <= p.y + cut.ph) return p; }
-    for (let i = boardOrder.length - 1; i >= 0; i--) { const p = boardOrder[i]; if (bx >= p.x - cut.padX && bx <= p.x + cut.pw + cut.padX && by >= p.y - cut.padY && by <= p.y + cut.ph + cut.padY) return p; }
+  function drawGroup(g: Group, lifted: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
+    const shadow = lifted && g.pieces.length <= 40;
+    if (shadow) { ctx.save(); ctx.shadowColor = 'rgba(15,18,34,.45)'; ctx.shadowBlur = 16 / view.s; ctx.shadowOffsetY = 6 / view.s; }
+    for (const p of g.pieces) { const b = p.bmp, x = px(p) + b.ox, y = py(p) + b.oy; if (x + b.w < vx0 || y + b.h < vy0 || x > vx1 || y > vy1) continue; ctx.drawImage(b.canvas, x, y, b.w, b.h); }
+    if (shadow) ctx.restore();
+  }
+  function hit(bx: number, by: number): Group | null {
+    for (let i = groups.length - 1; i >= 0; i--) for (const p of groups[i].pieces) { const x = px(p), y = py(p); if (bx >= x && bx <= x + cut.pw && by >= y && by <= y + cut.ph) return groups[i]; }
+    for (let i = groups.length - 1; i >= 0; i--) for (const p of groups[i].pieces) { const x = px(p), y = py(p); if (bx >= x - cut.padX && bx <= x + cut.pw + cut.padX && by >= y - cut.padY && by <= y + cut.ph + cut.padY) return groups[i]; }
     return null;
   }
-  function place(p: Piece) {
-    moves++; const tol = Math.min(cut.pw, cut.ph) * 0.45;
-    if (Math.abs(p.x - p.c * cut.pw) < tol && Math.abs(p.y - p.r * cut.ph) < tol) {
-      p.x = p.c * cut.pw; p.y = p.r * cut.ph; p.locked = true; p.onBoard = false; boardOrder = boardOrder.filter((q) => q !== p);
-      const lc = lockedLayer.getContext('2d')!; lc.drawImage(p.bmp.canvas, p.x + p.bmp.ox, p.y + p.bmp.oy, p.bmp.w, p.bmp.h);
-      lockedN++; updateHud(); navigator.vibrate?.(8); if (lockedN === total) finish();
-    } else { p.onBoard = true; if (!boardOrder.includes(p)) boardOrder.push(p); }
-    p.el?.remove(); draw();
-  }
+  const toFront = (g: Group) => { const i = groups.indexOf(g); if (i >= 0 && i !== groups.length - 1) { groups.splice(i, 1); groups.push(g); } };
+  const makeGroup = (p: Piece, dx: number, dy: number): Group => { const g = { id: ++gid, dx, dy, pieces: [p] }; p.g = g; groups.push(g); return g; };
 
-  // ── 보드 포인터: 조각 드래그 / 한 손가락 이동 / 두 손가락 핀치
+  // ── 놓기: 제자리면 잠그고, 이웃 뭉치와 맞으면 붙인다 (짧은 스냅 트윈 후 합침)
+  function place(g: Group) {
+    moves++;
+    const tol = Math.min(cut.pw, cut.ph) * 0.4;
+    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { snap(g, 0, 0, () => lockGroup(g)); return; }
+    const other = findNeighbor(g, tol);
+    if (other) { snap(g, other.dx, other.dy, () => merge(g, other)); return; }
+    draw();
+  }
+  function findNeighbor(g: Group, tol: number): Group | null {
+    for (const p of g.pieces) for (const [dr, dc] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) { const n = grid[p.r + dr]?.[p.c + dc]; if (!n || n.locked || !n.g || n.g === g) continue; if (Math.abs(n.g.dx - g.dx) < tol && Math.abs(n.g.dy - g.dy) < tol) return n.g; }
+    return null;
+  }
+  function snap(g: Group, x1: number, y1: number, done: () => void) { tweens.set(g, { x0: g.dx, y0: g.dy, x1, y1, t0: performance.now(), dur: 140, done }); draw(); }
+  function merge(g: Group, into: Group) {
+    for (const p of g.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(g), 1); toFront(into);
+    navigator.vibrate?.(6); click();
+    // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
+    const tol = Math.min(cut.pw, cut.ph) * 0.4;
+    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { snap(into, 0, 0, () => lockGroup(into)); return; }
+    let n: Group | null; while ((n = findNeighbor(into, tol))) { for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
+    draw();
+  }
+  function lockGroup(g: Group) {
+    const lc = lockedLayer.getContext('2d')!;
+    for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); }
+    const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1);
+    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw();
+    if (lockedN === total) finish();
+  }
+  // 딸깍 소리 (WebAudio, 아주 짧게). 첫 사용자 제스처 뒤에만 재생됨
+  let ac: AudioContext | null = null;
+  function click(deep = false) { try { ac ??= new (window.AudioContext || (window as any).webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); const t = ac.currentTime, o = ac.createOscillator(), gn = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(deep ? 520 : 760, t); o.frequency.exponentialRampToValueAtTime(deep ? 180 : 300, t + 0.05); gn.gain.setValueAtTime(0.12, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.07); o.connect(gn).connect(ac.destination); o.start(t); o.stop(t + 0.08); } catch {} }
+
+  // ── 보드 포인터: 뭉치 드래그 / 한 손가락 이동 / 두 손가락 핀치
   const ptrs = new Map<number, { x: number; y: number }>(); let dragOff = { x: 0, y: 0 }, pinch: { d0: number; s0: number; bx: number; by: number } | null = null;
   const startPinch = () => { const [a, b] = [...ptrs.values()]; const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, bm = toBoard(mx, my); pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), s0: view.s, bx: bm.x, by: bm.y }; };
   canvas.addEventListener('pointerdown', (e) => {
     if (ptrs.size >= 2) return;
     canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 2) { if (dragging) { dragging.onBoard = true; if (!boardOrder.includes(dragging)) boardOrder.push(dragging); dragging = null; canvas.classList.remove('drag'); } startPinch(); return; }
-    const b = toBoard(e.clientX, e.clientY); const p = hit(b.x, b.y);
-    if (p) { dragging = p; dragOff = { x: b.x - p.x, y: b.y - p.y }; boardOrder = [...boardOrder.filter((q) => q !== p), p]; canvas.classList.add('drag'); draw(); }
+    if (ptrs.size === 2) { if (dragging) { dragging = null; canvas.classList.remove('drag'); draw(); } startPinch(); return; }
+    const b = toBoard(e.clientX, e.clientY); const g = hit(b.x, b.y);
+    if (g && !tweens.has(g)) { dragging = g; dragOff = { x: b.x - g.dx, y: b.y - g.dy }; toFront(g); canvas.classList.add('drag'); draw(); }
   });
   canvas.addEventListener('pointermove', (e) => {
     if (!ptrs.has(e.pointerId)) return; const prev = ptrs.get(e.pointerId)!; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && ptrs.size === 2) {
       const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; const r = wrap.getBoundingClientRect();
-      view.s = Math.max(fitS * 0.5, Math.min(fitS * 6, pinch.s0 * (d / pinch.d0)));
+      view.s = Math.max(minS(), Math.min(maxS(), pinch.s0 * (d / pinch.d0)));
       view.tx = (mx - r.left) - pinch.bx * view.s; view.ty = (my - r.top) - pinch.by * view.s; draw(); return;
     }
-    if (dragging) { const b = toBoard(e.clientX, e.clientY); dragging.x = b.x - dragOff.x; dragging.y = b.y - dragOff.y; draw(); }
+    if (dragging) { const b = toBoard(e.clientX, e.clientY); dragging.dx = b.x - dragOff.x; dragging.dy = b.y - dragOff.y; draw(); }
     else if (ptrs.size === 1) { view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; draw(); }
   });
-  const up = (e: PointerEvent) => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (dragging && ptrs.size === 0) { place(dragging); dragging = null; canvas.classList.remove('drag'); } };
+  const up = (e: PointerEvent) => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (dragging && ptrs.size === 0) { const g = dragging; dragging = null; canvas.classList.remove('drag'); place(g); } };
   for (const ev of ['touchstart', 'touchmove'] as const) canvas.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   for (const ev of ['gesturestart', 'gesturechange'] as const) canvas.addEventListener(ev, (e) => e.preventDefault());
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
@@ -279,29 +335,32 @@ const shelves = shelvesFor(lang);
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = edgeOnly && !isEdge(p); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
-  $('jg-quit').addEventListener('click', () => { running = false; clearInterval(timer); scenes.go('title'); });
+  $('jg-quit').addEventListener('click', () => { running = false; clearInterval(timer); gen++; scenes.go('title'); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
-  // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기
+  // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
+  function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; return g; }
+  function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; draw(); }
+  function dropLift(g: Group, p: Piece, cy: number, ok: boolean) { lifting = null; const r = wrap.getBoundingClientRect(); if (ok && cy < r.bottom) { p.el?.remove(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); draw(); } }
   function bindTray(el: HTMLElement, p: Piece) {
-    let sx = 0, sy = 0, id = -1, lifted = false, isMouse = false;
-    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; lifted = false; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
+    let sx = 0, sy = 0, id = -1, g: Group | null = null, isMouse = false;
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; g = null; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
     el.addEventListener('pointermove', (e) => {
       if (e.pointerId !== id) return; const dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!lifted) { const go = isMouse ? Math.hypot(dx, dy) > 6 : (dy < -8 && Math.abs(dy) > Math.abs(dx) * 0.8) || e.clientY < tray.getBoundingClientRect().top; if (!go) return; lifted = true; el.classList.add('lift'); lifting = p; }
-      const b = toBoard(e.clientX, e.clientY); p.x = b.x - cut.pw / 2; p.y = b.y - cut.ph / 2; draw();
+      if (!g) { const go = isMouse ? Math.hypot(dx, dy) > 6 : (dy < -8 && Math.abs(dy) > Math.abs(dx) * 0.8) || e.clientY < tray.getBoundingClientRect().top; if (!go) return; g = liftFromTray(p, e.clientX, e.clientY); }
+      moveLift(g, p, e.clientX, e.clientY);
     });
-    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!lifted) return; lifted = false; lifting = null; const r = wrap.getBoundingClientRect(); if (e.type === 'pointerup' && e.clientY < r.bottom) place(p); else { el.classList.remove('lift'); draw(); } };
+    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!g) return; const gg = g; g = null; dropLift(gg, p, e.clientY, e.type === 'pointerup'); };
     el.addEventListener('pointerup', done); el.addEventListener('pointercancel', done);
     // 터치(아이폰 사파리): pan-x 스크롤 판정에 pointercancel 되는 문제를 피해 터치 이벤트로 직접. 위로 6px 이상이면 스크롤을 막고 들어 올림
-    let tx = 0, ty = 0, tid = -1, tlift = false;
-    el.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; const t = e.touches[0]; tx = t.clientX; ty = t.clientY; tid = t.identifier; tlift = false; }, { passive: true });
+    let tx = 0, ty = 0, tid = -1, tg: Group | null = null;
+    el.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; const t = e.touches[0]; tx = t.clientX; ty = t.clientY; tid = t.identifier; tg = null; }, { passive: true });
     el.addEventListener('touchmove', (e) => {
       const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; const dx = t.clientX - tx, dy = t.clientY - ty;
-      if (!tlift) { if (dy < -6 && Math.abs(dy) > Math.abs(dx)) { tlift = true; el.classList.add('lift'); lifting = p; } else return; }
-      e.preventDefault(); const b = toBoard(t.clientX, t.clientY); p.x = b.x - cut.pw / 2; p.y = b.y - cut.ph / 2; draw();
+      if (!tg) { if (dy < -6 && Math.abs(dy) > Math.abs(dx)) tg = liftFromTray(p, t.clientX, t.clientY); else return; }
+      e.preventDefault(); moveLift(tg, p, t.clientX, t.clientY);
     }, { passive: false });
-    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tlift) return; tlift = false; lifting = null; const r = wrap.getBoundingClientRect(); if (e.type === 'touchend' && t.clientY < r.bottom) place(p); else { el.classList.remove('lift'); draw(); } };
+    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tg) return; const gg = tg; tg = null; dropLift(gg, p, t.clientY, e.type === 'touchend'); };
     el.addEventListener('touchend', tend); el.addEventListener('touchcancel', tend);
   }
 
@@ -330,13 +389,13 @@ const shelves = shelvesFor(lang);
   const loadRank = () => {}; // 랭킹 목록은 홈에서 보여줌
   ($('jg-submit') as HTMLFormElement).addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target as HTMLFormElement; const nick = ($('jg-nick') as HTMLInputElement).value.trim(); if (!nick) return; try { setNick(nick); const r = await api({ action: 'solve', nick, device: deviceId(), ms: Number(form.dataset.score) * 1000, tries: moves }); if (r.error) throw new Error(r.error); toast(T.registered(r.rank)); form.hidden = true; loadRank(); } catch { toast(T.rankFail); } });
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
-  (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked).slice(0, n)) { p.x = p.c * cut.pw; p.y = p.r * cut.ph; place(p); } }, state: () => ({ total, lockedN, moves, board: boardOrder.length, tray: tray.children.length, loose: boardOrder.map((p) => ({ r: p.r, c: p.c, x: p.x, y: p.y })), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
   { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = PAINTINGS.find((x) => x.key === k);
     if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
     else if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
-    else if (pt) { if (pn >= 6 && pn <= 300) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![12, 24, 48, 96, 150, 200].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box3d[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
+    else if (pt) { if (pn >= 6 && pn <= 2000) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![48, 100, 200, 300, 500, 1000].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box3d[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
   $('jg-start').addEventListener('click', start);
   $('jg-retry').addEventListener('click', start);
   $('jg-title').addEventListener('click', () => scenes.go('title'));

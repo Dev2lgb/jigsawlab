@@ -11,7 +11,7 @@ const { lang = 'ko', key } = Astro.props as { lang?: Lang; key: string };
 const T = UI[lang], li = LI[lang], P = prefix(lang);
 const p = PAINTINGS.find((x) => x.key === key)!, a = ABOUT[key], cat = CATEGORIES.find((c) => c.keys.includes(key))!;
 const title = p.title[li], artist = p.artist[li];
-const PRESETS = [12, 24, 48, 96, 150, 200];
+const PRESETS = [48, 100, 200, 300, 500, 1000];
 const others = cat.keys.filter((k) => k !== key).map((k) => paintingFor(k, lang)!);
 const alts = { ko: `/puzzle/${key}/`, en: `/en/puzzle/${key}/`, ja: `/ja/puzzle/${key}/` };
 const pageTitle = { ko: `${title} 직소 퍼즐 — ${artist} · jigsawlab`, en: `${title} jigsaw puzzle — ${artist} · jigsawlab`, ja: `${title} ジグソーパズル — ${artist} · jigsawlab` }[lang];
@@ -64,7 +64,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
     const fill = () => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); document.querySelectorAll<HTMLAnchorElement>('.preset').forEach((a) => { const g = gridFor(Number(a.dataset.n), asp); a.querySelector('small')!.textContent = T.detail.gridOf(g.cols, g.rows); const b = getBest(`${key}:${g.cols * g.rows}`); if (b) a.title = T.detail.best(fmt(b)); }); };
     img.complete ? fill() : img.addEventListener('load', fill);
-    const bests = [12, 24, 48, 96, 150, 200].map((n) => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); const g = gridFor(n, asp); return getBest(`${key}:${g.cols * g.rows}`); }).filter((b): b is number => b !== null);
+    const bests = [48, 100, 200, 300, 500, 1000].map((n) => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); const g = gridFor(n, asp); return getBest(`${key}:${g.cols * g.rows}`); }).filter((b): b is number => b !== null);
     document.getElementById('best')!.textContent = bests.length ? T.detail.best(fmt(Math.min(...bests))) : T.detail.noBest;
   </script>
 </Base>

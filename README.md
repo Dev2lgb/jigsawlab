@@ -21,13 +21,16 @@
 1. `npx wrangler login`
 2. `npx wrangler d1 create jigsawlab-db` → 나온 `database_id` 를 `wrangler.jsonc` 에 넣기
 3. `pnpm db:migrate:local && pnpm db:migrate`
-4. `pnpm deploy` → Workers 대시보드에서 커스텀 도메인 `jigsawlab.app` 연결
+4. `pnpm deploy` (커스텀 도메인은 wrangler.jsonc routes 로 자동 연결)
+5. GitHub 자동 배포: 저장소 Secrets 에 `CLOUDFLARE_API_TOKEN`(Workers Scripts·D1 편집 권한), `CLOUDFLARE_ACCOUNT_ID` 등록 → main push 시 `.github/workflows/deploy.yml`
 
 ## 구조
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`
-- `src/components/Jigsaw.astro` 앱 본체 (홈·조각 수 다이얼로그·플레이·결과), `ShareCard.astro`, `Privacy.astro`
+- `src/components/Home.astro` 랜딩(히어로·하는 법·상자 진열대·내 사진·랭킹·가이드), `Jigsaw.astro` 앱 본체(/play/: 선택·조각 수 다이얼로그·플레이·결과), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
 - `src/i18n/jigsaw.ts` 3개 국어 문구 + SEO 본문, `src/i18n/ui.ts` 사이트 공통
-- `src/pages/{,en/,ja/}index.astro` 홈 = 퍼즐 앱, `s/index.astro` 공유 카드, `api/daily.ts`
+- `src/pages/{,en/,ja/}` — `index.astro` 홈, `play.astro` 앱, `puzzle/[key].astro` 상세(22점 정적), `s/index.astro` 공유 카드(서버), `privacy.astro`; `api/daily.ts`(서버)
+- `src/data/catalog.ts` 카테고리(진열대), `src/data/paintings.ts` 그림 소개·소장(3언어). 새 그림 = `lib/jigsaw.ts` PAINTINGS + 두 파일 + `public/jigsaw/` 이미지 3종
+- 딥링크: `/play/?daily=1` 오늘의 퍼즐, `/play/?photo=1` 내 사진 강조, `/play/?k=<key>&n=<조각>` 그림·조각 수 프리셀렉트
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 테스트 훅: `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`
 

@@ -72,7 +72,7 @@ const shelves = shelvesFor(lang);
       <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
         <p class="gate-k">{U.play.gate.kicker}</p>
         <div class="chosen"><img id="jg-gate-img" alt="" /><div><b id="jg-gate-h"></b><span class="grid-lbl" id="jg-gate-sub"></span></div></div>
-        <a class="btn primary lg gate-login" id="jg-gate-login" href="#"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></a>
+        <button type="button" class="btn primary lg gate-login" id="jg-gate-login"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></button>
         <p class="muted gate-sub">{U.play.gate.loginSub}</p>
         <p class="gate-or"><span>{U.play.gate.or}</span></p>
         <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
@@ -226,7 +226,10 @@ const shelves = shelvesFor(lang);
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
-  import { me, syncDone, syncSave, syncDelSave, fetchSync, fetchSave, loginUrl, authAvailable, type SaveMeta } from '../lib/account';
+  import { me, syncDone, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, type SaveMeta } from '../lib/account';
+  import { openLogin, askNick } from '../lib/authui';
+  import { setNickRemote } from '../lib/account';
+  import { randomNick } from '../lib/nickgen';
   import { initFavUI, initSearch } from '../lib/fav';
   import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
@@ -576,7 +579,7 @@ const shelves = shelvesFor(lang);
   let mvT = 0, curT = 0;
   function netMove(g: Group) { const now = performance.now(); if (now - mvT < 40) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
-  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', () => { const n = (prompt(U.nickAsk, pl.nick) || '').trim().slice(0, 12); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); }); e.appendChild(r); } box.appendChild(e); } }
+  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
   $('jg-players-btn').addEventListener('click', () => openPlayers(true)); $('jg-pldlg-bg').addEventListener('click', () => openPlayers(false)); $('jg-pldlg-close').addEventListener('click', () => openPlayers(false));
   const fullLoad = (on: boolean, txt?: string) => { const e = $('jg-fullload'); e.classList.toggle('on', on); if (txt) $('jg-fullload-txt').textContent = txt; if (!on) document.documentElement.removeAttribute('data-join'); };
@@ -590,7 +593,7 @@ const shelves = shelvesFor(lang);
     const u = await me(); let entered = false; try { entered = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
     if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
     room = { id, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
-    let nick = getNick(); if (!nick) { nick = `${U.guest} ${Math.floor(Math.random() * 90 + 10)}`; setNick(nick); }
+    let nick = getNick(); if (!nick) { nick = randomNick(LANG); setNick(nick); }
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; $('jg-hud-name').textContent = '';
     if (isPhoto) {
       // 내 사진 방: 사진은 서버에 없다. 방장이면 메모리(또는 이 브라우저 IndexedDB)에 있고, 아니면 방장에게 WebRTC 로 받는다
@@ -607,8 +610,8 @@ const shelves = shelvesFor(lang);
     return new Promise((res) => {
       fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
       const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = `/jigsaw/t-${w.key}.webp`; $('jg-gate-h').textContent = w ? T.paintingBy(w.title[LI], w.artist[LI], w.year) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
-      ($('jg-gate-login') as HTMLAnchorElement).href = loginUrl(location.pathname + location.search);
-      const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick(); const form = $('jg-gate-form') as HTMLFormElement;
+      $('jg-gate-login').onclick = () => openLogin(location.pathname + location.search);
+      const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement;
       const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; res(v); };
       form.onsubmit = (e) => { e.preventDefault(); const n = inp.value.trim().slice(0, 12); if (!n) { inp.focus(); return; } done(n); };
       g.querySelector('.modal-bg')!.addEventListener('click', () => done(null), { once: true });

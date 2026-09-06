@@ -37,7 +37,8 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
   <script>
     import { saves, images, hasIDB, type SaveData } from '../lib/db';
     import { getDone, type DoneEntry } from '../lib/store';
-    import { me, loginUrl, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, type SaveMeta } from '../lib/account';
+    import { openLogin, askNick } from '../lib/authui';
+    import { me, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, type SaveMeta } from '../lib/account';
     import { favs, toggleFav } from '../lib/fav';
     import { UI, type Lang } from '../i18n/ui';
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, M = UI[LANG].my, A = UI[LANG].acct, P = LANG === 'ko' ? '' : `/${LANG}`;
@@ -74,9 +75,9 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       const u = await me(); const box = $('acct-box'), st = $('acct-state'), bt = $('acct-btns'); bt.innerHTML = '';
       if (!authAvailable()) return; box.hidden = false;
       const btn = (t: string, cls: string, fn: () => void) => { const b = document.createElement(cls.includes('link') ? 'a' : 'button') as HTMLButtonElement; b.className = `btn sm ${cls}`; b.textContent = t; b.addEventListener('click', fn); bt.appendChild(b); return b; };
-      if (!u) { st.textContent = A.notSignedIn; const a = btn(A.loginBtn, 'primary link', () => {}) as unknown as HTMLAnchorElement; a.href = loginUrl(); return; }
+      if (!u) { st.textContent = A.notSignedIn; btn(A.loginBtn, 'primary', () => openLogin()); return; }
       st.textContent = A.signedIn(u.nick || '?'); $('my-sub').textContent = A.synced;
-      btn(A.rename, '', async () => { const n = (prompt(UI[LANG].play.nickAsk, u.nick) || '').trim().slice(0, 12); if (n && (await setNickRemote(n))) renderAcct(); });
+      btn(A.rename, '', async () => { const n = await askNick(u.nick, 'edit'); if (n && n !== u.nick && (await setNickRemote(n))) renderAcct(); });
       btn(A.logout, '', async () => { await logout(); location.reload(); });
       btn(A.del, 'danger', async () => { if (!confirm(A.delAsk)) return; if (await deleteAccount()) { alert(A.deleted); location.reload(); } });
       const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); }

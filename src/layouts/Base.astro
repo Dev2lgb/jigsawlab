@@ -23,6 +23,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <title>{title}</title>
   <meta name="description" content={desc} />
   <link rel="canonical" href={canonical} />
+  <meta name="naver-site-verification" content="1f5678d3427f33062b2e0426990b2f01daab34a7" />
   {noindex && <meta name="robots" content="noindex" />}
   {alts && Object.entries(alts).map(([l, p]) => <link rel="alternate" hreflang={l} href={new URL(p, site).toString()} />)}
   {alts?.ko && <link rel="alternate" hreflang="x-default" href={new URL(alts.ko, site).toString()} />}

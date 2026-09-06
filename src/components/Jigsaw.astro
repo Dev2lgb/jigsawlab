@@ -55,6 +55,7 @@ const shelves = shelvesFor(lang);
       <button type="button" class="ib" id="jg-zin" title={t.zoomIn}>＋</button>
       <button type="button" class="ib" id="jg-zout" title={t.zoomOut}>－</button>
       <button type="button" class="ib" id="jg-fit" title={t.fit}>⤢</button>
+      <button type="button" class="ib" id="jg-restart" title={U.play.startOver}>↺</button>
       <button type="button" class="ib" id="jg-quit" title={t.toTitle}>✕</button>
     </div>
     <div class="progress" aria-hidden="true"><i id="jg-prog"></i></div>
@@ -194,7 +195,7 @@ const shelves = shelvesFor(lang);
       if (s.kind === 'photo' && s.file && hasIDB()) { s.photoId = `photo-${Date.now().toString(36)}`; cv.toBlob((b) => { if (b) images.put(s.photoId!, b).catch(() => {}); }, 'image/webp', 0.85); }
       if (s.fixedN) { wantN = s.fixedN; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', Number(b.dataset.n) === wantN)); ($('jg-custom') as HTMLInputElement).value = ''; }
       updateGrid(); await checkSave();
-      if (auto) { if (pendingSave) setup.hidden = false; else start(); }
+      if (auto) { if (pendingSave) start(pendingSave); else start(); }
     } catch { toast(T.imgFail); setup.hidden = true; src = null; }
   }
   function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); const b = getBest(bestKey(g.cols * g.rows)); $('jg-best').textContent = b ? T.best(fmt(b)) : T.noRecord; checkSave(); }
@@ -427,6 +428,7 @@ const shelves = shelvesFor(lang);
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
+  $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.play.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} pendingSave = null; start(); });
   $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(); running = false; clearInterval(timer); gen++; scenes.go('title'); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 

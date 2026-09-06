@@ -61,6 +61,7 @@ const shelves = shelvesFor(lang);
     </div>
     <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}>🎨 {U.play.sortColor}</button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}>🔀</button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
+    <div class="pilepick" id="jg-pilepick" hidden><p class="pp-h">{U.play.moveTo}</p><div class="pp-list" id="jg-pilepick-list"></div></div>
   </div>
 </section>
 
@@ -139,6 +140,9 @@ const shelves = shelvesFor(lang);
   .tray-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; background: var(--bg-2); border-top: 1px solid var(--line); }
   .piles { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; } .piles::-webkit-scrollbar { display: none; }
   .piles :global(.pile-tab) { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .78rem; font-weight: 700; color: var(--ink-2); cursor: pointer; white-space: nowrap; font-family: inherit; transition: transform .15s var(--ease); } .piles :global(.pile-tab[aria-pressed="true"]) { background: var(--ink); color: #fff; border-color: var(--ink); } .piles :global(.pile-tab.over) { background: var(--accent); color: #fff; border-color: var(--accent); transform: scale(1.08); } .piles :global(.pile-tab small) { opacity: .7; font-weight: 500; margin-left: 4px; }
+  .pilepick { position: fixed; z-index: 12; left: 50%; transform: translateX(-50%); width: min(92vw, 420px); padding: 14px; border-radius: 18px; background: var(--bg); box-shadow: 0 24px 60px -20px rgba(15,18,34,.55), 0 0 0 1px var(--line); animation: pp .18s var(--ease); } @keyframes pp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .pp-h { margin: 0 0 10px; font-size: .85rem; font-weight: 700; color: var(--muted); } .pp-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pp-list :global(button) { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font: inherit; font-weight: 700; cursor: pointer; } .pp-list :global(button[aria-pressed="true"]) { background: var(--ink); color: #fff; border-color: var(--ink); } .pp-list :global(button.new) { border-style: dashed; color: var(--muted); }
   .tb { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .78rem; font-weight: 600; cursor: pointer; }
   .tray { flex: none; height: 104px; display: flex; gap: 8px; align-items: center; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; background: var(--bg-2); touch-action: pan-x; scrollbar-width: thin; }
   .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -293,6 +297,16 @@ const shelves = shelvesFor(lang);
     piles.forEach((name, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pile-tab'; b.dataset.pile = String(i); b.setAttribute('aria-pressed', String(i === activePile)); b.innerHTML = `${i === 0 ? U.pileAll : name}<small>${counts[i] ?? 0}</small>`; b.addEventListener('click', () => { activePile = i; renderPiles(); applyEdgeFilter(); }); box.appendChild(b); });
     if (piles.length < 8) { const add = document.createElement('button'); add.type = 'button'; add.className = 'pile-tab'; add.textContent = U.pileNew; add.addEventListener('click', () => { piles.push(U.pileName(piles.length)); activePile = piles.length - 1; renderPiles(); applyEdgeFilter(); scheduleSave(); }); box.appendChild(add); }
   }
+  // 탭으로 더미 고르기 (더미가 있을 때)
+  function openPilePick(p: Piece) {
+    if (piles.length < 2) return false; const box = $('jg-pilepick'), list = $('jg-pilepick-list'); list.innerHTML = '';
+    piles.forEach((name, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = i === 0 ? U.pileAll : name; b.setAttribute('aria-pressed', String(p.pile === i)); b.addEventListener('click', () => { moveToPile(p, i); closePilePick(); }); list.appendChild(b); });
+    if (piles.length < 8) { const b = document.createElement('button'); b.type = 'button'; b.className = 'new'; b.textContent = U.pileNew; b.addEventListener('click', () => { piles.push(U.pileName(piles.length)); renderPiles(); moveToPile(p, piles.length - 1); closePilePick(); }); list.appendChild(b); }
+    box.hidden = false; const tr = tray.getBoundingClientRect(); box.style.bottom = `${innerHeight - tr.top + 8}px`; box.style.top = 'auto';
+    setTimeout(() => document.addEventListener('pointerdown', outsidePick, { once: true }), 0); return true;
+  }
+  const outsidePick = (e: Event) => { if (!(e.target as HTMLElement).closest('#jg-pilepick')) closePilePick(); };
+  function closePilePick() { $('jg-pilepick').hidden = true; }
   function moveToPile(p: Piece, pile: number) { p.pile = pile; renderPiles(); applyEdgeFilter(); scheduleSave(); toast(U.toPile(pile === 0 ? U.pileAll : piles[pile])); }
   const pileTabAt = (x: number, y: number) => (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>('.pile-tab[data-pile]') ?? null;
   let overTab: HTMLElement | null = null;
@@ -481,18 +495,19 @@ const shelves = shelvesFor(lang);
       if (!g) { const go = isMouse ? Math.hypot(dx, dy) > 6 : (dy < -8 && Math.abs(dy) > Math.abs(dx) * 0.8) || e.clientY < tray.getBoundingClientRect().top; if (!go) return; g = liftFromTray(p, e.clientX, e.clientY); }
       moveLift(g, p, e.clientX, e.clientY);
     });
-    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!g) return; const gg = g; g = null; dropLift(gg, p, e.clientX, e.clientY, e.type === 'pointerup'); };
+    const done = (e: PointerEvent) => { if (e.pointerId !== id) return; id = -1; if (!g) { if (e.type === 'pointerup') openPilePick(p); return; } const gg = g; g = null; dropLift(gg, p, e.clientX, e.clientY, e.type === 'pointerup'); };
     el.addEventListener('pointerup', done); el.addEventListener('pointercancel', done);
     // 터치(아이폰 사파리): pan-x 스크롤 판정에 pointercancel 되는 문제를 피해 터치 이벤트로 직접. 위로 6px 이상이면 스크롤을 막고 들어 올림
     let tx = 0, ty = 0, tid = -1, tg: Group | null = null;
-    el.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; const t = e.touches[0]; tx = t.clientX; ty = t.clientY; tid = t.identifier; tg = null; }, { passive: true });
+    let tmoved = false;
+    el.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; const t = e.touches[0]; tx = t.clientX; ty = t.clientY; tid = t.identifier; tg = null; tmoved = false; }, { passive: true });
     el.addEventListener('touchmove', (e) => {
-      const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; const dx = t.clientX - tx, dy = t.clientY - ty;
+      const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; const dx = t.clientX - tx, dy = t.clientY - ty; if (Math.hypot(dx, dy) > 8) tmoved = true;
       if (!tg) { if (dy < -6 && Math.abs(dy) > Math.abs(dx)) tg = liftFromTray(p, t.clientX, t.clientY); else return; }
       e.preventDefault(); moveLift(tg, p, t.clientX, t.clientY);
     }, { passive: false });
-    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tg) return; const gg = tg; tg = null; dropLift(gg, p, t.clientX, t.clientY, e.type === 'touchend'); };
-    el.addEventListener('touchend', tend); el.addEventListener('touchcancel', tend);
+    const tend = (e: TouchEvent) => { const t = [...e.changedTouches].find((x) => x.identifier === tid); if (!t) return; tid = -1; if (!tg) { if (e.type === 'touchend' && !tmoved && openPilePick(p)) e.preventDefault(); return; } const gg = tg; tg = null; dropLift(gg, p, t.clientX, t.clientY, e.type === 'touchend'); };
+    el.addEventListener('touchend', tend, { passive: false }); el.addEventListener('touchcancel', tend);
   }
 
   // ── 완성

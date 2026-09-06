@@ -263,7 +263,7 @@ const shelves = shelvesFor(lang);
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) try { await saves.del(saveId()); } catch {}
-    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room || src.kind === 'photo'; $('jg-traybar').hidden = !!room; if (room) { tray.hidden = true; $('jg-edge').hidden = true; } else { tray.hidden = false; $('jg-edge').hidden = false; } tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room || src.kind === 'photo'; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -281,10 +281,11 @@ const shelves = shelvesFor(lang);
       order = rs.tray.map((i) => pieces[i]); rs.pile.forEach((pl, i) => { pieces[i].pile = pl; });
     } else order = [...pieces].sort(() => Math.random() - 0.5);
     const frag = document.createDocumentFragment();
-    for (const p of order) { if (p.locked || p.g) continue; const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; (el as any).__p = p; frag.appendChild(el); bindTray(el, p); trayIO.observe(el); }
+    for (const p of order) { if (p.locked || p.g) continue; frag.appendChild(trayEl(p)); }
     tray.appendChild(frag);
-    if (room) { tray.hidden = true; $('jg-traybar').hidden = true; } renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); if (room) { view.s = fitS * 0.75; const r = wrap.getBoundingClientRect(); view.tx = (r.width - cut.W * view.s) / 2; view.ty = (r.height - cut.H * view.s) / 2; draw(); } updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
+    renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
   }
+  function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; (el as any).__p = p; bindTray(el, p); trayIO.observe(el); return el; }
   function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
   function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
 
@@ -494,9 +495,9 @@ const shelves = shelvesFor(lang);
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
-  function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; return g; }
-  function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; hoverTab(cx, cy); draw(); }
-  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); draw(); } }
+  function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; if (room) { g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); send({ t: 'take', g: g.sid, dx: g.dx, dy: g.dy }); } return g; }
+  function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; hoverTab(cx, cy); draw(); if (room && g.sid) netMove(g); }
+  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); const untake = () => { if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); } }; if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); draw(); } }
   function bindTray(el: HTMLElement, p: Piece) {
     let sx = 0, sy = 0, id = -1, g: Group | null = null, isMouse = false;
     el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; g = null; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
@@ -543,7 +544,7 @@ const shelves = shelvesFor(lang);
     switch (m.t) {
       case 'init': {
         room.me = m.you; for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {}));
-        const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: [], pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
+        const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i)) t.push(i); for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; })(), pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
         wantN = st.total; start(rs).then(() => { renderPlayers(); if (st.locked.length >= st.total) { /* 이미 끝난 방 */ } }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
@@ -551,7 +552,9 @@ const shelves = shelvesFor(lang);
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       case 'grab': room.holders.set(m.g, m.id); { const g = room.bySid.get(m.g); if (g) toFront(g); } draw(); return;
       case 'release': room.holders.delete(m.g); draw(); return;
-      case 'deny': { const g = room.bySid.get(m.g); if (g && dragging === g) { dragging = null; canvas.classList.remove('drag'); toast(U.heldBy('')); } return; }
+      case 'take': { const p = pieces[Number(m.g)]; if (!p || p.locked || p.g) return; p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); renderPiles(); draw(); return; }
+      case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; room.bySid.delete(m.g); room.holders.delete(m.g); tray.appendChild(trayEl(p)); applyEdgeFilter(); renderPiles(); draw(); return; }
+      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.remove(); p.el = undefined; room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } return; }
       case 'mv': { const g = room.bySid.get(m.g); if (g && g !== dragging) { g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'merge': { const g = room.bySid.get(m.g), into = room.bySid.get(m.into); if (g && into && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } into.dx = m.dx; into.dy = m.dy; tweens.delete(g); merge(g, into); } return; }

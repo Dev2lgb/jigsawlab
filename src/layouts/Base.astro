@@ -139,7 +139,8 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .menu-langs { display: flex; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }
   @media (max-width: 860px) { :root { --hd: 56px; --hd-gap: 10px; } .top { grid-template-columns: auto 1fr; gap: 12px; } .top.scrolled::before { border-radius: 18px; left: calc(var(--gutter) - 10px); right: calc(var(--gutter) - 10px); } .nav { display: none; } .right { justify-self: end; } .langs { display: none; } .menu-btn { display: flex; width: 40px; height: 40px; } }
   @media (min-width: 861px) { .menu { display: none !important; } }
-  @media (max-width: 640px) { html[data-play="on"] .top { display: none; } html[data-play="on"] { --top-h: 0px; } .top .play-btn { display: none; } }
+  html[data-play="on"] .top { display: none; } html[data-play="on"] { --top-h: 0px; }
+  @media (max-width: 640px) { .top .play-btn { display: none; } }
   #main { flex: 1; display: flex; flex-direction: column; }
 
   /* 푸터 */

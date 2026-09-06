@@ -11,5 +11,5 @@ export default defineConfig({
   adapter: cloudflare({ imageService: 'passthrough' }),
   session: false, // 세션 안 씀 (KV 바인딩 불필요)
   i18n: { defaultLocale: 'ko', locales: ['ko', 'en', 'ja'], routing: { prefixDefaultLocale: false } },
-  integrations: [sitemap({ filter: (page) => !page.includes('/s/') && !page.includes('/api/') })],
+  integrations: [sitemap({ filter: (page) => !page.includes('/s/') && !page.includes('/api/') && !/\/my\/$/.test(page), i18n: { defaultLocale: 'ko', locales: { ko: 'ko', en: 'en', ja: 'ja' } } })],
 });

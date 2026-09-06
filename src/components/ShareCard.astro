@@ -1,13 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { PAINTINGS } from '../lib/jigsaw';
+import { WORK_BY_KEY } from '../data/works';
 import { JIGSAW } from '../i18n/jigsaw';
 import { prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang), T = JIGSAW[lang];
 import { parseShare } from '../lib/shareParams';
 const { k, n, t, m, daily } = parseShare(Astro.url)!; // 페이지에서 검사·리다이렉트 완료
-const pnt = PAINTINGS.find((p) => p.key === k)!;
+const pnt = WORK_BY_KEY[k]!;
 const fmt = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 const S = {
   ko: { h: daily ? '오늘의 퍼즐 기록' : '친구의 직소 퍼즐 기록', cmt: `${n}조각${m > 0 ? ` · ${m}번 놓아서 완성` : ''}`, cta: '나도 해보기', hand: daily ? '오늘의 퍼즐, 이 시간보다 빨리 맞출 수 있겠어?' : '같은 그림, 같은 조각 수로 도전해 볼래?', sub: t / n < 3 ? '⚡ 조각당 3초도 안 걸렸어요' : t / n < 8 ? '🔥 손이 빠르네요' : '🧩 차분하게 끝까지' },
@@ -20,7 +20,7 @@ const ctaHref = daily ? `${P}/play/?d=1&k=${k}` : `${P}/play/?k=${k}&n=${n}`;
 ---
 <Base title={title} desc={desc} lang={lang} ogImage={`/jigsaw/o-${k}.jpg`} noindex path={Astro.url.pathname + Astro.url.search}>
   <section class="scene page active share">
-    <img class="pic" src={`/jigsaw/${k}.jpg`} alt={pnt.title[li]} width="1200" height="950" />
+    <img class="pic" src={`/jigsaw/${k}.webp`} alt={pnt.title[li]} width={pnt.w} height={pnt.h} />
     <h1>{S.h}</h1>
     <p class="muted">{pnt.title[li]} — {pnt.artist[li]}</p>
     <div class="val">{fmt}</div>

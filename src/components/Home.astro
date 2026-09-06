@@ -2,22 +2,23 @@
 // 랜딩 홈 — 풀블리드 히어로(오늘 그림의 색이 배경으로 번짐 + 조각 빠진 그림) → 흐르는 상자 마퀴 → 카테고리별 3D 상자 진열대 → 내 사진 → 오늘의 랭킹
 import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
-import { PAINTINGS, DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang);
-const day = todayKST(), daily = dailyPick(day, PAINTINGS), shelves = shelvesFor(lang), total = PAINTINGS.length;
+const day = todayKST(), daily = dailyPick(day, DAILY_POOL), shelves = shelvesFor(lang), total = WORKS.length;
 const all = shelves.flatMap((s) => s.items);
-const marquee = [...all.slice(0, 11), ...all.slice(11)];
+const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 ---
 <section class="hero" id="hero" data-key={daily.painting.key}>
-  <div class="glow" aria-hidden="true"><img id="glow-img" src={`/jigsaw/t-${daily.painting.key}.jpg`} alt="" /></div>
+  <div class="glow" aria-hidden="true"><img id="glow-img" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" /></div>
   <div class="wrap hero-in">
     <div class="hero-text">
       <p class="today"><span class="dot"></span>{T.hero.today} · {day.replace(/-/g, '.')}</p>
       <h1 id="hero-title">{daily.painting.title[li]}</h1>
       <p class="by" id="hero-by">{daily.painting.artist[li]} · {daily.painting.year} · {T.hero.pieces(DAILY_PIECES)}</p>
-      <p class="stat"><span id="hero-solved">{T.hero.solved(0)}</span><span id="hero-fast" hidden></span></p>
+      <p class="stat" id="hero-stat" hidden><span id="hero-solved"></span><span id="hero-fast" hidden></span></p>
       <div class="cta"><a class="btn primary lg" href={`${P}/play/?daily=1`}>{T.hero.cta}</a><a class="btn lg" href={`${P}/play/?photo=1`}>{T.hero.photo}</a></div>
       <p class="note">{T.hero.sameForAll}</p>
     </div>
@@ -28,7 +29,7 @@ const marquee = [...all.slice(0, 11), ...all.slice(11)];
 </section>
 
 <section class="marq" aria-hidden="true">
-  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.jpg`} alt="" loading="lazy" width="240" height="190" />)}</div>
+  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.webp`} alt="" loading="lazy" width="240" height="190" />)}</div>
 </section>
 
 <section class="sec" id="catalog">
@@ -58,7 +59,7 @@ const marquee = [...all.slice(0, 11), ...all.slice(11)];
   </div>
 </section>
 
-<section class="sec" id="rank">
+<section class="sec" id="rank" hidden>
   <div class="wrap rank-in">
     <div data-reveal>
       <h2 class="sec-h">{T.rank.title}</h2>
@@ -127,24 +128,25 @@ const marquee = [...all.slice(0, 11), ...all.slice(11)];
 
 <script>
   import { drawPopped } from '../lib/hero';
-  import { PAINTINGS, DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+  import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+  import { DAILY_POOL } from '../data/works';
   import { UI, type Lang } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, LI = { ko: 0, en: 1, ja: 2 }[LANG], T = UI[LANG];
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  const day = todayKST(), pick = dailyPick(day, PAINTINGS);
+  const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
   document.getElementById('hero-title')!.textContent = pick.painting.title[LI];
   document.getElementById('hero-by')!.textContent = `${pick.painting.artist[LI]} · ${pick.painting.year} · ${T.hero.pieces(DAILY_PIECES)}`;
-  (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.jpg`;
-  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.jpg`, pick.seed, DAILY_PIECES, 5);
+  (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`;
+  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);
   (async () => {
     try {
       const r = await fetch('/api/daily', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'ranking' }) }); const rk = await r.json();
-      document.getElementById('hero-solved')!.textContent = T.hero.solved(rk.total);
+      if (rk.total) { document.getElementById('hero-solved')!.textContent = T.hero.solved(rk.total); document.getElementById('hero-stat')!.hidden = false; }
       if (rk.rows[0]) { const f = document.getElementById('hero-fast')!; f.textContent = T.hero.fastest(fmt(rk.rows[0].ms / 1000)); f.hidden = false; }
       document.getElementById('rank-total')!.textContent = rk.total ? T.rank.total(rk.total) : '';
       const ol = document.getElementById('rank-list')!; ol.innerHTML = '';
-      if (!rk.rows.length) { ol.innerHTML = `<li class="empty">${T.rank.empty}</li>`; return; }
+      if (!rk.rows.length) return; document.getElementById('rank')!.hidden = false;
       for (const [i, row] of (rk.rows as any[]).slice(0, 10).entries()) { const li = document.createElement('li'); const a = document.createElement('span'); a.className = 'rank'; a.textContent = String(i + 1); const b = document.createElement('span'); b.className = 'nick'; b.textContent = row.nick; const c = document.createElement('span'); c.className = 'score'; c.innerHTML = `${fmt(row.ms / 1000)}<small> · ${Number(row.tries)}</small>`; li.append(a, b, c); ol.appendChild(li); }
-    } catch { document.getElementById('rank-list')!.innerHTML = `<li class="empty">${T.rank.fail}</li>`; }
+    } catch { /* 랭킹 없으면 섹션 숨김 */ }
   })();
 </script>

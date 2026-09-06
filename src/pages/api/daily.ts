@@ -1,12 +1,13 @@
 // 오늘의 퍼즐: GET → 오늘 그림·완성 수 / POST {action:'ranking'} → 오늘 순위 / {action:'solve'} → 기록 등록(기기당 1건, 더 빠르면 갱신)
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { todayKST, dailyPick, PAINTINGS, DAILY_PIECES } from '../../lib/jigsaw';
+import { todayKST, dailyPick, DAILY_PIECES } from '../../lib/jigsaw';
+import { DAILY_POOL } from '../../data/works';
 export const prerender = false;
 const json = (d: unknown, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
 export const GET: APIRoute = async () => {
-  const day = todayKST(), pick = dailyPick(day, PAINTINGS);
+  const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
   const cnt = await env.DB.prepare('SELECT COUNT(*) n FROM daily_solves WHERE day = ?').bind(day).first<{ n: number }>().catch(() => null);
   return json({ day, key: pick.painting.key, pieces: DAILY_PIECES, solved: cnt?.n ?? 0 });
 };

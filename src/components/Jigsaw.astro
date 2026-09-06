@@ -2,13 +2,14 @@
 // 직소 퍼즐 앱 본체 — 홈 화면(오늘의 퍼즐·내 사진·명화) → 조각 수 다이얼로그 → 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과
 import { JIGSAW } from '../i18n/jigsaw';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
-import { PAINTINGS, DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { DAILY_POOL } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 import Box from './Box.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
-const day = todayKST(), daily = dailyPick(day, PAINTINGS);
+const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
 const shelves = shelvesFor(lang);
 ---
 <section class="scene page active picker" data-scene="title">
@@ -16,7 +17,7 @@ const shelves = shelvesFor(lang);
   <p class="pick-sub">{t.sub}</p>
   <div class="sources">
     <button type="button" class="src daily" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day}>
-      <img id="daily-thumb" src={`/jigsaw/t-${daily.painting.key}.jpg`} alt="" width="240" height="190" />
+      <img id="daily-thumb" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" width="240" height="190" />
       <span class="src-text"><b>{t.daily}</b><span id="daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
     </button>
     <label class="src drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden />
@@ -139,7 +140,8 @@ const shelves = shelvesFor(lang);
 
 <script>
   import { JIGSAW } from '../i18n/jigsaw';
-  import { gridFor, seeded, makeCut, renderPiece, PAINTINGS, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { gridFor, seeded, makeCut, renderPiece, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { DAILY_POOL, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
   import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak } from '../lib/store';
   import { share, toast } from '../lib/share';
@@ -152,9 +154,9 @@ const shelves = shelvesFor(lang);
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
   const dailyBtn = $('jg-daily') as HTMLButtonElement;
-  const day = todayKST(), pick = dailyPick(day, PAINTINGS);
+  const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
   dailyBtn.dataset.key = pick.painting.key; dailyBtn.dataset.seed = String(pick.seed); dailyBtn.dataset.day = day;
-  ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.jpg`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
+  ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; seed?: number; day?: string; fixedN?: number };
@@ -180,8 +182,8 @@ const shelves = shelvesFor(lang);
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
-  dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.jpg`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
-  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box3d').forEach((b) => b.addEventListener('click', () => { const p = PAINTINGS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.jpg` }); }));
+  dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.webp`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
+  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box3d').forEach((b) => b.addEventListener('click', () => { const p = WORKS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.webp` }); }));
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
@@ -377,7 +379,7 @@ const shelves = shelvesFor(lang);
     $('jg-res-time').textContent = fmt(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
     const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
     if (src!.kind === 'daily') bumpStreak(src!.day!);
-    const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? PAINTINGS.find((x) => x.key === src!.key)!.title[LI] : '';
+    const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/play/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
     const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily'; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
@@ -392,7 +394,7 @@ const shelves = shelvesFor(lang);
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
-  { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = PAINTINGS.find((x) => x.key === k);
+  { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = WORKS.find((x) => x.key === k);
     if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
     else if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
     else if (pt) { if (pn >= 6 && pn <= 2000) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![48, 100, 200, 300, 500, 1000].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box3d[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }

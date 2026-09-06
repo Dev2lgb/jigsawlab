@@ -1,5 +1,6 @@
 ---
 // 공통 틀 — 화면 전체 폭, Pretendard, 큰 라운드·부드러운 그림자, 스크롤 리빌, 3D 퍼즐 상자 공통 스타일
+import { icon } from '../lib/icons';
 import { UI, LANGS, prefix, type Lang } from '../i18n/ui';
 interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
 const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
@@ -48,6 +49,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     <nav class="nav" aria-label="main">{nav.map((n) => <a href={n.href}>{n.label}</a>)}</nav>
     <div class="right">
       <div class="langs" role="group" aria-label="language">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}>{l.toUpperCase()}</a>)}</div>
+      <a class="acct" id="acct" href={`${P}/my/`} data-login={T.acct.login} data-fail={T.acct.fail} data-nick-ask={T.play.nickAsk} data-noauth="1"><Fragment set:html={icon('user', 16)} /><span id="acct-nick">{T.acct.login}</span></a>
       <a class="btn primary sm play-btn" href={`${P}/play/`}>{T.nav.play}</a>
       <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="menu"><span></span><span></span><span></span></button>
     </div>
@@ -83,6 +85,17 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) els.forEach((e) => e.classList.add('in'));
     else { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { (e.target as HTMLElement).classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }); els.forEach((e) => io.observe(e)); }
     const top = document.getElementById('top')!; const onS = () => top.classList.toggle('scrolled', scrollY > 8); onS(); addEventListener('scroll', onS, { passive: true });
+    // 계정 버튼(선택 로그인). 로그인 직후 해시로 결과를 받음: new → 닉네임 정하기, ok → 이 기기 기록 합치기
+    import('../lib/account').then(async ({ me, loginUrl, setNickRemote, mergeLocalDone, authAvailable }) => {
+      const a = document.getElementById('acct') as HTMLAnchorElement, nk = document.getElementById('acct-nick')!;
+      const h = location.hash.match(/^#login=(\w+)/); if (h) history.replaceState(null, '', location.pathname + location.search);
+      const u = await me(!!h); a.dataset.noauth = authAvailable() ? '0' : '1';
+      if (u) { nk.textContent = u.nick || a.dataset.login!; }
+      else { nk.textContent = a.dataset.login!; a.href = loginUrl(); }
+      if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
+      if (u && (h?.[1] === 'new' || (u && !u.nick))) { const n = (prompt(a.dataset.nickAsk ?? '', localStorage.getItem('nick') ?? '') || '').trim().slice(0, 12); if (n && (await setNickRemote(n))) nk.textContent = n; }
+      if (u) mergeLocalDone();
+    });
     // 모바일 메뉴
     const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
     const setMenu = (o: boolean) => { menu.hidden = !o; mb.setAttribute('aria-expanded', String(o)); document.documentElement.style.overflow = o ? 'hidden' : ''; };
@@ -130,6 +143,8 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .mark { display: inline-flex; align-items: center; color: var(--ink); font-family: var(--brand); font-weight: 800; font-size: 1.45rem; letter-spacing: -0.02em; line-height: 1; } .mark:hover { text-decoration: none; }
   .nav { display: flex; gap: 2px; justify-self: center; } .nav a { color: var(--ink-2); font-weight: 600; font-size: .95rem; padding: 9px 14px; border-radius: 999px; transition: background .15s, color .15s; } .nav a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
   .right { display: flex; align-items: center; gap: 10px; }
+  .acct { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); font-weight: 700; font-size: .85rem; max-width: 160px; } .acct span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct:hover { background: var(--bg-3); text-decoration: none; } .acct[data-noauth="1"] { display: none; }
+  @media (max-width: 860px) { .acct { width: 36px; height: 36px; padding: 0; justify-content: center; } .acct span { display: none; } }
   .langs { display: flex; padding: 3px; border-radius: 999px; background: var(--bg-3); } .langs a { color: var(--muted); font-size: .74rem; font-weight: 700; padding: 5px 9px; border-radius: 999px; letter-spacing: .02em; } .langs a[aria-current] { color: var(--ink); background: var(--bg); box-shadow: 0 1px 3px rgba(15,18,34,.15); } .langs a:hover { text-decoration: none; color: var(--ink); }
   .menu-btn { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; } .menu-btn span { display: block; width: 18px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease), opacity .2s; }
   .menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); } .menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; } .menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -170,7 +185,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .btn:hover { background: var(--bg-2); text-decoration: none; transform: translateY(-1px); } .btn:active { transform: translateY(0); }
   .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: 0 10px 24px -12px rgba(15,18,34,.6); } .btn.primary:hover { background: #000; box-shadow: 0 14px 30px -12px rgba(15,18,34,.6); }
   .btn.ghost { background: transparent; border-color: transparent; } .btn.ghost:hover { background: var(--bg-3); }
-  .btn.lg { min-height: 58px; padding: 12px 30px; font-size: 1.08rem; } .btn.sm { min-height: 38px; padding: 4px 16px; font-size: .9rem; }
+  .btn.lg { min-height: 58px; padding: 12px 30px; font-size: 1.08rem; } .btn.sm { min-height: 38px; padding: 4px 16px; font-size: .9rem; } .btn.danger { color: #c0203f; border-color: #e9b8c2; } .btn.danger:hover { background: #fdf0f3; }
   .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .85rem; font-weight: 600; white-space: nowrap; }
   .input { width: 100%; min-height: 46px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 16px; } .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }

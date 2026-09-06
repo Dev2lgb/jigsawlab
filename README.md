@@ -5,7 +5,9 @@
 
 ## 스택
 - **Astro** + **@astrojs/cloudflare** → **Cloudflare Workers** (정적 자산 + 서버 라우트). Pages 가 아닌 Workers 인 이유: 실시간 멀티용 Durable Objects 를 붙일 예정
-- **Cloudflare D1** `jigsawlab-db` — 오늘의 퍼즐 랭킹만. 나머지는 localStorage
+- **Cloudflare D1** `jigsawlab-db` — 오늘의 퍼즐 랭킹 + (선택) 구글 로그인 회원의 업적·하던 퍼즐 동기화. 나머지는 localStorage/IndexedDB
+- **구글 로그인(선택)**: scope `openid` 만, 저장은 HMAC(sub) 가명 ID + 닉네임뿐. 세션은 서명 쿠키 `jl_s`. 서버 `src/lib/auth.ts`, 라우트 `api/auth/[action].ts`(login·callback·logout·delete)·`api/me.ts`·`api/sync.ts`, 클라이언트 `src/lib/account.ts`
+- **실시간 방** Durable Object `Room`(`src/lib/room.ts`, worker.ts 가 `/api/room/<id>` 직결). 내 사진 방은 사진이 서버에 안 가고 WebRTC(`src/lib/rtc.ts`)로 방장→친구 직접 전송, DO 는 sdp/ice 신호만 중계
 - 서버 라우트(`export const prerender = false`): `/api/daily`, `/s/`(공유 카드, 쿼리로 OG 결정). 나머지는 정적
 
 ## 명령어
@@ -22,7 +24,8 @@
 2. `npx wrangler d1 create jigsawlab-db` → 나온 `database_id` 를 `wrangler.jsonc` 에 넣기
 3. `pnpm db:migrate:local && pnpm db:migrate`
 4. `pnpm deploy` (커스텀 도메인은 wrangler.jsonc routes 로 자동 연결)
-5. GitHub 자동 배포: 저장소 Secrets 에 `CLOUDFLARE_API_TOKEN`(Workers Scripts·D1 편집 권한), `CLOUDFLARE_ACCOUNT_ID` 등록 → main push 시 `.github/workflows/deploy.yml`
+5. 구글 로그인 비밀값: Google Cloud 콘솔에서 OAuth 클라이언트(웹) 생성, 승인된 리디렉션 URI `https://jigsawlab.app/api/auth/callback`. 그 다음 `npx wrangler secret put GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `SESSION_SECRET`(긴 랜덤 문자열). 로컬은 `.dev.vars` 에 같은 키. 비밀값이 없으면 로그인 UI 가 자동으로 숨겨짐
+6. GitHub 자동 배포: 저장소 Secrets 에 `CLOUDFLARE_API_TOKEN`(Workers Scripts·D1 편집 권한), `CLOUDFLARE_ACCOUNT_ID` 등록 → main push 시 `.github/workflows/deploy.yml`
 
 ## 구조
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`

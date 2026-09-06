@@ -4,12 +4,16 @@ import Base from '../layouts/Base.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my;
+const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct;
 const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
 ---
 <Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={{ ko: '/my/', en: '/en/my/', ja: '/ja/my/' }} path={`${P}/my/`} noindex>
   <div class="wrap my">
-    <div class="my-head"><h1>{M.title}</h1><p class="muted">{M.onDevice}</p></div>
+    <div class="my-head"><h1>{M.title}</h1><p class="muted" id="my-sub">{M.onDevice}</p></div>
+    <section class="acct-box" id="acct-box" hidden>
+      <div class="acct-row"><b id="acct-state"></b><div class="acct-btns" id="acct-btns"></div></div>
+      <p class="muted acct-why">{A.why}</p>
+    </section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
@@ -17,6 +21,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
   <script is:inline define:vars={{ meta }}>window.__meta = JSON.parse(meta);</script>
   <style>
     .my { padding-top: clamp(24px, 4vw, 48px); } .my-head { margin-bottom: 8px; } .my-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; } .my-head p { margin: 6px 0 0; }
+    .acct-box { margin-top: 18px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); } .acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .acct-btns { display: flex; gap: 8px; flex-wrap: wrap; } .acct-btns :global(.btn) { font-size: .85rem; } .acct-why { margin: 10px 0 0; font-size: .82rem; line-height: 1.55; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -31,10 +36,12 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
   </style>
   <script>
     import { saves, images, hasIDB, type SaveData } from '../lib/db';
-    import { getDone } from '../lib/store';
+    import { getDone, type DoneEntry } from '../lib/store';
+    import { me, loginUrl, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, type SaveMeta } from '../lib/account';
     import { favs, toggleFav } from '../lib/fav';
     import { UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, M = UI[LANG].my, P = LANG === 'ko' ? '' : `/${LANG}`;
+    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, M = UI[LANG].my, A = UI[LANG].acct, P = LANG === 'ko' ? '' : `/${LANG}`;
+    let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, [string, string, string]>;
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const $ = (id: string) => document.getElementById(id)!;
@@ -48,12 +55,13 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       return a;
     };
     async function renderProg() {
-      const box = $('l-prog'); box.innerHTML = ''; let list: SaveData[] = []; if (hasIDB()) try { list = await saves.all(); } catch {}
+      const box = $('l-prog'); box.innerHTML = ''; let list: (SaveData | SaveMeta)[] = []; if (hasIDB()) try { list = await saves.all(); } catch {}
+      const have = new Set(list.map((x) => x.id)); const remoteIds = new Set(remote.saves.map((m) => m.id)); for (const m of remote.saves) if (!have.has(m.id)) list.push(m); list.sort((a, b) => b.savedAt - a.savedAt);
       $('e-prog').hidden = !!list.length; $('c-prog').textContent = list.length ? String(list.length) : '';
-      for (const sv of list) box.appendChild(card({ href: `${P}/play/?resume=${encodeURIComponent(sv.id)}`, img: sv.thumb, title: sv.name, sub: `<b>${Math.round((sv.done / sv.total) * 100)}%</b> · ${M.pieces(sv.total)} · ${fmt(sv.elapsed / 1000)}`, bar: (sv.done / sv.total) * 100, onDel: async () => { try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} renderProg(); } }));
+      for (const sv of list) box.appendChild(card({ href: `${P}/play/?resume=${encodeURIComponent(sv.id)}`, img: sv.thumb, title: sv.name, sub: `<b>${Math.round((sv.done / sv.total) * 100)}%</b> · ${M.pieces(sv.total)} · ${fmt(sv.elapsed / 1000)}`, bar: (sv.done / sv.total) * 100, badge: remoteIds.has(sv.id) ? A.synced : undefined, onDel: async () => { try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} if (remoteIds.has(sv.id)) { await syncDelSave(sv.id); remote.saves = remote.saves.filter((m) => m.id !== sv.id); } renderProg(); } }));
     }
     function renderDone() {
-      const box = $('l-done'); box.innerHTML = ''; const list = getDone();
+      const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
       for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto ? undefined : `${P}/puzzle/${d.key}/`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmt(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
@@ -62,6 +70,17 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       $('e-fav').hidden = !!list.length; $('c-fav').textContent = list.length ? String(list.length) : '';
       for (const k of list) { const m = meta[k]; box.appendChild(card({ href: `${P}/puzzle/${k}/`, img: `/jigsaw/t-${k}.webp`, title: m[0], sub: `${m[1]} · ${m[2]}`, onDel: () => { toggleFav(k); renderFav(); } })); }
     }
-    renderProg(); renderDone(); renderFav();
+    async function renderAcct() {
+      const u = await me(); const box = $('acct-box'), st = $('acct-state'), bt = $('acct-btns'); bt.innerHTML = '';
+      if (!authAvailable()) return; box.hidden = false;
+      const btn = (t: string, cls: string, fn: () => void) => { const b = document.createElement(cls.includes('link') ? 'a' : 'button') as HTMLButtonElement; b.className = `btn sm ${cls}`; b.textContent = t; b.addEventListener('click', fn); bt.appendChild(b); return b; };
+      if (!u) { st.textContent = A.notSignedIn; const a = btn(A.loginBtn, 'primary link', () => {}) as unknown as HTMLAnchorElement; a.href = loginUrl(); return; }
+      st.textContent = A.signedIn(u.nick || '?'); $('my-sub').textContent = A.synced;
+      btn(A.rename, '', async () => { const n = (prompt(UI[LANG].play.nickAsk, u.nick) || '').trim().slice(0, 12); if (n && (await setNickRemote(n))) renderAcct(); });
+      btn(A.logout, '', async () => { await logout(); location.reload(); });
+      btn(A.del, 'danger', async () => { if (!confirm(A.delAsk)) return; if (await deleteAccount()) { alert(A.deleted); location.reload(); } });
+      const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); }
+    }
+    renderProg(); renderDone(); renderFav(); renderAcct();
   </script>
 </Base>

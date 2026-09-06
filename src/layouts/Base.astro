@@ -31,6 +31,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preload" href="/fonts/BMHANNAPro.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href={fontCss} />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" />
@@ -71,12 +72,14 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
 </html>
 
 <style is:global>
+  /* 한나체는 한글·영문·숫자만. 기호(·, ×, ♡ 등)는 글리프가 비어 있어 프리텐다드로 */
+  @font-face { font-family: 'BM HANNA Pro'; src: url('/fonts/BMHANNAPro.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+0020-007E, U+1100-11FF, U+3131-318E, U+AC00-D7A3; }
   :root {
     --bg: #ffffff; --bg-2: #f5f6f8; --bg-3: #eceef2; --board: #e6e8ee; --ink: #0f1222; --ink-2: #3a3f55; --muted: #6b7188; --line: #e3e6ec; --line-2: #d2d6df;
     --accent: #3b5bff; --accent-deep: #2b47e0; --accent-soft: #eaeeff; --accent-glow: rgba(59,91,255,.35); --gold: #f0a71b; --gold-soft: #fff4dc;
     --box: #f7f2e7; --box-2: #eee6d3; --box-3: #d9cfb5; --box-frame: #b08d55;
     --top-h: 68px; --r: 24px; --r-sm: 14px; --max: 1440px; --gutter: clamp(20px, 4vw, 64px);
-    --font: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+    --font: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
     --brand: 'Syne', var(--font);
     --ease: cubic-bezier(.2, .8, .2, 1);
     color-scheme: light;

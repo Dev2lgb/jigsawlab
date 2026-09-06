@@ -1,22 +1,33 @@
 ---
-// 소개 페이지 — 사이트가 뭔지 4가지 + 가이드(사용법·FAQ)
+// 소개 페이지 — 히어로 / 4가지 포인트 / 가이드(왼쪽 고정 목차 + 오른쪽 본문). 섹션 간격은 홈의 .sec 리듬과 동일
 import Base from '../layouts/Base.astro';
 import { UI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), A = T.about;
+const html = JIGSAW[lang].seo;
+const toc = [...html.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `g${i + 1}`, text: m[1] }));
+let i = 0; const guide = html.replace(/<h2>/g, () => `<h2 id="g${++i}">`);
 ---
 <Base title={`${A.title} · jigsawlab`} desc={A.lead} lang={lang} alts={{ ko: '/about/', en: '/en/about/', ja: '/ja/about/' }} path={`${P}/about/`}>
-  <section class="about-hero"><div class="wrap"><h1>{A.title}</h1><p class="lead">{A.lead}</p><a class="btn primary lg" href={`${P}/play/`}>{T.nav.play}</a></div></section>
-  <section class="wrap"><div class="points">{A.points.map(([h, b], i) => <div class="pt" data-reveal={String(i)}><span class="n">{i + 1}</span><h2>{h}</h2><p>{b}</p></div>)}</div></section>
-  <section class="wrap guide"><h2 class="sec-h">{A.guide}</h2><article class="seo" set:html={JIGSAW[lang].seo} /></section>
+  <section class="hero"><div class="wrap hero-in"><h1>{A.title}</h1><p class="lead">{A.lead}</p><a class="btn primary lg" href={`${P}/play/`}>{T.nav.play}</a></div></section>
+  <section class="sec"><div class="wrap"><div class="points">{A.points.map(([h, b], i) => <div class="pt" data-reveal={String(i)}><span class="n">{i + 1}</span><h2>{h}</h2><p>{b}</p></div>)}</div></div></section>
+  <section class="sec"><div class="wrap guide">
+    <nav class="toc" aria-label="guide"><p class="toc-h">{A.guide}</p>{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
+    <article class="seo body" set:html={guide} />
+  </div></section>
   <style>
-    .about-hero { padding: clamp(48px, 8vw, 110px) 0 clamp(32px, 5vw, 60px); background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
-    .about-hero h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.04em; } .lead { margin: 18px 0 28px; font-size: clamp(1.05rem, 1.6vw, 1.3rem); color: var(--ink-2); max-width: 40em; }
-    .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 20px; }
+    .hero { background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+    .hero-in { padding-top: clamp(48px, 8vw, 110px); padding-bottom: clamp(40px, 6vw, 72px); }
+    .hero h1 { font-family: var(--brand); font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.03em; } .lead { margin: 18px 0 28px; font-size: clamp(1.05rem, 1.6vw, 1.3rem); color: var(--ink-2); max-width: 40em; }
+    .points { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    @media (max-width: 1000px) { .points { grid-template-columns: repeat(2, 1fr); } } @media (max-width: 560px) { .points { grid-template-columns: 1fr; } }
     .pt { padding: 28px; border-radius: var(--r); background: var(--bg-2); } .pt .n { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 800; margin-bottom: 16px; } .pt h2 { font-size: 1.2rem; margin: 0 0 8px; } .pt p { margin: 0; color: var(--ink-2); }
-    .guide { margin-top: clamp(48px, 7vw, 90px); }
-    .guide :global(.seo) { max-width: none; } .guide :global(.seo p), .guide :global(.seo li) { max-width: none; }
-    @media (min-width: 1000px) { .guide :global(.seo) { column-count: 2; column-gap: clamp(40px, 5vw, 80px); } .guide :global(.seo .lead) { column-span: all; margin-bottom: 8px; } .guide :global(.seo h2), .guide :global(.seo h3) { break-after: avoid; } .guide :global(.seo p), .guide :global(.seo li), .guide :global(.seo ol), .guide :global(.seo ul) { break-inside: avoid; } .guide :global(.seo h2:first-of-type) { margin-top: 12px; } }
+    .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+    .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; } .toc-h { margin: 0 0 8px; font-size: 1.3rem; font-weight: 800; letter-spacing: -.03em; }
+    .toc a { color: var(--ink-2); font-size: .92rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; } .toc a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
+    .body :global(h2) { margin-top: 0; scroll-margin-top: calc(var(--top-h) + 20px); } .body :global(h2 + p), .body :global(h2 + ol) { margin-top: 8px; } .body :global(h2:not(:first-of-type)) { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--line); }
+    .body :global(p), .body :global(li) { max-width: 72ch; } .body :global(.lead) { max-width: 72ch; }
+    @media (max-width: 860px) { .guide { grid-template-columns: 1fr; } .toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } .toc-h { flex-basis: 100%; } .toc a { background: var(--bg-2); } }
   </style>
 </Base>

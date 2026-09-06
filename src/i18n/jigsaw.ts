@@ -1,14 +1,14 @@
 import type { Lang } from './ui';
 export const JIGSAW = {
   ko: {
-    title: '사진 직소 퍼즐 만들기', sub: '내 사진을 원하는 조각 수로 잘라 직소 퍼즐로. 사진은 기기 밖으로 나가지 않아요',
-    pick: '내 사진 고르기', drop: '사진을 여기에 놓거나 눌러서 선택', daily: '오늘의 퍼즐', dailyCap: (title: string, n: number) => `${title} · ${n}조각 · 시간 랭킹`, gallery: '명화로 하기', pieces: '조각 수', custom: '직접 입력', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}조각`, noImg: '먼저 사진을 고르거나 명화를 선택하세요', chosen: '선택한 그림', myPhoto: '내 사진',
-    start: '▶ START', privacy: '사진은 브라우저 안에서만 잘리고 저장·전송되지 않습니다', loading: '조각을 만드는 중…',
-    time: '시간', moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', zoomIn: '확대', zoomOut: '축소', fit: '맞춤', trayHint: '아래 조각을 위로 끌어 올려 제자리에 놓으세요. 두 손가락으로 확대·이동',
-    viewResult: '결과 보기', done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '같은 사진 다시', another: '다른 퍼즐', toTitle: '처음으로',
-    share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '내 사진으로도 만들 수 있어요 — jigsawlab', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
-    nickLabel: '닉네임', nickPh: '랭킹에 올릴 이름', submit: '랭킹 등록', registered: (r: number) => `랭킹 ${r}위에 올랐어요!`, rankTotal: (n: number) => `오늘 ${n}명 완성`, rankEmpty: '아직 아무도 없어요. 1등 자리 비었음!', rankFail: '랭킹을 못 불러왔어요', lbTitle: '오늘의 퍼즐 랭킹', unit: '초', noRecord: '아직 기록이 없어요',
-    imgFail: '이미지를 열 수 없어요. JPG·PNG·HEIC 사진인지 확인해 주세요', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
+    title: '뭘 맞춰볼까요?', sub: '오늘의 퍼즐, 내 사진, 아니면 아래 상자 중에서.',
+    pick: '내 사진 고르기', drop: '눌러서 고르거나 여기에 끌어다 놓기', daily: '오늘의 퍼즐', dailyCap: (title: string, n: number) => `${title} · ${n}조각`, gallery: '상자에서 고르기', pieces: '조각 수', custom: '직접 입력', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}조각`, noImg: '먼저 그림을 골라 주세요', chosen: '선택한 그림', myPhoto: '내 사진',
+    start: '시작', privacy: '사진은 폰 밖으로 나가지 않아요', loading: '조각 자르는 중…',
+    time: '시간', moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', zoomIn: '확대', zoomOut: '축소', fit: '맞춤', trayHint: '조각을 위로 끌어 올려 놓기',
+    viewResult: '결과 보기', done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '한 번 더', another: '다른 퍼즐', toTitle: '처음으로',
+    share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '너도 해봐 🧩', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
+    nickLabel: '닉네임', nickPh: '랭킹에 올릴 이름', submit: '랭킹 등록', registered: (r: number) => `랭킹 ${r}위에 올랐어요!`, rankTotal: (n: number) => `오늘 ${n}명 완성`, rankEmpty: '1등 자리 비었어요', rankFail: '랭킹을 못 불러왔어요', lbTitle: '오늘의 퍼즐 랭킹', unit: '초', noRecord: '아직 기록이 없어요',
+    imgFail: '이 사진은 못 열었어요. 다른 사진으로 해볼까요?', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
     seo: `<p class="lead">사진 한 장을 고르고 조각 수를 정하면 톱니가 맞물리는 진짜 직소 퍼즐이 됩니다. 아래 트레이에서 조각을 끌어 올려 제자리에 끼우고, 모바일에서는 두 손가락으로 확대·이동하며 맞춰요. 사진은 기기 밖으로 나가지 않고, 내장된 명화로는 매일 같은 판을 풀어 시간을 겨루는 오늘의 퍼즐도 있습니다.</p>
 <h2>어떻게 하나요</h2>
 <ol>
@@ -36,12 +36,12 @@ export const JIGSAW = {
 `,
   },
   en: {
-    title: 'Photo Jigsaw Puzzle Maker', sub: 'Turn any photo into a real jigsaw with as many pieces as you like. The photo never leaves your device',
-    pick: 'Choose my photo', drop: 'Drop a photo here or tap to choose', daily: "Today's puzzle", dailyCap: (title: string, n: number) => `${title} · ${n} pieces · time leaderboard`, gallery: 'Use a painting', pieces: 'Pieces', custom: 'Custom', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} pieces`, noImg: 'Choose a photo or a painting first', chosen: 'Selected picture', myPhoto: 'My photo',
-    start: '▶ START', privacy: 'The photo is cut inside your browser and is never saved or uploaded', loading: 'Cutting pieces…',
+    title: 'What shall we solve?', sub: "Today's puzzle, your own photo, or one of the boxes below.",
+    pick: 'Choose my photo', drop: 'Drop a photo here or tap to choose', daily: "Today's puzzle", dailyCap: (title: string, n: number) => `${title} · ${n} pieces`, gallery: 'Use a painting', pieces: 'Pieces', custom: 'Custom', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} pieces`, noImg: 'Choose a photo or a painting first', chosen: 'Selected picture', myPhoto: 'My photo',
+    start: 'Start', privacy: 'Your photo never leaves your device', loading: 'Cutting pieces…',
     time: 'Time', moves: 'Placed', left: (n: number) => `${n} pieces left`, edgeOnly: 'Edge pieces only', hint: 'Ghost image', zoomIn: 'Zoom in', zoomOut: 'Zoom out', fit: 'Fit', trayHint: 'Drag pieces up from the tray into place. Pinch to zoom, two fingers to pan',
     viewResult: 'See result', done: 'Complete!', resTime: 'Time', resPieces: 'Pieces', resMoves: 'Placements', best: (s: string) => `Your best: ${s}`, newBest: 'New record!', retry: 'Same photo again', another: 'Another puzzle', toTitle: 'Back to start',
-    share: 'Share result', shareTitle: (n: number, t: string) => `Finished a ${n}-piece jigsaw in ${t}! 🧩`, shareText: 'Make one from your own photo — jigsawlab Jigsaw', shareDaily: (n: number, t: string, title: string) => `Today's puzzle "${title}", ${n} pieces in ${t}! 🧩 Can you beat it?`,
+    share: 'Share result', shareTitle: (n: number, t: string) => `Finished a ${n}-piece jigsaw in ${t}! 🧩`, shareText: 'Your turn 🧩', shareDaily: (n: number, t: string, title: string) => `Today's puzzle "${title}", ${n} pieces in ${t}! 🧩 Can you beat it?`,
     nickLabel: 'Nickname', nickPh: 'Name for the leaderboard', submit: 'Submit', registered: (r: number) => `You're #${r} on the board!`, lbTitle: "Today's puzzle leaderboard", unit: 's', noRecord: 'No record yet',
     imgFail: "Couldn't open that image. Please use a JPG, PNG or HEIC photo", paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
     seo: `<p class="lead">Pick a photo, choose a piece count, and it becomes a real jigsaw with interlocking tabs. Drag pieces up from the tray into place, pinch to zoom on a phone, and finish against the clock. The photo never leaves your device, and a built-in gallery of public-domain paintings powers a daily puzzle where everyone races on the same cut.</p>
@@ -72,11 +72,11 @@ export const JIGSAW = {
   },
   ja: {
     title: '写真ジグソーパズル作成', sub: '自分の写真を好きなピース数の本格ジグソーに。写真は端末の外に出ません',
-    pick: '写真を選ぶ', drop: 'ここに写真をドロップ、またはタップして選択', daily: '今日のパズル', dailyCap: (title: string, n: number) => `${title} · ${n}ピース · タイムランキング`, gallery: '名画で遊ぶ', pieces: 'ピース数', custom: '自分で入力', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}ピース`, noImg: 'まず写真か名画を選んでください', chosen: '選んだ絵', myPhoto: '自分の写真',
-    start: '▶ START', privacy: '写真はブラウザの中だけで切り分けられ、保存も送信もされません', loading: 'ピースを作っています…',
+    pick: '写真を選ぶ', drop: 'ここに写真をドロップ、またはタップして選択', daily: '今日のパズル', dailyCap: (title: string, n: number) => `${title} · ${n}ピース`, gallery: '箱から選ぶ', pieces: 'ピース数', custom: '自分で入力', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}ピース`, noImg: 'まず写真か名画を選んでください', chosen: '選んだ絵', myPhoto: '自分の写真',
+    start: 'スタート', privacy: '写真は端末の外に出ません', loading: 'ピースを作っています…',
     time: 'タイム', moves: '置いた回数', left: (n: number) => `残り${n}ピース`, edgeOnly: '外周ピースのみ', hint: '下絵', zoomIn: '拡大', zoomOut: '縮小', fit: 'フィット', trayHint: '下のピースを上に引き上げてはめてください。2本指で拡大・移動',
     viewResult: '結果を見る', done: '完成！', resTime: 'タイム', resPieces: 'ピース', resMoves: '置いた回数', best: (s: string) => `自己ベスト ${s}`, newBest: '新記録！', retry: '同じ写真でもう一度', another: '別のパズル', toTitle: 'はじめに戻る',
-    share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '自分の写真でも作れます — jigsawlab ジグソーパズル', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
+    share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '次はあなたの番 🧩', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
     nickLabel: 'ニックネーム', nickPh: 'ランキングに載せる名前', submit: 'ランキングに登録', registered: (r: number) => `ランキング${r}位に載りました！`, rankTotal: (n: number) => `${n} finished today`, rankEmpty: 'Nobody yet. First place is open!', rankFail: 'Could not load the board', rankTotal: (n: number) => `今日${n}人が完成`, rankEmpty: 'まだ誰もいません。1位が空いています！', rankFail: 'ランキングを読み込めませんでした', lbTitle: '今日のパズル ランキング', unit: '秒', noRecord: 'まだ記録がありません',
     imgFail: '画像を開けませんでした。JPG・PNG・HEICの写真か確認してください', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}、${y}`,
     seo: `<p class="lead">写真を1枚選んでピース数を決めると、凹凸がかみ合う本物のジグソーパズルになります。下のトレイからピースを引き上げてはめ、スマホでは2本指で拡大・移動しながら完成させましょう。写真は端末の外に出ず、内蔵のパブリックドメイン名画では毎日同じ盤面でタイムを競う「今日のパズル」も遊べます。</p>

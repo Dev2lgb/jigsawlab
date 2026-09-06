@@ -17,7 +17,7 @@ export const UI = {
     my: { title: '내 퍼즐', inProgress: '하던 퍼즐', done: '완성한 퍼즐', favs: '즐겨찾기', emptyProgress: '하던 퍼즐이 없어요', emptyDone: '아직 완성한 퍼즐이 없어요', emptyFavs: '상자의 하트를 누르면 여기 모여요', resume: '이어하기', del: '지우기', pieces: (n: number) => `${n}조각`, photo: '내 사진', doneCount: (n: number) => `${n}판`, onDevice: '이 기기에만 저장돼요' },
     guide: '가이드',
     about: { title: 'jigsawlab', lead: '실물 퍼즐 하던 손맛 그대로, 폰에서도. 가입 없이, 사진은 폰 밖으로 안 나가고, 판 위엔 광고가 없어요.', points: [['조각끼리 붙어요', '맞는 조각을 맞대면 딸깍 붙고, 뭉치째 움직여요. 1000조각도 그렇게 끝까지.'], ['하던 판은 저장', '나갔다 와도 그대로. 더미 나눠둔 것, 정렬해둔 순서까지.'], ['내 사진, 내 폰 안에서', '사진은 서버로 안 가요. 가족 사진도 마음 놓고.'], ['명화 226점', '고흐, 모네, 호쿠사이, 김홍도, 모리스. 상자를 열면 그림 이야기도 있어요.']], guide: '자세히' },
-    foot: { privacy: '개인정보처리방침', terms: '이용약관', termsTitle: '이용약관', madeBy: '', rights: '그림은 모두 퍼블릭 도메인입니다', copied: '링크를 복사했어요', shareFail: '공유가 안 됐어요', privacyTitle: '개인정보처리방침', toHome: '홈으로' },
+    foot: { privacy: '개인정보처리방침', terms: '이용약관', termsTitle: '이용약관', contact: '문의', madeBy: '', rights: '그림은 모두 퍼블릭 도메인입니다', copied: '링크를 복사했어요', shareFail: '공유가 안 됐어요', privacyTitle: '개인정보처리방침', toHome: '홈으로' },
   },
   en: {
     name: 'jigsawlab', tagline: 'Where one photo becomes a jigsaw', langName: 'English',
@@ -32,7 +32,7 @@ export const UI = {
     my: { title: 'My puzzles', inProgress: 'In progress', done: 'Finished', favs: 'Favourites', emptyProgress: 'Nothing in progress', emptyDone: 'No finished puzzles yet', emptyFavs: 'Tap the heart on a box to collect it here', resume: 'Continue', del: 'Delete', pieces: (n: number) => `${n} pieces`, photo: 'My photo', doneCount: (n: number) => `${n} puzzles`, onDevice: 'Stored on this device only' },
     guide: 'Guide',
     about: { title: 'jigsawlab', lead: 'The feel of a real jigsaw, on your phone. No sign-up, your photo stays on your device, and no ads on the board.', points: [['Pieces snap together', 'Put matching pieces side by side and they click, then move as one cluster. That is how you finish 1000 pieces.'], ['Your board is saved', 'Leave and come back: piles, sort order, everything is where you left it.'], ['Your photo, on your phone', 'Photos never go to a server. Family pictures are safe.'], ['226 masterpieces', 'Van Gogh, Monet, Hokusai, Kim Hong-do, Morris. Open a box and read the story too.']], guide: 'More' },
-    foot: { privacy: 'Privacy', terms: 'Terms', termsTitle: 'Terms of Service', madeBy: '', rights: 'All paintings are in the public domain', copied: 'Link copied', shareFail: "Couldn't share", privacyTitle: 'Privacy policy', toHome: 'Home' },
+    foot: { privacy: 'Privacy', terms: 'Terms', termsTitle: 'Terms of Service', contact: 'Contact', madeBy: '', rights: 'All paintings are in the public domain', copied: 'Link copied', shareFail: "Couldn't share", privacyTitle: 'Privacy policy', toHome: 'Home' },
   },
   ja: {
     name: 'jigsawlab', tagline: '写真一枚がジグソーパズルになる場所', langName: '日本語',
@@ -47,6 +47,6 @@ export const UI = {
     my: { title: 'マイパズル', inProgress: '途中のパズル', done: '完成したパズル', favs: 'お気に入り', emptyProgress: '途中のパズルはありません', emptyDone: 'まだ完成したパズルはありません', emptyFavs: '箱のハートを押すとここに集まります', resume: '続きから', del: '削除', pieces: (n: number) => `${n}ピース`, photo: '自分の写真', doneCount: (n: number) => `${n}枚`, onDevice: 'この端末にのみ保存されます' },
     guide: 'ガイド',
     about: { title: 'jigsawlab', lead: '本物のジグソーの手ざわりを、スマホでも。登録不要、写真は端末の外に出ず、盤の上に広告はありません。', points: [['ピースがくっつく', '合うピースを並べるとカチッとくっつき、塊ごと動きます。1000ピースもそうやって最後まで。'], ['途中の盤面は保存', '離れて戻ってもそのまま。分けた山も、並べた順番も。'], ['写真は端末の中だけ', 'サーバーには送りません。家族写真も安心。'], ['名画226点', 'ゴッホ、モネ、北斎、金弘道、モリス。箱を開くと絵の話もあります。']], guide: 'くわしく' },
-    foot: { privacy: 'プライバシー', terms: '利用規約', termsTitle: '利用規約', madeBy: '', rights: '絵はすべてパブリックドメインです', copied: 'リンクをコピーしました', shareFail: '共有できませんでした', privacyTitle: 'プライバシーポリシー', toHome: 'ホームへ' },
+    foot: { privacy: 'プライバシー', terms: '利用規約', termsTitle: '利用規約', contact: 'お問い合わせ', madeBy: '', rights: '絵はすべてパブリックドメインです', copied: 'リンクをコピーしました', shareFail: '共有できませんでした', privacyTitle: 'プライバシーポリシー', toHome: 'ホームへ' },
   },
 } as const;

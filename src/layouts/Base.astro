@@ -1,8 +1,8 @@
 ---
 // 공통 틀 — 화면 전체 폭, Pretendard, 큰 라운드·부드러운 그림자, 스크롤 리빌, 3D 퍼즐 상자 공통 스타일
 import { UI, LANGS, prefix, type Lang } from '../i18n/ui';
-interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string }
-const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname } = Astro.props;
+interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
+const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
 const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigsawlab.app');
 const canonical = new URL(path, site).toString();
 const fontCss = lang === 'ja' ? 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css' : 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
@@ -38,6 +38,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <link rel="stylesheet" href={fontCss} />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" />
+  {ads && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5830650963828895" crossorigin="anonymous" is:inline></script>}
   <slot name="head" />
   <script is:inline define:vars={{ i18n: { copied: T.foot.copied, shareFail: T.foot.shareFail } }}>window.__i18n = i18n;</script>
 </head>

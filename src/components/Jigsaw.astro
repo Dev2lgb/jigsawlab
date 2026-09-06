@@ -30,6 +30,8 @@ const shelves = shelvesFor(lang);
   <div id="jg-gallery"><div class="shelf" id="fav-shelf" hidden><h3>♥ {U.catalog.fav}<span class="muted fav-count">0</span></h3><div class="shelf-row" id="fav-row"></div></div>{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-row">{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div></div>)}</div>
 </section>
 
+<script is:inline>if (/[?&]room=/.test(location.search)) document.documentElement.setAttribute('data-join', '1');</script>
+<div class="fullload" id="jg-fullload" role="status"><span class="spin"></span><p id="jg-fullload-txt">{U.play.joining}</p></div>
 <div class="modal" id="jg-setup" hidden>
   <div class="modal-bg" id="jg-modal-bg"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="jg-chosen-name">
@@ -37,8 +39,7 @@ const shelves = shelvesFor(lang);
     <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
     <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
-    <div class="row"><button class="btn primary" id="jg-resume-btn" hidden>{U.play.resume}</button><button class="btn primary" id="jg-start">{t.start}</button></div>
-    <p class="muted best" id="jg-best"></p>
+    <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
   </div>
 </div>
 
@@ -106,7 +107,13 @@ const shelves = shelvesFor(lang);
   @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); } 50% { box-shadow: 0 0 0 8px var(--accent-soft); } }
   .src.pulse { animation: pulse 1.2s ease-in-out 3; }
 
-  /* 조각 수 다이얼로그 */
+  /* 방 들어가는 중 — 전체 화면 로더 */
+  .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); }
+  :global(html[data-join]) .fullload, .fullload.on { display: flex; }
+  .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
+  /* 조각 수 다이얼로그 — 내 사진 조각 수 고를 때만 */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .modal-bg { position: absolute; inset: 0; background: rgba(23,26,36,.45); }
   .dialog { position: relative; width: min(92vw, 420px); max-height: 92%; overflow: auto; padding: 20px; background: var(--bg); border-radius: 18px; box-shadow: 0 20px 60px rgba(23,26,36,.25); animation: pop .16s ease-out; }
@@ -131,6 +138,7 @@ const shelves = shelvesFor(lang);
   .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--bg-2); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
   .roombar { display: inline-flex; align-items: center; gap: 8px; margin-left: 8px; }
+  .players :global(.pl.me) { cursor: pointer; }
   @media (max-width: 640px) { .roombar { margin-left: 0; gap: 4px; } .players { gap: 0; } .players :global(.pl) { padding: 0; width: 22px; height: 22px; border-radius: 50%; justify-content: center; margin-left: -6px; border: 2px solid var(--bg-2); } .players :global(.pl b) { display: none; } .players :global(.pl:first-child) { margin-left: 0; } .players :global(.pl i) { width: 100%; height: 100%; border-radius: 50%; } #jg-invite, #jg-tosolo-invite { width: 32px; height: 32px; padding: 0; border-radius: 10px; display: grid; place-items: center; font-size: .95rem; } #jg-invite :global(span), #jg-tosolo-invite :global(span) { display: none; } .hud { flex-wrap: nowrap; overflow: hidden; gap: 4px; } } .players { display: inline-flex; gap: 4px; } .players :global(.pl) { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .75rem; font-weight: 700; } .players :global(.pl b) { font-weight: 700; } .players :global(.pl i) { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } .hud .chip:nth-child(2) { display: none; } }
   .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
@@ -203,8 +211,8 @@ const shelves = shelvesFor(lang);
   const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
   const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
   const MAXSIDE = 2400;
-  async function loadSource(s: Source, auto = false) {
-    src = s; img = null; pendingSave = null; $('jg-resume-btn').hidden = true; setup.hidden = auto; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
+  async function loadSource(s: Source, auto = false, quiet = false) {
+    src = s; img = null; pendingSave = null; setup.hidden = s.kind !== 'photo' || auto || quiet; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
     document.querySelectorAll('#jg-gallery .box3d').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
     const file = s.file ?? s.blob; const blobUrl = file ? URL.createObjectURL(file) : s.url!; thumb.src = blobUrl;
     try {
@@ -219,14 +227,14 @@ const shelves = shelvesFor(lang);
       if (auto) { if (pendingSave) start(pendingSave); else start(); }
     } catch { toast(T.imgFail); setup.hidden = true; src = null; }
   }
-  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); const b = getBest(bestKey(g.cols * g.rows)); $('jg-best').textContent = b ? T.best(fmt(b)) : T.noRecord; checkSave(); }
+  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); }
   const saveId = () => { if (src!.kind === 'daily') return `daily:${src!.day}`; if (src!.kind === 'photo') return `photo:${src!.photoId}`; const g = gridFor(wantN, imgW / imgH); return `${src!.key}:${g.cols * g.rows}`; };
-  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) { $('jg-resume-btn').hidden = true; $('jg-start').textContent = T.start; return; } try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} $('jg-resume-btn').hidden = !pendingSave; $('jg-start').textContent = pendingSave ? U.startOver : T.start; }
+  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
-  document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
-  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
+  document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
+  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000) { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
   // ── 게임 상태 — 느슨한 조각은 모두 "뭉치(Group)"에 속한다. 뭉치의 (dx,dy)는 제자리 대비 오프셋이라 뭉치 안 조각들은 격자 관계를 그대로 유지한다
   type Group = { id: number; dx: number; dy: number; pieces: Piece[]; sid?: string };
@@ -351,14 +359,13 @@ const shelves = shelvesFor(lang);
     }
   }
   async function resumeSave(sv: SaveData) {
-    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} listSaves(); return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false); setup.hidden = true; }
-    else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp`, seed: sv.seed, day: sv.day, fixedN: sv.total }, false); setup.hidden = true; }
-    else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp` }, false); setup.hidden = true; }
-    if (!img) return; setup.hidden = true; start(sv);
+    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} listSaves(); return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false, true); }
+    else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp`, seed: sv.seed, day: sv.day, fixedN: sv.total }, false); }
+    else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp` }, false); }
+    if (!img) return; start(sv);
   }
   listSaves(); scenes.onChange((n) => { if (n === 'title') listSaves(); });
   initFavUI(); initSearch($('jg-search') as HTMLInputElement);
-  $('jg-resume-btn').addEventListener('click', () => { if (pendingSave) start(pendingSave); });
 
   // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
   type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void };
@@ -526,17 +533,21 @@ const shelves = shelvesFor(lang);
   let mvT = 0, curT = 0;
   function netMove(g: Group) { const now = performance.now(); if (now - mvT < 40) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
-  function renderPlayers() { if (!room) return; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('span'); e.className = 'pl'; e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); box.appendChild(e); } }
+  function renderPlayers() { if (!room) return; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('span'); e.className = 'pl'; e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { e.classList.add('me'); e.title = U.rename; e.addEventListener('click', () => { const n = (prompt(U.nickAsk, pl.nick) || '').trim().slice(0, 12); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); }); } box.appendChild(e); } }
+  const fullLoad = (on: boolean, txt?: string) => { const e = $('jg-fullload'); e.classList.toggle('on', on); if (txt) $('jg-fullload-txt').textContent = txt; if (!on) document.documentElement.removeAttribute('data-join'); };
   async function joinRoom(id: string) {
-    let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { toast(U.roomGone); return; }
-    if (!info || info.error) { toast(U.roomGone); return; }
-    const w = WORKS.find((x) => x.key === info.key); if (!w) return;
+    fullLoad(true, U.joining);
+    const bail = () => { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(U.roomGone); };
+    let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
+    if (!info || info.error) return bail();
+    const w = WORKS.find((x) => x.key === info.key); if (!w) return bail();
     room = { id, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
-    let nick = getNick(); if (!nick) { nick = (prompt(U.nickAsk) || '').trim().slice(0, 12); if (nick) setNick(nick); }
-    await loadSource({ kind: 'gallery', key: w.key, name: T.paintingBy(w.title[LI], w.artist[LI], w.year), url: `/jigsaw/${w.key}.webp` }, false); setup.hidden = true; if (!img) return;
+    let nick = getNick(); if (!nick) { nick = `${U.guest} ${Math.floor(Math.random() * 90 + 10)}`; setNick(nick); }
+    scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; $('jg-hud-name').textContent = '';
+    await loadSource({ kind: 'gallery', key: w.key, name: T.paintingBy(w.title[LI], w.artist[LI], w.year), url: `/jigsaw/${w.key}.webp` }, false, true); if (!img) { room = null; return bail(); }
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'; const ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); room.ws = ws;
     ws.addEventListener('open', () => send({ t: 'hello', nick }));
-    ws.addEventListener('close', () => { if (room && running) toast(U.disconnected); });
+    ws.addEventListener('close', () => { if (!room) return; if (running) toast(U.disconnected); else bail(); });
     ws.addEventListener('message', (ev) => { let m: any; try { m = JSON.parse(ev.data); } catch { return; } if (!room) return; onRoomMsg(m); });
     history.replaceState(null, '', `${location.pathname}?room=${id}`);
   }
@@ -546,9 +557,10 @@ const shelves = shelvesFor(lang);
       case 'init': {
         room.me = m.you; for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {}));
         const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i)) t.push(i); for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; })(), pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
-        wantN = st.total; start(rs).then(() => { renderPlayers(); if (st.locked.length >= st.total) { /* 이미 끝난 방 */ } }); return;
+        wantN = st.total; start(rs).then(() => { renderPlayers(); fullLoad(false); }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
+      case 'nick': { const pl = room.players.get(m.id); if (pl) { pl.nick = m.nick; if (room.me && m.id === room.me.id) room.me.nick = m.nick; renderPlayers(); draw(); } return; }
       case 'leave': room.players.delete(m.id); for (const [g, h] of room.holders) if (h === m.id) room.holders.delete(g); renderPlayers(); draw(); return;
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       case 'grab': room.holders.set(m.g, m.id); { const g = room.bySid.get(m.g); if (g) toFront(g); } draw(); return;
@@ -564,10 +576,10 @@ const shelves = shelvesFor(lang);
   }
   // 혼자 하다가 친구 초대: 지금 판을 서버 방으로 올리고 그 방으로 이동
   $('jg-tosolo-invite').addEventListener('click', async (e) => {
-    if (!src || !cut || room || src.kind === 'photo') return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true;
+    if (!src || !cut || room || src.kind === 'photo') return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
-    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} location.href = `${location.pathname}?room=${d.id}`; } catch { b.disabled = false; toast(U.roomGone); }
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
   $('jg-invite').addEventListener('click', async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); });
 
@@ -605,7 +617,7 @@ const shelves = shelvesFor(lang);
     else if (q.get('resume')) { const id = q.get('resume')!; history.replaceState(null, '', location.pathname); saves.get(id).then((sv) => { if (sv) resumeSave(sv); }).catch(() => {}); }
     else if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
     else if (q.get('daily') || (pt && q.get('d') === '1')) { const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL); loadSource({ kind: 'daily', key: pk.painting.key, name: `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' '), url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); history.replaceState(null, '', location.pathname); }
-    else if (pt) { if (pn >= 6 && pn <= 2000) wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === wantN)); loadSource({ kind: 'gallery', key: pt.key, name: T.paintingBy(pt.title[LI], pt.artist[LI], pt.year), url: `/jigsaw/${pt.key}.webp` }, pn >= 6 && pn <= 2000); history.replaceState(null, '', location.pathname); } }
+    else if (pt) { if (pn >= 6 && pn <= 2000) wantN = pn; loadSource({ kind: 'gallery', key: pt.key, name: T.paintingBy(pt.title[LI], pt.artist[LI], pt.year), url: `/jigsaw/${pt.key}.webp` }, true); history.replaceState(null, '', location.pathname); } }
   $('jg-start').addEventListener('click', () => start());
   $('jg-retry').addEventListener('click', () => start());
   $('jg-title').addEventListener('click', () => scenes.go('title'));

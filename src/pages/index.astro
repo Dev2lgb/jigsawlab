@@ -1,10 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
-import Jigsaw from '../components/Jigsaw.astro';
+import Home from '../components/Home.astro';
+import { UI } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
-const t = JIGSAW.ko;
+const T = UI.ko, t = JIGSAW.ko;
 ---
-<Base title={`${t.title} · jigsawlab`} desc={t.sub} lang="ko" alts={{ ko: '/', en: '/en/', ja: '/ja/' }} path="/">
-  <Jigsaw lang="ko" />
-  <article class="seo" set:html={t.seo} />
+<Base title={`jigsawlab — ${T.tagline}`} desc={t.sub} lang="ko" alts={{ ko: '/', en: '/en/', ja: '/ja/' }} path="/">
+  <Home lang="ko" />
 </Base>

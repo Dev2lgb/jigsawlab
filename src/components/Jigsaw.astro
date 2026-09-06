@@ -1,38 +1,31 @@
 ---
 // 직소 퍼즐 앱 본체 — 홈 화면(오늘의 퍼즐·내 사진·명화) → 조각 수 다이얼로그 → 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과
 import { JIGSAW } from '../i18n/jigsaw';
-import { UI, prefix, type Lang } from '../i18n/ui';
+import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { PAINTINGS, DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
-import { CATEGORIES } from '../data/catalog';
+import { shelvesFor } from '../lib/catalogView';
+import Box from './Box.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const t = JIGSAW[lang], li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang);
+const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [12, 24, 48, 96, 150, 200];
 const day = todayKST(), daily = dailyPick(day, PAINTINGS);
-const byKey = Object.fromEntries(PAINTINGS.map((p) => [p.key, { key: p.key, artist: p.artist[li], title: p.title[li], year: p.year }]));
-const shelves = CATEGORIES.map((c) => ({ id: c.id, name: c.name[li], items: c.keys.map((k) => byKey[k]).filter(Boolean) }));
-const shareLabel = UI[lang].name;
+const shelves = shelvesFor(lang);
 ---
-<section class="scene page active" data-scene="title">
-  <h1 class="title-h">{t.title}</h1>
-  <p class="title-sub">{t.sub}</p>
-
-  <button type="button" class="hero" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day} aria-label={`${t.daily} · ${daily.painting.title[li]}`}>
-    <canvas class="hero-cv" id="hero-cv" width="720" height="560"></canvas>
-    <span class="hero-cap"><b>{t.daily}</b><span id="hero-name">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span></span>
-  </button>
-
-  <label class="drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden /><span class="drop-ic" aria-hidden="true">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg>
-    </span><b>{t.pick}</b><span class="muted">{t.drop}</span></label>
-
+<section class="scene page active picker" data-scene="title">
+  <h1 class="serif pick-title">{t.title}</h1>
+  <p class="pick-sub">{t.sub}</p>
+  <div class="sources">
+    <button type="button" class="src daily" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day}>
+      <img id="daily-thumb" src={`/jigsaw/t-${daily.painting.key}.jpg`} alt="" width="240" height="190" />
+      <span class="src-text"><b>{t.daily}</b><span id="daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
+    </button>
+    <label class="src drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden />
+      <span class="drop-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg></span>
+      <span class="src-text"><b>{t.pick}</b><span>{t.drop}</span><span class="src-go">{t.privacy}</span></span>
+    </label>
+  </div>
   <h2 class="gal-h">{t.gallery}</h2>
-  <div id="jg-gallery">{shelves.map((sh) => <section class="shelf"><h3>{sh.name}<span class="count">{sh.items.length}</span></h3><div class="boxes">{sh.items.map((p) => <button type="button" class="box" data-key={p.key} title={t.paintingBy(p.title, p.artist, p.year)}>
-      <span class="spine" aria-hidden="true"><span>{p.title}</span></span>
-      <span class="front"><span class="box-top"><small>{p.year}</small><b>{p.title}</b></span><img src={`/jigsaw/t-${p.key}.jpg`} alt={p.title} loading="lazy" width="240" height="190" /><span class="box-foot"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
-    </button>)}</div></section>)}</div>
-  <p class="privacy muted">{t.privacy}</p>
-
-  <div class="card lb-card"><h2 class="lb-h">{t.lbTitle}</h2><p class="muted" id="jg-r-total"></p><ol class="lb" id="jg-rank"><li class="empty">…</li></ol></div>
+  <div id="jg-gallery">{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="boxes">{sh.items.map((p) => <Box p={p} />)}</div></div>)}</div>
 </section>
 
 <div class="modal" id="jg-setup" hidden>
@@ -52,6 +45,7 @@ const shareLabel = UI[lang].name;
     <div class="hud">
       <span class="chip">⏱ <b id="jg-time">0:00</b></span>
       <span class="chip" id="jg-left"></span>
+      <span class="hud-name muted" id="jg-hud-name"></span>
       <span class="sp"></span>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false">👁</button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false">▢</button>
@@ -60,6 +54,7 @@ const shareLabel = UI[lang].name;
       <button type="button" class="ib" id="jg-fit" title={t.fit}>⤢</button>
       <button type="button" class="ib" id="jg-quit" title={t.toTitle}>✕</button>
     </div>
+    <div class="progress" aria-hidden="true"><i id="jg-prog"></i></div>
     <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
       <div class="done" id="jg-done" hidden><span>🎉 {t.done}</span><b id="jg-done-time"></b><button type="button" class="btn primary sm" id="jg-toresult">{t.viewResult}</button></div>
     </div>
@@ -76,7 +71,8 @@ const shareLabel = UI[lang].name;
   <div class="row">
     <button class="btn primary" id="jg-retry">{t.retry}</button>
     <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
-    <button class="btn" id="jg-title">{t.toTitle}</button>
+    <button class="btn" id="jg-title">{t.another}</button>
+    <a class="btn" href={`${P}/`}>{U.foot.toHome}</a>
   </div>
   <form class="card submit" id="jg-submit" hidden>
     <div class="field"><label for="jg-nick">{t.nickLabel}</label><input class="input" id="jg-nick" maxlength="12" placeholder={t.nickPh} /></div>
@@ -85,34 +81,22 @@ const shareLabel = UI[lang].name;
 </section>
 
 <style>
-  .title-h { font-size: clamp(1.7rem, 4.5vw, 2.4rem); font-weight: 700; margin: 4px 0 6px; }
-  .title-sub { margin: 0 0 22px; color: var(--muted); font-size: 1.05rem; max-width: 34em; }
-  /* 오늘의 퍼즐 — 실제 오늘 컷으로 조각 몇 개가 빠져 있는 그림 */
-  .hero { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--white); cursor: pointer; text-align: left; overflow: hidden; color: var(--ink); }
-  .hero:hover { border-color: var(--accent); } .hero:hover .hero-cap b { color: var(--accent); }
-  .hero-cv { display: block; width: 100%; height: auto; background: var(--board); }
-  .hero-cap { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 12px 16px; } .hero-cap b { font-size: 1.05rem; } .hero-cap span { color: var(--muted); font-size: .92rem; }
-  .drop { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; border: 1.5px dashed var(--line); border-radius: 18px; background: var(--white); cursor: pointer; flex-wrap: wrap; }
-  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
-  .drop-ic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); flex: none; } .drop b { font-size: 1.02rem; } .drop .muted { font-size: .9rem; flex-basis: 100%; }
-  @media (min-width: 560px) { .drop .muted { flex-basis: auto; margin-left: auto; } }
-  .gal-h { font-size: 1.05rem; font-weight: 600; margin: 26px 0 10px; color: var(--muted); }
-  /* 퍼즐 상자 진열대 */
-  .shelf { margin: 0 0 22px; } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf .count { color: var(--muted); font-weight: 400; font-size: .85rem; }
-  .boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }
-  .box { position: relative; display: block; padding: 0 0 0 12px; border: 0; background: none; cursor: pointer; text-align: left; color: var(--ink); perspective: 700px; -webkit-tap-highlight-color: transparent; }
-  .box .front { display: block; border-radius: 3px 6px 6px 3px; background: linear-gradient(170deg, #fbf8f1, #efe9dc); box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 12px 22px -10px rgba(23,26,36,.45), 1px 1px 0 rgba(23,26,36,.08); padding: 7px 8px 6px; transform: rotateY(-9deg); transform-origin: left center; transition: transform .18s ease, box-shadow .18s ease; }
-  .box .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; border-radius: 3px 0 0 3px; background: linear-gradient(90deg, #cfc6b3, #e2dbcb); box-shadow: inset -1px 0 0 rgba(23,26,36,.08); transform-origin: right center; transform: rotateY(38deg) translateX(1px); overflow: hidden; }
-  .box .spine span { position: absolute; left: 50%; top: 8px; transform: translateX(-50%) rotate(90deg); transform-origin: top left; white-space: nowrap; font-size: .55rem; color: #6b6352; letter-spacing: .02em; top: 8px; margin-left: 2px; }
-  .box:hover .front, .box.on .front { transform: rotateY(-4deg) translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 18px 26px -12px rgba(23,26,36,.5), 0 0 0 2px var(--accent); }
-  .box-top { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; min-height: 1.1em; } .box-top small { font-size: .7rem; color: #7a715e; font-variant-numeric: tabular-nums; } .box-top b { flex: 1; text-align: center; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .box img { display: block; width: 100%; aspect-ratio: 5 / 4; height: auto; object-fit: cover; border: 2px solid #b08a4f; outline: 1px solid rgba(255,255,255,.7); outline-offset: -3px; background: var(--board); }
-  .box-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 6px 0 0; } .box-foot .logo { font-size: .58rem; font-weight: 700; color: var(--accent); letter-spacing: -.01em; } .box-foot small { font-size: .62rem; color: #7a715e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .privacy { margin: 14px 0 0; font-size: .85rem; }
-  .lb-card { margin-top: 26px; } .lb-h { font-size: 1.05rem; margin: 0 0 2px; } .lb-card .muted { margin: 0 0 8px; font-size: .9rem; }
-  .lb { list-style: none; margin: 0; padding: 0; } .lb li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line-soft); } .lb li.empty { color: var(--muted); border: 0; }
-  .lb .rank { width: 24px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; } .lb .nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lb .score { font-weight: 600; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 400; }
-  .lb li:nth-child(1) .rank { color: var(--gold); }
+  .picker { max-width: var(--max); padding-top: 26px; }
+  .pick-title { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 0 0 6px; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
+  .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .sources { grid-template-columns: 1fr; } }
+  .src { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); color: var(--ink); cursor: pointer; text-align: left; font: inherit; }
+  .src:hover, .src.pulse { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .src.drop { border-style: dashed; } .src.drop.over { background: var(--accent-soft); border-color: var(--accent); }
+  .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line-soft); }
+  .drop-ic { display: grid; place-items: center; width: 92px; height: 74px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .src-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .src-text b { font-size: 1.05rem; } .src-text > span { color: var(--muted); font-size: .88rem; } .src-go { color: var(--accent) !important; font-weight: 600; margin-top: 4px; }
+  .gal-h { font-family: var(--serif); font-size: 1.3rem; margin: 30px 0 14px; }
+  .shelf { margin: 0 0 24px; } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
+  .picker .boxes { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 16px 12px; }
+  @media (max-width: 480px) { .picker .boxes { grid-template-columns: repeat(3, 1fr); gap: 12px 8px; } .picker .box { padding-left: 9px; } .picker .box .spine { width: 9px; } }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); } 50% { box-shadow: 0 0 0 8px var(--accent-soft); } }
+  .src.pulse { animation: pulse 1.2s ease-in-out 3; }
 
   /* 조각 수 다이얼로그 */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -132,6 +116,8 @@ const shareLabel = UI[lang].name;
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
   .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--paper); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
+  .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } }
+  .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
   @media (max-width: 480px) { .hud { gap: 4px; padding: 6px 8px; } .hud .chip { font-size: .78rem; padding: 3px 8px; } .ib { width: 32px; height: 32px; } }
   .ib { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--white); color: var(--ink); font-size: 1rem; cursor: pointer; display: grid; place-items: center; } .ib[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
   .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
@@ -145,7 +131,7 @@ const shareLabel = UI[lang].name;
   .tray :global(.tp.lift) { visibility: hidden; }
 
   /* 결과 */
-  .result { text-align: center; }
+  .result { text-align: center; padding-top: 40px; } .result .title-h { font-family: var(--serif); font-size: 2.2rem; }
   .res-img { display: block; max-width: min(92vw, 360px); max-height: 270px; width: auto; height: auto; margin: 14px auto 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--board); }
   .res { display: flex; gap: 22px; justify-content: center; margin: 12px 0 4px; } .res div { display: flex; flex-direction: column; align-items: center; } .res small { color: var(--muted); font-size: .8rem; } .res b { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
   .best-line { margin: 4px 0 10px; color: var(--gold); font-weight: 600; min-height: 1.4em; }
@@ -154,12 +140,13 @@ const shareLabel = UI[lang].name;
 
 <script>
   import { JIGSAW } from '../i18n/jigsaw';
-  import { gridFor, seeded, makeCut, renderPiece, piecePath, PAINTINGS, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { gridFor, seeded, makeCut, renderPiece, PAINTINGS, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
   import { initScenes } from '../lib/scene';
   import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak } from '../lib/store';
   import { share, toast } from '../lib/share';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
   const T = JIGSAW[LANG]; const scenes = initScenes();
+  scenes.onChange((n) => { if (n === 'title') history.replaceState(null, '', location.pathname); });
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
@@ -168,27 +155,7 @@ const shareLabel = UI[lang].name;
   const dailyBtn = $('jg-daily') as HTMLButtonElement;
   const day = todayKST(), pick = dailyPick(day, PAINTINGS);
   dailyBtn.dataset.key = pick.painting.key; dailyBtn.dataset.seed = String(pick.seed); dailyBtn.dataset.day = day;
-  $('hero-name').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
-
-  // 홈 그림: 오늘 그림을 오늘의 컷으로 자르고, 조각 몇 개를 살짝 빼둔 모습
-  async function drawHero() {
-    const cv = $('hero-cv') as HTMLCanvasElement; let im: HTMLImageElement; try { im = await loadImg(`/jigsaw/${pick.painting.key}.jpg`); } catch { return; }
-    const W = 720, H = Math.round(W * im.naturalHeight / im.naturalWidth), d = Math.min(2, devicePixelRatio || 1);
-    cv.width = W * d; cv.height = H * d; const c = cv.getContext('2d')!; c.scale(d, d);
-    const g = gridFor(DAILY_PIECES, W / H), cut = makeCut(W, H, g.cols, g.rows, seeded(pick.seed));
-    c.drawImage(im, 0, 0, W, H);
-    const rand = seeded(pick.seed ^ 0x9e3779b9), picked: [number, number][] = [];
-    while (picked.length < 4) { const r = 1 + Math.floor(rand() * (g.rows - 2)), col = 1 + Math.floor(rand() * (g.cols - 2)); if (!picked.some(([a, b]) => Math.abs(a - r) < 2 && Math.abs(b - col) < 2)) picked.push([r, col]); }
-    const board = getComputedStyle(document.documentElement).getPropertyValue('--board').trim() || '#e7e9ef';
-    for (const [r, col] of picked) { c.save(); c.clip(piecePath(cut, r, col)); c.fillStyle = board; c.fillRect(0, 0, W, H); c.restore(); c.save(); c.lineWidth = 1; c.strokeStyle = 'rgba(23,26,36,.18)'; c.stroke(piecePath(cut, r, col)); c.restore(); }
-    for (const [r, col] of picked) {
-      const b = renderPiece(cut, r, col, im, d), cx = col * cut.pw + cut.pw / 2, cy = r * cut.ph + cut.ph / 2;
-      const dx = (rand() - 0.5) * cut.pw * 0.9, dy = (rand() - 0.5) * cut.ph * 0.9 + cut.ph * 0.35, rot = (rand() - 0.5) * 0.5;
-      c.save(); c.translate(cx + dx, cy + dy); c.rotate(rot); c.shadowColor = 'rgba(23,26,36,.45)'; c.shadowBlur = 18; c.shadowOffsetY = 8;
-      c.drawImage(b.canvas, -b.w / 2, -b.h / 2, b.w, b.h); c.restore();
-    }
-  }
-  drawHero();
+  ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.jpg`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; seed?: number; day?: string; fixedN?: number };
@@ -240,7 +207,7 @@ const shareLabel = UI[lang].name;
     const g = gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
     const rand = seeded(src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0);
     cut = makeCut(imgW, imgH, g.cols, g.rows, rand);
-    closeSetup(); complete = false; completeAlpha = 0; $('jg-done').hidden = true; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-done').hidden = true; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); $('jg-loading').hidden = false; tray.innerHTML = ''; pieces = []; boardOrder = []; dragging = null; lifting = null; lockedN = 0; moves = 0; running = false;
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     await new Promise((r) => setTimeout(r, 30));
@@ -251,7 +218,7 @@ const shareLabel = UI[lang].name;
     applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now(); running = true; clearInterval(timer); timer = window.setInterval(tick, 250);
   }
   function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); }
-  function updateHud() { $('jg-left').textContent = T.left(total - lockedN); }
+  function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
   let drawQueued = false;
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
   function drawNow() {
@@ -354,22 +321,22 @@ const shareLabel = UI[lang].name;
     if (src!.kind === 'daily') bumpStreak(src!.day!);
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? PAINTINGS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
-    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
+    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/play/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
     const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily'; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(720 / cut.W, 540 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
   $('jg-toresult').addEventListener('click', () => scenes.go('result'));
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 오늘의 퍼즐 랭킹(날짜별, 기기당 최고 1건)
-  async function loadRank() { try { const rk = await api({ action: 'ranking' }); $('jg-r-total').textContent = T.rankTotal(rk.total); const ol = $('jg-rank'); ol.innerHTML = ''; if (!rk.rows.length) { ol.innerHTML = `<li class="empty">${T.rankEmpty}</li>`; return; } for (const [i, r] of (rk.rows as any[]).slice(0, 10).entries()) { const li = document.createElement('li'); const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = String(i + 1); const nick = document.createElement('span'); nick.className = 'nick'; nick.textContent = r.nick; const sc = document.createElement('span'); sc.className = 'score'; sc.innerHTML = `${fmt(r.ms / 1000)}<small> · ${Number(r.tries)}</small>`; li.append(rank, nick, sc); ol.appendChild(li); } } catch { $('jg-rank').innerHTML = `<li class="empty">${T.rankFail}</li>`; } }
-  loadRank();
+  const loadRank = () => {}; // 랭킹 목록은 홈에서 보여줌
   ($('jg-submit') as HTMLFormElement).addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target as HTMLFormElement; const nick = ($('jg-nick') as HTMLInputElement).value.trim(); if (!nick) return; try { setNick(nick); const r = await api({ action: 'solve', nick, device: deviceId(), ms: Number(form.dataset.score) * 1000, tries: moves }); if (r.error) throw new Error(r.error); toast(T.registered(r.rank)); form.hidden = true; loadRank(); } catch { toast(T.rankFail); } });
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked).slice(0, n)) { p.x = p.c * cut.pw; p.y = p.r * cut.ph; place(p); } }, state: () => ({ total, lockedN, moves, board: boardOrder.length, tray: tray.children.length, loose: boardOrder.map((p) => ({ r: p.r, c: p.c, x: p.x, y: p.y })), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
   { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = PAINTINGS.find((x) => x.key === k);
-    if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
+    if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
+    else if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
     else if (pt) { if (pn >= 6 && pn <= 300) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![12, 24, 48, 96, 150, 200].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
   $('jg-start').addEventListener('click', start);
   $('jg-retry').addEventListener('click', start);

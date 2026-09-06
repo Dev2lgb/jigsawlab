@@ -1,0 +1,76 @@
+---
+// 그림 상세 = 상자를 연 화면. 큰 상자 + 그림 이야기 + 조각 수 선택(→ /play/) + 같은 진열대의 다른 상자
+import Base from '../layouts/Base.astro';
+import Box from './Box.astro';
+import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { PAINTINGS } from '../lib/jigsaw';
+import { ABOUT } from '../data/paintings';
+import { CATEGORIES } from '../data/catalog';
+import { paintingFor } from '../lib/catalogView';
+const { lang = 'ko', key } = Astro.props as { lang?: Lang; key: string };
+const T = UI[lang], li = LI[lang], P = prefix(lang);
+const p = PAINTINGS.find((x) => x.key === key)!, a = ABOUT[key], cat = CATEGORIES.find((c) => c.keys.includes(key))!;
+const title = p.title[li], artist = p.artist[li];
+const PRESETS = [12, 24, 48, 96, 150, 200];
+const others = cat.keys.filter((k) => k !== key).map((k) => paintingFor(k, lang)!);
+const alts = { ko: `/puzzle/${key}/`, en: `/en/puzzle/${key}/`, ja: `/ja/puzzle/${key}/` };
+const pageTitle = { ko: `${title} 직소 퍼즐 — ${artist} · jigsawlab`, en: `${title} jigsaw puzzle — ${artist} · jigsawlab`, ja: `${title} ジグソーパズル — ${artist} · jigsawlab` }[lang];
+const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: title, creator: { '@type': 'Person', name: artist }, dateCreated: p.year, image: new URL(`/jigsaw/${key}.jpg`, Astro.site).toString(), description: a.about[li] };
+---
+<Base title={pageTitle} desc={a.about[li]} lang={lang} ogImage={`/jigsaw/o-${key}.jpg`} alts={alts} path={alts[lang]}>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} slot="head" />
+  <div class="wrap detail">
+    <p class="crumb"><a href={`${P}/#catalog`}>{T.detail.back}</a> <span>/</span> <span>{cat.name[li]}</span></p>
+    <div class="detail-in">
+      <div class="big-box">
+        <span class="spine" aria-hidden="true"><span>{title}</span></span>
+        <div class="front"><div class="box-top"><small>{p.year}</small><b>{title}</b></div><img src={`/jigsaw/${key}.jpg`} alt={title} width="1200" height="950" /><div class="box-foot"><span class="logo">jigsawlab</span><small>{artist}</small></div></div>
+      </div>
+      <div class="info">
+        <h1 class="serif">{title}</h1>
+        <p class="by">{artist}</p>
+        <dl class="meta"><div><dt>{T.detail.year}</dt><dd>{p.year}</dd></div><div><dt>{T.detail.museum}</dt><dd>{a.museum[li]}</dd></div></dl>
+        <p class="about">{a.about[li]}</p>
+        <h2 class="pick-h">{T.detail.pieces}</h2>
+        <div class="presets" id="presets" data-w="1200" data-h="950">{PRESETS.map((n) => <a class:list={['preset', { main: n === 48 }]} href={`${P}/play/?k=${key}&n=${n}`} data-n={n}><b>{n}</b><small></small></a>)}</div>
+        <p class="best muted" id="best" data-key={key}></p>
+      </div>
+    </div>
+    {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="boxes">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
+  </div>
+  <style>
+    .detail { padding-top: 22px; }
+    .crumb { margin: 0 0 18px; color: var(--muted); font-size: .9rem; } .crumb span { margin: 0 6px; }
+    .detail-in { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 44px; align-items: start; }
+    @media (max-width: 860px) { .detail-in { grid-template-columns: 1fr; gap: 26px; } }
+    .big-box { position: relative; padding-left: 26px; perspective: 1200px; }
+    .big-box .front { border-radius: 4px 10px 10px 4px; background: linear-gradient(168deg, #fbf8f1 0%, var(--box) 55%, var(--box-2) 100%); box-shadow: 0 1px 0 rgba(255,255,255,.85) inset, 0 34px 50px -26px rgba(20,23,42,.6), 1px 1px 0 rgba(20,23,42,.08); padding: 16px 18px 14px; transform: rotateY(-8deg); transform-origin: left center; }
+    .big-box .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 26px; border-radius: 4px 0 0 4px; background: linear-gradient(90deg, var(--box-edge), var(--box-2)); transform-origin: right center; transform: rotateY(40deg) translateX(1px); overflow: hidden; }
+    .big-box .spine span { position: absolute; left: 50%; top: 18px; transform: translateX(-50%) rotate(90deg); transform-origin: top left; white-space: nowrap; font-size: .8rem; color: #6b6352; margin-left: 4px; font-family: var(--serif); }
+    .big-box .box-top { margin-bottom: 10px; } .big-box .box-top small { font-size: .85rem; } .big-box .box-top b { font-size: 1.15rem; }
+    .big-box img { display: block; width: 100%; height: auto; border: 3px solid var(--box-frame); outline: 1px solid rgba(255,255,255,.7); outline-offset: -4px; background: var(--board); }
+    .big-box .box-foot { margin-top: 10px; } .big-box .box-foot .logo { font-size: .8rem; } .big-box .box-foot small { font-size: .8rem; }
+    .info h1 { font-size: clamp(1.8rem, 3.6vw, 2.6rem); } .by { margin: 6px 0 0; color: var(--ink-2); font-size: 1.05rem; }
+    .meta { display: flex; gap: 22px; margin: 14px 0 0; padding: 12px 0; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); } .meta div { display: flex; flex-direction: column; } .meta dt { font-size: .78rem; color: var(--muted); } .meta dd { margin: 0; font-weight: 600; font-size: .95rem; }
+    .about { margin: 16px 0 0; color: var(--ink-2); line-height: 1.7; }
+    .pick-h { font-size: 1rem; font-weight: 600; margin: 26px 0 10px; }
+    .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .preset { display: flex; flex-direction: column; align-items: center; padding: 10px 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); } .preset:hover { text-decoration: none; border-color: var(--accent); background: var(--accent-soft); }
+    .preset b { font-size: 1.25rem; } .preset small { color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; min-height: 1em; }
+    .preset.main { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+    .best { margin: 12px 0 0; font-size: .9rem; min-height: 1.4em; }
+    .more { margin-top: 44px; }
+  </style>
+  <script>
+    import { gridFor } from '../lib/jigsaw';
+    import { getBest } from '../lib/store';
+    import { UI, type Lang } from '../i18n/ui';
+    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const img = document.querySelector<HTMLImageElement>('.big-box img')!, key = document.getElementById('best')!.dataset.key!;
+    const fill = () => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); document.querySelectorAll<HTMLAnchorElement>('.preset').forEach((a) => { const g = gridFor(Number(a.dataset.n), asp); a.querySelector('small')!.textContent = T.detail.gridOf(g.cols, g.rows); const b = getBest(`${key}:${g.cols * g.rows}`); if (b) a.title = T.detail.best(fmt(b)); }); };
+    img.complete ? fill() : img.addEventListener('load', fill);
+    const bests = [12, 24, 48, 96, 150, 200].map((n) => { const asp = (img.naturalWidth || 1200) / (img.naturalHeight || 950); const g = gridFor(n, asp); return getBest(`${key}:${g.cols * g.rows}`); }).filter((b): b is number => b !== null);
+    document.getElementById('best')!.textContent = bests.length ? T.detail.best(fmt(Math.min(...bests))) : T.detail.noBest;
+  </script>
+</Base>

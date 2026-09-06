@@ -16,7 +16,7 @@ const S = {
 }[lang];
 const title = daily ? T.shareDaily(n, fmt, pnt.title[li]) : T.shareTitle(n, fmt);
 const desc = `${pnt.title[li]} — ${pnt.artist[li]} · ${S.cmt}`;
-const ctaHref = daily ? `${P}/?d=1&k=${k}` : `${P}/?k=${k}&n=${n}`;
+const ctaHref = daily ? `${P}/play/?d=1&k=${k}` : `${P}/play/?k=${k}&n=${n}`;
 ---
 <Base title={title} desc={desc} lang={lang} ogImage={`/jigsaw/o-${k}.jpg`} noindex path={Astro.url.pathname + Astro.url.search}>
   <section class="scene page active share">

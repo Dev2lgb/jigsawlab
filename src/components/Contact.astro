@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { UI, prefix, type Lang } from '../i18n/ui';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang);
+const C = {
+  ko: { title: '문의', lead: '버그, 제안, 저작권 문의, 광고·제휴 이야기 모두 이메일로 주세요. 보통 하루 안에 답합니다.', mail: '이메일 보내기', items: [['🐛 버그·제안', '어느 그림, 몇 조각, 어떤 기기·브라우저였는지 적어 주시면 훨씬 빨리 고쳐요.'], ['©️ 저작권·초상권', '문제가 되는 그림이나 페이지 주소를 알려 주시면 확인 후 바로 내립니다.'], ['🤝 광고·제휴', '퍼즐 브랜드, 미술관, 매체 협업 환영합니다.']] },
+  en: { title: 'Contact', lead: 'Bugs, ideas, copyright questions, ads and partnerships: email is the way. Replies usually within a day.', mail: 'Send an email', items: [['🐛 Bugs & ideas', 'Tell us the painting, piece count, device and browser and we can fix it much faster.'], ['©️ Copyright', 'Send the page or image in question and we will check and take it down promptly.'], ['🤝 Ads & partnerships', 'Puzzle brands, museums and media are welcome.']] },
+  ja: { title: 'お問い合わせ', lead: '不具合、ご提案、著作権に関するご連絡、広告・提携のご相談はメールでどうぞ。通常1日以内に返信します。', mail: 'メールを送る', items: [['🐛 不具合・提案', 'どの絵で、何ピースで、どの端末・ブラウザだったかを書いていただけると早く直せます。'], ['©️ 著作権・肖像権', '問題のある絵やページのURLをお知らせください。確認のうえ速やかに削除します。'], ['🤝 広告・提携', 'パズルブランド、美術館、メディアとの協業を歓迎します。']] },
+}[lang];
+const EMAIL = 'dev2lgb@gmail.com';
+---
+<Base title={`${C.title} · jigsawlab`} desc={C.lead} lang={lang} alts={{ ko: '/contact/', en: '/en/contact/', ja: '/ja/contact/' }} path={`${P}/contact/`}>
+  <section class="wrap ct">
+    <h1>{C.title}</h1>
+    <p class="lead">{C.lead}</p>
+    <a class="btn primary lg" href={`mailto:${EMAIL}?subject=jigsawlab`}>{C.mail}</a>
+    <p class="addr"><a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+    <div class="items">{C.items.map(([h, b]) => <div class="it"><h2>{h}</h2><p>{b}</p></div>)}</div>
+  </section>
+  <style>
+    .ct { padding-top: clamp(28px, 5vw, 64px); } .ct h1 { font-size: clamp(2rem, 4.5vw, 3.4rem); letter-spacing: -.04em; } .lead { margin: 16px 0 26px; font-size: clamp(1.02rem, 1.5vw, 1.2rem); color: var(--ink-2); max-width: 40em; }
+    .addr { margin: 14px 0 0; color: var(--muted); } .addr a { color: var(--ink); font-weight: 600; }
+    .items { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 40px; } .it { padding: 24px; border-radius: var(--r); background: var(--bg-2); } .it h2 { font-size: 1.1rem; margin: 0 0 8px; } .it p { margin: 0; color: var(--ink-2); }
+  </style>
+</Base>

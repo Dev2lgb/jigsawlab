@@ -67,10 +67,11 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
         <a href={`${P}/play/?photo=1`}>{T.nav.photo}</a>
         <a href={`${P}/my/`}>{T.nav.my}</a>
         <a href={`${P}/about/`}>{T.nav.about}</a>
+        <a href={`${P}/contact/`}>{T.foot.contact}</a>
         <a href={`${P}/terms/`}>{T.foot.terms}</a>
         <a href={`${P}/privacy/`}>{T.foot.privacy}</a>
       </div>
-      <div class="foot-meta"><span>{T.foot.rights}</span><a href="mailto:hello@jigsawlab.app">hello@jigsawlab.app</a><span>© 2026 jigsawlab</span></div>
+      <div class="foot-meta"><span>{T.foot.rights}</span><a href={`${P}/contact/`}>{T.foot.contact}</a><span>© 2026 jigsawlab</span></div>
     </div>
   </footer>
   <script>

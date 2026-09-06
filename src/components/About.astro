@@ -16,5 +16,7 @@ const T = UI[lang], P = prefix(lang), A = T.about;
     .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 20px; }
     .pt { padding: 28px; border-radius: var(--r); background: var(--bg-2); } .pt .n { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 800; margin-bottom: 16px; } .pt h2 { font-size: 1.2rem; margin: 0 0 8px; } .pt p { margin: 0; color: var(--ink-2); }
     .guide { margin-top: clamp(48px, 7vw, 90px); }
+    .guide :global(.seo) { max-width: none; } .guide :global(.seo p), .guide :global(.seo li) { max-width: none; }
+    @media (min-width: 1000px) { .guide :global(.seo) { column-count: 2; column-gap: clamp(40px, 5vw, 80px); } .guide :global(.seo .lead) { column-span: all; margin-bottom: 8px; } .guide :global(.seo h2), .guide :global(.seo h3) { break-after: avoid; } .guide :global(.seo p), .guide :global(.seo li), .guide :global(.seo ol), .guide :global(.seo ul) { break-inside: avoid; } .guide :global(.seo h2:first-of-type) { margin-top: 12px; } }
   </style>
 </Base>

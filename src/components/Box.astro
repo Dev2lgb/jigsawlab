@@ -1,15 +1,18 @@
 ---
-// 3D 퍼즐 상자 — 링크(href) 또는 버튼. 크기는 --w/--h/--d 로 바깥에서 조절
-interface Props { p: { key: string; title: string; artist: string; year: string }; href?: string; on?: boolean; big?: boolean }
-const { p, href, on = false, big = false } = Astro.props;
+// 3D 퍼즐 상자 — 링크(href) 또는 버튼 + 즐겨찾기 하트. 크기는 --w/--h/--d 로 바깥에서 조절. data-q 는 검색용
+interface Props { p: { key: string; title: string; artist: string; year: string; q?: string }; href?: string; on?: boolean; big?: boolean; fav?: boolean }
+const { p, href, on = false, big = false, fav = true } = Astro.props;
 const Tag = href ? 'a' : 'button';
 const img = big ? `/jigsaw/${p.key}.webp` : `/jigsaw/t-${p.key}.webp`;
 ---
-<Tag class:list={['box3d', { on, big }]} href={href} type={href ? undefined : 'button'} data-key={p.key} title={`${p.title} — ${p.artist}, ${p.year}`} aria-label={`${p.title} — ${p.artist}`}>
-  <span class="cube">
-    <span class="face front"><span class="bt"><small>{p.year}</small><b>{p.title}</b></span><img src={img} alt="" loading="lazy" width={big ? 1200 : 240} height={big ? 950 : 190} /><span class="bf"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
-    <span class="face side"><span>{p.title} · {p.artist}</span></span>
-    <span class="face topf"></span>
-  </span>
-  <span class="shadow" aria-hidden="true"></span>
-</Tag>
+<span class:list={['boxw', { big }]} data-key={p.key} data-q={p.q}>
+  <Tag class:list={['box3d', { on, big }]} href={href} type={href ? undefined : 'button'} data-key={p.key} title={`${p.title} — ${p.artist}, ${p.year}`} aria-label={`${p.title} — ${p.artist}`}>
+    <span class="cube">
+      <span class="face front"><span class="bt"><small>{p.year}</small><b>{p.title}</b></span><img src={img} alt="" loading="lazy" width={big ? 1200 : 240} height={big ? 950 : 190} /><span class="bf"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
+      <span class="face side"><span>{p.title} · {p.artist}</span></span>
+      <span class="face topf"></span>
+    </span>
+    <span class="shadow" aria-hidden="true"></span>
+  </Tag>
+  {fav && <button type="button" class="fav" data-fav={p.key} aria-pressed="false" aria-label="favorite">♡</button>}
+</span>

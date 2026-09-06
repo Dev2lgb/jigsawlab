@@ -54,6 +54,28 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
       <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="menu"><span></span><span></span><span></span></button>
     </div>
   </header>
+  <div class="gdlg" id="auth-dlg" hidden>
+    <div class="gdlg-bg" id="auth-bg"></div>
+    <div class="gdlg-box auth" role="dialog" aria-modal="true" aria-labelledby="auth-h">
+      <button type="button" class="gdlg-x" id="auth-close" aria-label={T.acct.close}><Fragment set:html={icon('x', 18)} /></button>
+      <div class="auth-mark">jigsawlab</div>
+      <h2 id="auth-h">{T.acct.dlgTitle}</h2>
+      <p class="auth-lead">{T.acct.dlgLead}</p>
+      <a class="gbtn" id="auth-google" href={`/api/auth/login?next=${encodeURIComponent(`${P}/`)}`} rel="nofollow"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.7-2.1 15.6-5.7l-7.7-6c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg><span>{T.acct.google}</span></a>
+      <ul class="auth-pts">{T.acct.dlgPoints.map((p) => <li><Fragment set:html={icon('check', 14)} />{p}</li>)}</ul>
+      <p class="auth-foot"><a href={`${P}/privacy/`}>{T.foot.privacyTitle}</a></p>
+    </div>
+  </div>
+  <div class="gdlg" id="nick-dlg" hidden data-title={T.acct.nickTitle} data-start={T.acct.nickStart} data-save={T.acct.nickSave}>
+    <div class="gdlg-bg" id="nick-bg"></div>
+    <form class="gdlg-box nick" id="nick-form" role="dialog" aria-modal="true" aria-labelledby="nick-h">
+      <h2 id="nick-h">{T.acct.nickTitle}</h2>
+      <p class="auth-lead">{T.acct.nickLead}</p>
+      <div class="nick-wrap"><input class="input nick-in" id="nick-input" maxlength="12" autocomplete="nickname" placeholder={T.acct.nickPh} /><button type="button" class="nick-shuffle" id="nick-shuffle" title={T.acct.shuffle} aria-label={T.acct.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
+      <p class="nick-hint">{T.acct.nickHint}</p>
+      <div class="nick-row"><button type="button" class="btn" id="nick-cancel">{T.acct.later}</button><button type="submit" class="btn primary" id="nick-ok">{T.acct.nickStart}</button></div>
+    </form>
+  </div>
   <div class="menu" id="menu" hidden>
     <div class="menu-bg" id="menu-bg"></div>
     <nav class="menu-sheet" aria-label="menu">
@@ -86,14 +108,15 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     else { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { (e.target as HTMLElement).classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }); els.forEach((e) => io.observe(e)); }
     const top = document.getElementById('top')!; const onS = () => top.classList.toggle('scrolled', scrollY > 8); onS(); addEventListener('scroll', onS, { passive: true });
     // 계정 버튼(선택 로그인). 로그인 직후 해시로 결과를 받음: new → 닉네임 정하기, ok → 이 기기 기록 합치기
-    import('../lib/account').then(async ({ me, loginUrl, setNickRemote, mergeLocalDone, authAvailable }) => {
+    Promise.all([import('../lib/account'), import('../lib/authui'), import('../lib/nickgen')]).then(async ([{ me, setNickRemote, mergeLocalDone, authAvailable }, { initAuthUI, openLogin, askNick }, { randomNick }]) => {
+      initAuthUI();
       const a = document.getElementById('acct') as HTMLAnchorElement, nk = document.getElementById('acct-nick')!;
       const h = location.hash.match(/^#login=(\w+)/); if (h) history.replaceState(null, '', location.pathname + location.search);
       const u = await me(!!h); a.dataset.noauth = authAvailable() ? '0' : '1';
       if (u) { nk.textContent = u.nick || a.dataset.login!; }
-      else { nk.textContent = a.dataset.login!; a.href = loginUrl(); }
+      else { nk.textContent = a.dataset.login!; a.href = '#'; a.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }); }
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
-      if (u && (h?.[1] === 'new' || (u && !u.nick))) { const n = (prompt(a.dataset.nickAsk ?? '', localStorage.getItem('nick') ?? '') || '').trim().slice(0, 12); if (n && (await setNickRemote(n))) nk.textContent = n; }
+      if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(document.documentElement.lang); if (n && (await setNickRemote(n))) nk.textContent = n; }
       if (u) mergeLocalDone();
     });
     // 모바일 메뉴
@@ -181,6 +204,15 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .scene.play { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top-h); background: var(--board); z-index: 10; }
 
   /* 부품 */
+  .gdlg { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; } .gdlg-bg { position: absolute; inset: 0; background: rgba(15,18,34,.5); backdrop-filter: blur(2px); } html.dlg-open { overflow: hidden; }
+  .gdlg-box { position: relative; width: min(92vw, 400px); max-height: 92%; overflow: auto; padding: 28px 26px 22px; background: var(--bg); border-radius: 22px; box-shadow: 0 30px 80px -20px rgba(15,18,34,.5); animation: gdlg-pop .18s ease-out; } @keyframes gdlg-pop { from { transform: translateY(8px) scale(.98); opacity: 0; } }
+  .gdlg-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--bg-2); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; } .gdlg-x:hover { background: var(--bg-3); }
+  .gdlg-box h2 { margin: 0 0 6px; font-size: 1.45rem; letter-spacing: -.03em; } .auth-lead { margin: 0 0 18px; color: var(--muted); font-size: .92rem; line-height: 1.55; }
+  .auth-mark { font-family: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, sans-serif; font-size: 1rem; color: var(--muted); margin-bottom: 14px; letter-spacing: -.02em; }
+  .gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-2); background: #fff; color: #1f1f1f; font-weight: 700; font-size: 1rem; text-decoration: none; transition: background .15s, box-shadow .15s, transform .15s; } .gbtn:hover { background: #f7f8fa; text-decoration: none; box-shadow: 0 8px 20px -12px rgba(15,18,34,.5); transform: translateY(-1px); } .gbtn svg { flex: none; }
+  .auth-pts { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: .86rem; color: var(--ink-2); } .auth-pts li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.45; } .auth-pts li svg { flex: none; margin-top: 3px; color: #2f9e6b; }
+  .auth-foot { margin: 18px 0 0; font-size: .78rem; color: var(--muted); text-align: center; } .auth-foot a { color: inherit; text-decoration: underline; }
+  .nick-in { font-size: 1.15rem; min-height: 52px; text-align: center; font-weight: 700; } .nick-hint { margin: 8px 0 0; font-size: .78rem; color: var(--muted); text-align: center; } .nick-row { display: flex; gap: 8px; margin-top: 18px; } .nick-row .btn { flex: 1; } .nick-wrap { display: flex; gap: 8px; } .nick-wrap .input { flex: 1; min-width: 0; } .nick-shuffle { flex: none; width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--bg); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; } .nick-shuffle:hover { background: var(--bg-2); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px 22px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--bg); color: var(--ink); font-weight: 700; cursor: pointer; transition: transform .15s var(--ease), box-shadow .2s, background .15s; white-space: nowrap; }
   .btn:hover { background: var(--bg-2); text-decoration: none; transform: translateY(-1px); } .btn:active { transform: translateY(0); }
   .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: 0 10px 24px -12px rgba(15,18,34,.6); } .btn.primary:hover { background: #000; box-shadow: 0 14px 30px -12px rgba(15,18,34,.6); }

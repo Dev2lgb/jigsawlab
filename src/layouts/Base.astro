@@ -31,7 +31,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <meta property="og:title" content={title} /><meta property="og:description" content={desc} /><meta property="og:url" content={canonical} />
   <meta property="og:image" content={new URL(ogImage, site).toString()} /><meta property="og:locale" content={{ ko: 'ko_KR', en: 'en_US', ja: 'ja_JP' }[lang]} /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={desc} /><meta name="twitter:image" content={new URL(ogImage, site).toString()} />
   {path === '/' || path === '/en/' || path === '/ja/' ? <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'jigsawlab', url: site.toString(), inLanguage: lang, description: desc })} /> : null}
-  <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preload" href="/fonts/BMHANNAPro.woff2" as="font" type="font/woff2" crossorigin />

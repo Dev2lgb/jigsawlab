@@ -12,7 +12,7 @@ const day = todayKST(), daily = dailyPick(day, PAINTINGS);
 const shelves = shelvesFor(lang);
 ---
 <section class="scene page active picker" data-scene="title">
-  <h1 class="serif pick-title">{t.title}</h1>
+  <h1 class="pick-title">{t.title}</h1>
   <p class="pick-sub">{t.sub}</p>
   <div class="sources">
     <button type="button" class="src daily" id="jg-daily" data-key={daily.painting.key} data-seed={daily.seed} data-day={day}>
@@ -25,7 +25,7 @@ const shelves = shelvesFor(lang);
     </label>
   </div>
   <h2 class="gal-h">{t.gallery}</h2>
-  <div id="jg-gallery">{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="boxes">{sh.items.map((p) => <Box p={p} />)}</div></div>)}</div>
+  <div id="jg-gallery">{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-row">{sh.items.map((p) => <Box p={p} />)}</div></div>)}</div>
 </section>
 
 <div class="modal" id="jg-setup" hidden>
@@ -82,32 +82,31 @@ const shelves = shelvesFor(lang);
 
 <style>
   .picker { max-width: var(--max); padding-top: 26px; }
-  .pick-title { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 0 0 6px; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
+  .pick-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0 0 6px; letter-spacing: -.035em; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
   .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 700px) { .sources { grid-template-columns: 1fr; } }
-  .src { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); color: var(--ink); cursor: pointer; text-align: left; font: inherit; }
+  .src { display: flex; align-items: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; font: inherit; transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; } .src:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -28px rgba(15,18,34,.5); }
   .src:hover, .src.pulse { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .src.drop { border-style: dashed; } .src.drop.over { background: var(--accent-soft); border-color: var(--accent); }
   .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line-soft); }
   .drop-ic { display: grid; place-items: center; width: 92px; height: 74px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; }
   .src-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .src-text b { font-size: 1.05rem; } .src-text > span { color: var(--muted); font-size: .88rem; } .src-go { color: var(--accent) !important; font-weight: 600; margin-top: 4px; }
-  .gal-h { font-family: var(--serif); font-size: 1.3rem; margin: 30px 0 14px; }
+  .gal-h { font-size: 1.5rem; margin: 34px 0 6px; }
   .shelf { margin: 0 0 24px; } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
-  .picker .boxes { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 16px 12px; }
-  @media (max-width: 480px) { .picker .boxes { grid-template-columns: repeat(3, 1fr); gap: 12px 8px; } .picker .box { padding-left: 9px; } .picker .box .spine { width: 9px; } }
+  .picker .shelf-row { --w: 180px; --h: 164px; --d: 38px; padding-top: 10px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-row { --w: 150px; --h: 138px; --d: 32px; } }
   @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); } 50% { box-shadow: 0 0 0 8px var(--accent-soft); } }
   .src.pulse { animation: pulse 1.2s ease-in-out 3; }
 
   /* 조각 수 다이얼로그 */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .modal-bg { position: absolute; inset: 0; background: rgba(23,26,36,.45); }
-  .dialog { position: relative; width: min(92vw, 420px); max-height: 92%; overflow: auto; padding: 20px; background: var(--white); border-radius: 18px; box-shadow: 0 20px 60px rgba(23,26,36,.25); animation: pop .16s ease-out; }
+  .dialog { position: relative; width: min(92vw, 420px); max-height: 92%; overflow: auto; padding: 20px; background: var(--bg); border-radius: 18px; box-shadow: 0 20px 60px rgba(23,26,36,.25); animation: pop .16s ease-out; }
   @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
-  .close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--white); cursor: pointer; }
+  .close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
   .chosen { display: flex; align-items: center; gap: 12px; margin: 0 32px 4px 0; } .chosen img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--board); flex: none; } .chosen div { display: flex; flex-direction: column; } .grid-lbl { color: var(--accent); font-weight: 600; }
   .lbl { color: var(--muted); font-size: .85rem; font-weight: 600; margin: 14px 0 6px; }
   .pieces { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .pieces button { border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); font-weight: 600; padding: 6px 13px; cursor: pointer; } .pieces button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pieces button { border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); font-weight: 600; padding: 6px 13px; cursor: pointer; } .pieces button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .custom { width: 96px; min-height: 36px; padding: 4px 10px; }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
   .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
@@ -119,19 +118,19 @@ const shelves = shelvesFor(lang);
   .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } }
   .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
   @media (max-width: 480px) { .hud { gap: 4px; padding: 6px 8px; } .hud .chip { font-size: .78rem; padding: 3px 8px; } .ib { width: 32px; height: 32px; } }
-  .ib { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--white); color: var(--ink); font-size: 1rem; cursor: pointer; display: grid; place-items: center; } .ib[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .ib { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 1rem; cursor: pointer; display: grid; place-items: center; } .ib[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
   .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
   .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .boardwrap canvas.drag { cursor: grabbing; }
   .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
-  .done { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--white); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(233,168,32,.25); white-space: nowrap; z-index: 3; font-weight: 600; }
+  .done { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--bg); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(233,168,32,.25); white-space: nowrap; z-index: 3; font-weight: 600; }
   .done b { font-variant-numeric: tabular-nums; color: var(--accent); }
   .tray { flex: none; height: 104px; display: flex; gap: 8px; align-items: center; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; background: var(--paper); border-top: 1px solid var(--line); touch-action: pan-x; scrollbar-width: thin; }
-  .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--white); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
   .tray :global(.tp.lift) { visibility: hidden; }
 
   /* 결과 */
-  .result { text-align: center; padding-top: 40px; } .result .title-h { font-family: var(--serif); font-size: 2.2rem; }
+  .result { text-align: center; padding-top: 40px; } .result .title-h { font-size: 2.4rem; letter-spacing: -.04em; }
   .res-img { display: block; max-width: min(92vw, 360px); max-height: 270px; width: auto; height: auto; margin: 14px auto 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--board); }
   .res { display: flex; gap: 22px; justify-content: center; margin: 12px 0 4px; } .res div { display: flex; flex-direction: column; align-items: center; } .res small { color: var(--muted); font-size: .8rem; } .res b { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
   .best-line { margin: 4px 0 10px; color: var(--gold); font-weight: 600; min-height: 1.4em; }
@@ -165,7 +164,7 @@ const shelves = shelvesFor(lang);
   const MAXSIDE = 1600;
   async function loadSource(s: Source) {
     src = s; img = null; setup.hidden = false; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
-    document.querySelectorAll('#jg-gallery .box').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
+    document.querySelectorAll('#jg-gallery .box3d').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
     const blobUrl = s.file ? URL.createObjectURL(s.file) : s.url!; thumb.src = blobUrl;
     try {
       let bmp: ImageBitmap | HTMLImageElement;
@@ -182,7 +181,7 @@ const shelves = shelvesFor(lang);
   $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   dailyBtn.addEventListener('click', () => loadSource({ kind: 'daily', key: pick.painting.key, name: `${T.daily} · ${pick.painting.title[LI]}`, url: `/jigsaw/${pick.painting.key}.jpg`, seed: pick.seed, day, fixedN: DAILY_PIECES }));
-  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box').forEach((b) => b.addEventListener('click', () => { const p = PAINTINGS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.jpg` }); }));
+  document.querySelectorAll<HTMLButtonElement>('#jg-gallery .box3d').forEach((b) => b.addEventListener('click', () => { const p = PAINTINGS.find((x) => x.key === b.dataset.key)!; loadSource({ kind: 'gallery', key: p.key, name: T.paintingBy(p.title[LI], p.artist[LI], p.year), url: `/jigsaw/${p.key}.jpg` }); }));
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { if (src?.kind === 'daily') return toast(T.dailyCap('', DAILY_PIECES).trim()); wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 300 && src?.kind !== 'daily') { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
@@ -337,7 +336,7 @@ const shelves = shelvesFor(lang);
   { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = PAINTINGS.find((x) => x.key === k);
     if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
     else if (q.get('daily') === '1' || (pt && q.get('d') === '1')) { dailyBtn.click(); history.replaceState(null, '', location.pathname); }
-    else if (pt) { if (pn >= 6 && pn <= 300) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![12, 24, 48, 96, 150, 200].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
+    else if (pt) { if (pn >= 6 && pn <= 300) { wantN = pn; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', Number(x.dataset.n) === pn)); if (![12, 24, 48, 96, 150, 200].includes(pn)) ($('jg-custom') as HTMLInputElement).value = String(pn); } document.querySelector<HTMLButtonElement>(`#jg-gallery .box3d[data-key="${pt.key}"]`)?.click(); history.replaceState(null, '', location.pathname); } }
   $('jg-start').addEventListener('click', start);
   $('jg-retry').addEventListener('click', start);
   $('jg-title').addEventListener('click', () => scenes.go('title'));

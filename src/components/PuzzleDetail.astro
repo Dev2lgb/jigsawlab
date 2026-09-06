@@ -21,9 +21,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
   <div class="wrap detail">
     <p class="crumb"><a href={`${P}/#catalog`}>{T.detail.back}</a> <span>/</span> <span>{cat.name[li]}</span></p>
     <div class="detail-in">
-      <div class="stage" data-reveal><Box p={{ key, title, artist, year: p.year }} big /><div class="floor" aria-hidden="true"></div></div>
+      <div class="stage" data-reveal><Box p={{ key, title, artist, year: p.year }} big fav={false} /><div class="floor" aria-hidden="true"></div></div>
       <div class="info" data-reveal="1">
-        <h1>{title}</h1>
+        <div class="t-row"><h1>{title}</h1><button type="button" class="fav fav-lg" data-fav={key} aria-pressed="false" aria-label={T.catalog.favAdd}>♡</button></div>
         <p class="by">{artist}</p>
         <dl class="meta"><div><dt>{T.detail.year}</dt><dd>{p.year}</dd></div><div><dt>{T.detail.museum}</dt><dd>{a.museum[li]}</dd></div>{p.medium && <div><dt>{T.detail.medium}</dt><dd>{p.medium}</dd></div>}</dl>
         <p class="about">{a.about[li]}</p>{p.source && <p class="src muted"><a href={p.source} rel="noopener">{T.detail.source}</a> · CC0</p>}
@@ -43,6 +43,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     .stage :global(.box3d) { --w: clamp(300px, 36vw, 520px); --h: calc(var(--w) * .92); --d: 96px; } @media (max-width: 860px) { .stage :global(.box3d) { --w: min(440px, 78vw); --d: 72px; } }
     .stage :global(.box3d .bt small) { font-size: .95rem; } .stage :global(.box3d .bt b) { font-size: 1.3rem; } .stage :global(.box3d .bf .logo) { font-size: .9rem; } .stage :global(.box3d .bf small) { font-size: .9rem; } .stage :global(.box3d .side span) { font-size: .95rem; } .stage :global(.box3d img) { border-width: 3px; }
     .stage :global(.box3d .cube) { transform: rotateX(-8deg) rotateY(22deg); } .stage :global(.box3d:hover .cube) { transform: rotateX(-4deg) rotateY(8deg) translateY(-8px); }
+    .t-row { display: flex; align-items: start; gap: 14px; } .t-row h1 { flex: 1; } .t-row :global(.fav) { position: static; opacity: 1; width: 48px; height: 48px; font-size: 1.5rem; flex: none; margin-top: 6px; }
     .info h1 { font-size: clamp(2rem, 4.2vw, 3.4rem); letter-spacing: -.04em; } .by { margin: 8px 0 0; color: var(--ink-2); font-size: 1.15rem; font-weight: 500; }
     .meta { display: flex; gap: 28px; margin: 18px 0 0; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); } .meta div { display: flex; flex-direction: column; } .meta dt { font-size: .8rem; color: var(--muted); font-weight: 600; } .meta dd { margin: 0; font-weight: 700; }
     .about { margin: 18px 0 0; color: var(--ink-2); line-height: 1.75; font-size: 1.05rem; } .src { margin: 8px 0 0; font-size: .82rem; } .src a { color: var(--muted); }
@@ -57,6 +58,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
   </style>
   <script>
     import { gridFor } from '../lib/jigsaw';
+    import { initFavUI } from '../lib/fav';
+    initFavUI();
     import { getBest } from '../lib/store';
     import { UI, type Lang } from '../i18n/ui';
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];

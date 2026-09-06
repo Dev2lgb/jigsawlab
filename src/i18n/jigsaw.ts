@@ -21,7 +21,7 @@ export const JIGSAW = {
 <h2>사진은 어디에도 올라가지 않습니다</h2>
 <p>고른 사진은 브라우저가 읽어 화면 안에서 자르고 그립니다. jigsawlab 서버로 전송되지 않고 저장도 되지 않아서, 가족 사진이나 아이 사진, 아직 공개하지 않은 사진으로도 마음 놓고 만들 수 있습니다. 그래서 내 사진으로 만든 퍼즐은 링크로 다른 사람에게 보낼 수 없고, 대신 결과(조각 수·시간)만 공유됩니다. 친구와 같은 판을 겨루고 싶다면 오늘의 퍼즐을 쓰세요.</p>
 <h2>오늘의 퍼즐</h2>
-<p>내장된 퍼블릭 도메인 명화 스물두 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 완성 시간이 짧은 순으로 랭킹이 매겨지고, 닉네임만 넣으면 등록됩니다. 자정(한국 시간)에 새 그림으로 바뀌며, 지난 기록은 그대로 남습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
+<p>내장된 퍼블릭 도메인 명화 200여 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 완성 시간이 짧은 순으로 랭킹이 매겨지고, 닉네임만 넣으면 등록됩니다. 자정(한국 시간)에 새 그림으로 바뀌며, 지난 기록은 그대로 남습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
 <h2>조각 수 고르는 요령</h2>
 <p>48조각은 10분 안쪽으로 끝나는 가벼운 판이고, 100~200조각은 확대·축소를 쓰면서 30분쯤 붙잡는 표준입니다. 300~500조각은 실물 퍼즐 입문 규격과 같아 태블릿·PC에서 한두 시간, 1000조각은 실물 성인 표준 규격으로 며칠에 걸쳐 조각을 뭉치로 모아가며 맞추는 본격 퍼즐입니다. 조각끼리 맞대면 서로 붙어 뭉치째 옮길 수 있으니 큰 판일수록 색·구역별로 뭉치를 먼저 만드세요. 하늘이나 바다처럼 색이 비슷한 면이 넓은 사진은 같은 조각 수라도 훨씬 어렵고, 얼굴·글자·경계선이 많은 사진은 쉬워집니다. 세로 사진이면 격자도 세로로 길게 잡히니 조각 수를 조금 늘려도 됩니다.</p>
 <h2>자주 묻는 질문</h2>
@@ -32,7 +32,7 @@ export const JIGSAW = {
 <h3>1000조각도 되나요?</h3>
 <p>직접 입력으로 최대 2000까지 됩니다. 확대는 조각 하나가 손가락만큼 보일 때까지 되고, 트레이는 보이는 조각만 그려서 1000조각도 가볍습니다. 다만 폰 화면에서는 300 안쪽을 권하고, 500 이상은 태블릿이나 PC가 편합니다. 큰 사진은 긴 변 2400픽셀로 줄여 처리합니다.</p>
 <h3>중간에 나가면 진행이 사라지나요?</h3>
-<p>네. 사진을 저장하지 않는 원칙 때문에 진행 상황도 저장하지 않습니다. 완성 기록만 브라우저에 남습니다. 한 번에 끝낼 수 있는 조각 수로 시작하는 게 좋습니다.</p>
+<p>아니요. 조각을 놓을 때마다 판·뭉치·트레이 순서·더미·시간이 이 기기 안(브라우저 저장소)에 저장되고, 나갔다 오면 선택 화면의 "하던 퍼즐"에서 이어할 수 있습니다. 내 사진도 기기 안에만 저장되며 서버로는 가지 않습니다. 완성하면 저장은 지워지고 기록만 남습니다.</p>
 `,
   },
   en: {
@@ -56,7 +56,7 @@ export const JIGSAW = {
 <h2>Your photo is never uploaded</h2>
 <p>The browser reads the photo and cuts and draws it on screen. Nothing is sent to a jigsawlab server or stored, which makes it safe for family photos, kids and pictures you have not published. It also means a puzzle made from your own photo cannot be sent to someone else as a link; only the result (pieces and time) is shared. To race a friend on the same puzzle, use the daily puzzle.</p>
 <h2>The daily puzzle</h2>
-<p>Each day one of 22 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. Times are ranked fastest first and a nickname is all it takes to post one. The picture changes at midnight Korean time, and past records stay on the board. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
+<p>Each day one of more than 200 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. Times are ranked fastest first and a nickname is all it takes to post one. The picture changes at midnight Korean time, and past records stay on the board. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
 <h2>Choosing a piece count</h2>
 <p>Forty-eight pieces is a light round that finishes in under ten minutes; 100 to 200 is the standard half-hour puzzle with some zooming. 300 to 500 matches a real starter box and takes an hour or two on a tablet or desktop, and 1000 is the real adult standard: a multi-day puzzle where you gather pieces into clusters. Pieces that fit snap together and move as one cluster, so on big puzzles build clusters by colour or area first. Photos with large areas of similar colour, such as sky or sea, are much harder at the same count, while faces, text and edges make it easier. Portrait photos get a tall grid, so you can afford a few more pieces.</p>
 <h2>Frequently asked questions</h2>
@@ -67,7 +67,7 @@ export const JIGSAW = {
 <h3>Does 1000 pieces work?</h3>
 <p>The custom field accepts up to 2000. You can zoom until a single piece is fingertip-sized, and the tray only draws visible pieces, so 1000 stays smooth. On a phone we recommend staying under 300; 500 and up is more comfortable on a tablet or desktop. Large photos are reduced to 2400 pixels on the long side.</p>
 <h3>Is my progress saved if I leave?</h3>
-<p>No. Because the photo is never stored, progress is not stored either; only completed records are kept in the browser. Start with a piece count you can finish in one sitting.</p>
+<p>Yes. Every placement saves the board, clusters, tray order, piles and elapsed time to this device's browser storage, and you can pick it up from "Puzzle in progress" on the start screen. Your photo is stored on the device only, never on a server. Finishing a puzzle clears the save and keeps just the record.</p>
 `,
   },
   ja: {
@@ -91,7 +91,7 @@ export const JIGSAW = {
 <h2>写真はどこにもアップロードされません</h2>
 <p>選んだ写真はブラウザが読み込み、画面の中で切り分けて描きます。jigsawlabのサーバーには送信されず保存もされないので、家族や子どもの写真、まだ公開していない写真でも安心して使えます。そのため、自分の写真で作ったパズルをリンクで他の人に送ることはできず、共有されるのは結果（ピース数とタイム）だけです。友達と同じ盤面で競いたいときは今日のパズルを使ってください。</p>
 <h2>今日のパズル</h2>
-<p>内蔵したパブリックドメインの名画22点から日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。完成タイムの速い順にランキングがつき、ニックネームを入れるだけで登録できます。日本時間の午前0時に新しい絵に切り替わり、過去の記録はそのまま残ります。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
+<p>内蔵したパブリックドメインの名画200点余りから日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。完成タイムの速い順にランキングがつき、ニックネームを入れるだけで登録できます。日本時間の午前0時に新しい絵に切り替わり、過去の記録はそのまま残ります。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
 <h2>ピース数の選び方</h2>
 <p>48ピースは10分以内で終わる軽い盤面、100〜200ピースはズームを使いながら30分ほど楽しむ標準サイズです。300〜500ピースは実物パズルの入門規格と同じでタブレットやPCで1〜2時間、1000ピースは大人向けの実物標準規格で、数日かけてピースを塊にまとめながら組む本格パズルです。合うピース同士はくっついて塊ごと動かせるので、大きな盤面ほど色や場所ごとに塊を先に作りましょう。</p>
 <h2>よくある質問</h2>
@@ -102,7 +102,7 @@ export const JIGSAW = {
 <h3>1000ピースもできますか？</h3>
 <p>自分で入力すれば最大2000まで可能です。ピース一つが指先ほどに見えるまで拡大でき、トレイは見えているピースだけ描くので1000ピースでも軽快です。ただしスマホでは300以内をおすすめし、500以上はタブレットやPCが快適です。大きな写真は長辺2400ピクセルに縮小して処理します。</p>
 <h3>途中でページを離れると進み具合は消えますか？</h3>
-<p>はい。写真を保存しないという方針のため、進み具合も保存しません。ブラウザに残るのは完成の記録だけです。一度で終えられるピース数から始めるのがおすすめです。</p>
+<p>いいえ。ピースを置くたびに盤面・塊・トレイの順序・山・経過時間がこの端末のブラウザに保存され、戻ってきたら選択画面の「途中のパズル」から続けられます。写真も端末内にのみ保存され、サーバーには送られません。完成すると保存は消え、記録だけが残ります。</p>
 `,
   },
 } satisfies Record<Lang, unknown>;

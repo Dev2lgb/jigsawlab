@@ -22,3 +22,8 @@ export function bumpStreak(day: string): number {
 export const getStreak = () => { try { return (JSON.parse(ls.get('daily:streak') ?? '{}') as { n?: number }).n ?? 0; } catch { return 0; } };
 
 export const api = (body: unknown) => fetch('/api/daily', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error ?? 'error'); return d; });
+
+/** 완성한 퍼즐 목록 (최근 200개) */
+export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number }
+export const getDone = (): DoneEntry[] => { try { return JSON.parse(ls.get('done:list') ?? '[]'); } catch { return []; } };
+export const addDone = (e: DoneEntry) => { const l = getDone(); l.unshift(e); ls.set('done:list', JSON.stringify(l.slice(0, 200))); };

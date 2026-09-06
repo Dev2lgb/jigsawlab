@@ -1,0 +1,20 @@
+---
+// 소개 페이지 — 사이트가 뭔지 4가지 + 가이드(사용법·FAQ)
+import Base from '../layouts/Base.astro';
+import { UI, prefix, type Lang } from '../i18n/ui';
+import { JIGSAW } from '../i18n/jigsaw';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang), A = T.about;
+---
+<Base title={`${A.title} · jigsawlab`} desc={A.lead} lang={lang} alts={{ ko: '/about/', en: '/en/about/', ja: '/ja/about/' }} path={`${P}/about/`}>
+  <section class="about-hero"><div class="wrap"><h1>{A.title}</h1><p class="lead">{A.lead}</p><a class="btn primary lg" href={`${P}/play/`}>{T.nav.play}</a></div></section>
+  <section class="wrap"><div class="points">{A.points.map(([h, b], i) => <div class="pt" data-reveal={String(i)}><span class="n">{i + 1}</span><h2>{h}</h2><p>{b}</p></div>)}</div></section>
+  <section class="wrap guide"><h2 class="sec-h">{A.guide}</h2><article class="seo" set:html={JIGSAW[lang].seo} /></section>
+  <style>
+    .about-hero { padding: clamp(48px, 8vw, 110px) 0 clamp(32px, 5vw, 60px); background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+    .about-hero h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.04em; } .lead { margin: 18px 0 28px; font-size: clamp(1.05rem, 1.6vw, 1.3rem); color: var(--ink-2); max-width: 40em; }
+    .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 20px; }
+    .pt { padding: 28px; border-radius: var(--r); background: var(--bg-2); } .pt .n { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 800; margin-bottom: 16px; } .pt h2 { font-size: 1.2rem; margin: 0 0 8px; } .pt p { margin: 0; color: var(--ink-2); }
+    .guide { margin-top: clamp(48px, 7vw, 90px); }
+  </style>
+</Base>

@@ -1,10 +1,15 @@
 ---
-// 퍼즐 상자 하나 — 링크(a) 또는 버튼(button)
-interface Props { p: { key: string; title: string; artist: string; year: string }; href?: string; on?: boolean }
-const { p, href, on = false } = Astro.props;
+// 3D 퍼즐 상자 — 링크(href) 또는 버튼. 크기는 --w/--h/--d 로 바깥에서 조절
+interface Props { p: { key: string; title: string; artist: string; year: string }; href?: string; on?: boolean; big?: boolean }
+const { p, href, on = false, big = false } = Astro.props;
 const Tag = href ? 'a' : 'button';
+const img = big ? `/jigsaw/${p.key}.jpg` : `/jigsaw/t-${p.key}.jpg`;
 ---
-<Tag class:list={['box', { on }]} href={href} type={href ? undefined : 'button'} data-key={p.key} title={`${p.title} — ${p.artist}, ${p.year}`}>
-  <span class="spine" aria-hidden="true"><span>{p.title}</span></span>
-  <span class="front"><span class="box-top"><small>{p.year}</small><b>{p.title}</b></span><img src={`/jigsaw/t-${p.key}.jpg`} alt={p.title} loading="lazy" width="240" height="190" /><span class="box-foot"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
+<Tag class:list={['box3d', { on, big }]} href={href} type={href ? undefined : 'button'} data-key={p.key} title={`${p.title} — ${p.artist}, ${p.year}`} aria-label={`${p.title} — ${p.artist}`}>
+  <span class="cube">
+    <span class="face front"><span class="bt"><small>{p.year}</small><b>{p.title}</b></span><img src={img} alt="" loading="lazy" width={big ? 1200 : 240} height={big ? 950 : 190} /><span class="bf"><span class="logo">jigsawlab</span><small>{p.artist}</small></span></span>
+    <span class="face side"><span>{p.title} · {p.artist}</span></span>
+    <span class="face topf"></span>
+  </span>
+  <span class="shadow" aria-hidden="true"></span>
 </Tag>

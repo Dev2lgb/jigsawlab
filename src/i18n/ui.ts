@@ -5,7 +5,7 @@ export const prefix = (l: Lang) => (l === 'ko' ? '' : `/${l}`);
 export const langOf = (pathname: string): Lang => (pathname.startsWith('/en') ? 'en' : pathname.startsWith('/ja') ? 'ja' : 'ko');
 export const UI = {
   ko: {
-    name: 'jigsawlab', tagline: '사진 한 장이 직소 퍼즐이 되는 곳', langName: '한국어',
+    name: 'jigsawlab', tagline: '사진 한 장이 직소 퍼즐이 되는 곳', langName: '한국어', seoTitle: 'jigsawlab — 온라인 직소 퍼즐, 명화와 내 사진으로', seoDesc: '명화 226점과 내 사진으로 만드는 무료 온라인 직소 퍼즐. 맞는 조각끼리 붙고, 하던 판은 저장되고, 48조각부터 1000조각까지. 가입 없이 폰에서도.',
     nav: { daily: '오늘의 퍼즐', catalog: '퍼즐', photo: '내 사진으로', play: '지금 맞추기', about: '소개', my: '내 퍼즐' },
     hero: { today: '오늘의 그림', pieces: (n: number) => `${n}조각`, solved: (n: number) => (n ? `오늘 ${n}명이 완성했어요` : ''), fastest: (t: string) => `가장 빠른 기록 ${t}`, cta: '오늘의 퍼즐 맞추기', photo: '내 사진으로 만들기', sameForAll: '', h1: '제대로 된 직소 퍼즐,\n폰에서도.', sub: '맞는 조각끼리 붙어서 뭉치로 움직이고, 색깔별로 더미를 나누고, 하던 판은 저장돼요. 판 위에 광고는 안 띄워요.', feats: ['맞는 조각끼리 붙어서 뭉치로', '색깔별로 더미 나누기', '하던 판은 그대로 저장', '48조각부터 1000조각까지', '내 사진으로도'], pick: '퍼즐 고르기', todayLink: (t: string) => `오늘의 그림 · ${t} · 같이 맞추기` },
     how: { title: '이렇게 놀아요', steps: [['퍼즐 고르기', '마음에 드는 그림을 고르거나, 내 사진을 골라요.'], ['조각 수 정하기', '48조각으로 가볍게, 1000조각으로 제대로.'], ['끌어 올려 끼우기', '트레이에서 조각을 올려 놓으면 딸깍. 맞는 조각끼리는 붙어서 같이 움직여요.']] },
@@ -20,7 +20,7 @@ export const UI = {
     foot: { privacy: '개인정보처리방침', terms: '이용약관', termsTitle: '이용약관', contact: '문의', madeBy: '', rights: '그림은 모두 퍼블릭 도메인입니다', copied: '링크를 복사했어요', shareFail: '공유가 안 됐어요', privacyTitle: '개인정보처리방침', toHome: '홈으로' },
   },
   en: {
-    name: 'jigsawlab', tagline: 'Where one photo becomes a jigsaw', langName: 'English',
+    name: 'jigsawlab', tagline: 'Where one photo becomes a jigsaw', langName: 'English', seoTitle: 'jigsawlab — Free online jigsaw puzzles from masterpieces and your photos', seoDesc: 'Free online jigsaw puzzles from 226 public-domain paintings or your own photos. Pieces snap into clusters, progress is saved, 48 to 1000 pieces. No sign-up, works on your phone.',
     nav: { daily: "Today's puzzle", catalog: 'Puzzles', photo: 'Your photo', play: 'Play now', about: 'About', my: 'My puzzles' },
     hero: { today: "Today's picture", pieces: (n: number) => `${n} pieces`, solved: (n: number) => (n ? `${n} people finished it today` : ''), fastest: (t: string) => `Fastest time ${t}`, cta: "Solve today's puzzle", photo: 'Make one from my photo', sameForAll: '', h1: 'A real jigsaw,\non your phone.', sub: 'Pieces that fit snap together and move as a cluster, sort into piles by colour, and your board is saved when you leave. No ads on the board, ever.', feats: ['Matching pieces snap into clusters', 'Sort into piles by colour', 'Your board is saved as you go', 'From 48 to 1000 pieces', 'Your own photos too'], pick: 'Pick a puzzle', todayLink: (t: string) => `Today's picture · ${t} · solve it together` },
     how: { title: 'How to play', steps: [['Pick a puzzle', 'A painting you like, or one of your own photos.'], ['Choose a piece count', '48 for a quick one, 1000 for the real thing.'], ['Drag up and snap', 'Pull a piece up from the tray and drop it. Matching pieces click together and move as one.']] },
@@ -35,7 +35,7 @@ export const UI = {
     foot: { privacy: 'Privacy', terms: 'Terms', termsTitle: 'Terms of Service', contact: 'Contact', madeBy: '', rights: 'All paintings are in the public domain', copied: 'Link copied', shareFail: "Couldn't share", privacyTitle: 'Privacy policy', toHome: 'Home' },
   },
   ja: {
-    name: 'jigsawlab', tagline: '写真一枚がジグソーパズルになる場所', langName: '日本語',
+    name: 'jigsawlab', tagline: '写真一枚がジグソーパズルになる場所', langName: '日本語', seoTitle: 'jigsawlab — 名画と自分の写真で遊ぶ無料オンラインジグソーパズル', seoDesc: '名画226点や自分の写真で作る無料のオンラインジグソーパズル。合うピースはくっつき、途中の盤面は保存、48〜1000ピース。登録不要、スマホでも。',
     nav: { daily: '今日のパズル', catalog: 'パズル', photo: '自分の写真で', play: '今すぐ遊ぶ', about: 'サイトについて', my: 'マイパズル' },
     hero: { today: '今日の絵', pieces: (n: number) => `${n}ピース`, solved: (n: number) => (n ? `今日 ${n}人が完成` : ''), fastest: (t: string) => `最速タイム ${t}`, cta: '今日のパズルを解く', photo: '自分の写真で作る', sameForAll: '', h1: '本物のジグソーを、\nスマホでも。', sub: '合うピースはくっついて塊で動き、色ごとに山に分け、途中の盤面は保存されます。盤の上に広告は出しません。', feats: ['合うピースはくっついて塊に', '色ごとに山を分ける', '途中の盤面はそのまま保存', '48ピースから1000ピースまで', '自分の写真でも'], pick: 'パズルを選ぶ', todayLink: (t: string) => `今日の絵 · ${t} · 一緒に組む` },
     how: { title: '遊び方', steps: [['パズルを選ぶ', '好きな絵を選ぶか、自分の写真を。'], ['ピース数を決める', '48で軽く、1000で本格的に。'], ['引き上げてはめる', 'トレイからピースを上げて置くとカチッ。合うピース同士はくっついて一緒に動きます。']] },

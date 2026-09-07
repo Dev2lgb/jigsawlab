@@ -2,5 +2,7 @@
 import { TEXT1 } from './worksText1';
 import { TEXT2 } from './worksText2';
 import { TEXT3 } from './worksText3';
+import { TEXT4 } from './worksText4';
+import { TEXT5 } from './worksText5';
 export interface WorkText { t: [string, string]; about: [string, string, string] }
-export const TEXT: Record<string, WorkText> = { ...TEXT1, ...TEXT2, ...TEXT3 };
+export const TEXT: Record<string, WorkText> = { ...TEXT1, ...TEXT2, ...TEXT3, ...TEXT4, ...TEXT5 };

@@ -1,0 +1,17 @@
+---
+// /play/ 부팅 1단계 — <head> 인라인. 스크립트 번들이 오기 전, 첫 페인트 전에 URL 만 보고 첫 화면을 정한다.
+// 한 진입점: ?room / ?resume / ?daily / ?k → html[data-boot] (로딩 화면, 선택 화면 숨김), 그 외 → 선택 화면.
+// 그림이 정해져 있으면(k) 원본 이미지를 미리 받고, 썸네일을 로딩 화면 배경(--boot-art)으로 보여 준다. 2단계(실제 분기)는 Jigsaw.astro 의 boot().
+---
+<script is:inline>
+(function () {
+  var q = new URLSearchParams(location.search), h = document.documentElement, k = q.get('k');
+  var mode = q.get('room') ? 'room' : q.get('resume') ? 'resume' : q.get('daily') ? 'daily' : k ? 'work' : '';
+  if (!mode) return;
+  h.setAttribute('data-boot', mode);
+  if (k && /^[a-z0-9-]{1,48}$/.test(k)) {
+    h.style.setProperty('--boot-art', 'url(/jigsaw/t-' + k + '.webp)'); h.setAttribute('data-boot-art', '1');
+    var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/jigsaw/' + k + '.webp'; l.fetchPriority = 'high'; document.head.appendChild(l);
+  }
+})();
+</script>

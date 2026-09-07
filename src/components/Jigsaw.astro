@@ -31,8 +31,8 @@ const shelves = shelvesFor(lang);
   <div id="jg-gallery"><div class="shelf" id="fav-shelf" hidden><h3>♥ {U.catalog.fav}<span class="muted fav-count">0</span></h3><div class="shelf-row" id="fav-row"></div></div>{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-row">{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div></div>)}</div>
 </section>
 
-<script is:inline>if (/[?&]room=/.test(location.search)) document.documentElement.setAttribute('data-join', '1');</script>
-<div class="fullload" id="jg-fullload" role="status"><span class="spin"></span><p id="jg-fullload-txt">{U.play.joining}</p></div>
+<!-- 로딩 화면 — 첫 페인트 전에 head 의 PlayBoot 가 html[data-boot] 로 먼저 띄우고(썸네일은 --boot-art), 엔진의 boot() 가 이어받는다 -->
+<div class="fullload" id="jg-fullload" role="status"><span class="fl-art" aria-hidden="true"></span><b class="fl-name" id="jg-fullload-name"></b><span class="spin"></span><p id="jg-fullload-txt"><span class="fl-t-open">{t.opening}</span><span class="fl-t-room">{U.play.joining}</span></p></div>
   <div class="modal" id="jg-gate" hidden>
     <div class="modal-bg"></div>
     <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
@@ -133,7 +133,12 @@ const shelves = shelvesFor(lang);
 
   /* 방 들어가는 중 — 전체 화면 로더 */
   .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); }
-  :global(html[data-join]) .fullload, .fullload.on { display: flex; }
+  :global(html[data-boot]) .fullload, .fullload.on { display: flex; }
+  :global(html[data-boot]) .scene.picker { display: none; } /* URL 이 그림·방·이어하기를 가리키면 선택 화면은 처음부터 안 그린다 */
+  .fl-art { display: none; width: min(240px, 62vw); aspect-ratio: 4 / 3; border-radius: 14px; background: var(--boot-art) center / cover no-repeat, var(--line); box-shadow: 0 18px 40px rgba(15, 18, 34, .16); }
+  :global(html[data-boot-art]) .fl-art { display: block; }
+  .fl-name { display: none; max-width: min(560px, 86vw); padding: 0 16px; text-align: center; color: var(--ink); font-weight: 700; line-height: 1.4; } .fl-name.on { display: block; }
+  .fl-t-room { display: none; } :global(html[data-boot="room"]) .fl-t-open { display: none; } :global(html[data-boot="room"]) .fl-t-room { display: inline; }
   .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
@@ -321,7 +326,7 @@ const shelves = shelvesFor(lang);
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
     closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
-    scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -600,7 +605,12 @@ const shelves = shelvesFor(lang);
   function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
   $('jg-players-btn').addEventListener('click', () => openPlayers(true)); $('jg-pldlg-bg').addEventListener('click', () => openPlayers(false)); $('jg-pldlg-close').addEventListener('click', () => openPlayers(false));
-  const fullLoad = (on: boolean, txt?: string) => { const e = $('jg-fullload'); e.classList.toggle('on', on); if (txt) $('jg-fullload-txt').textContent = txt; if (!on) document.documentElement.removeAttribute('data-join'); };
+  // 전체 화면 로딩. art 를 주면 썸네일·이름을 함께 보여 준다(상세 페이지에서 넘어올 때 같은 상자가 이어지도록). 끄면 head 가 걸어 둔 data-boot 도 함께 걷는다
+  const fullLoad = (on: boolean, txt?: string, art?: { img?: string; name?: string }) => {
+    const e = $('jg-fullload'), h = document.documentElement, nm = $('jg-fullload-name'); e.classList.toggle('on', on); if (txt) $('jg-fullload-txt').textContent = txt;
+    if (art?.img) { h.style.setProperty('--boot-art', `url("${art.img}")`); h.setAttribute('data-boot-art', '1'); } if (art?.name) { nm.textContent = art.name; nm.classList.add('on'); }
+    if (!on) { h.removeAttribute('data-boot'); h.removeAttribute('data-boot-art'); h.style.removeProperty('--boot-art'); nm.classList.remove('on'); }
+  };
   async function joinRoom(id: string, keepImage = false) {
     fullLoad(true, U.joining);
     const bail = (msg: string = U.roomGone) => { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(msg); };
@@ -744,13 +754,37 @@ const shelves = shelvesFor(lang);
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
-  // 공유 페이지에서 '나도 해보기'로 들어온 경우: 같은 명화·조각 수를 미리 선택
-  { const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')); const pt = WORKS.find((x) => x.key === k);
-    if (q.get('room')) { joinRoom(q.get('room')!.toLowerCase()); }
-    else if (q.get('resume')) { const id = q.get('resume')!; history.replaceState(null, '', location.pathname); saves.get(id).then(async (sv) => { if (sv) return resumeSave(sv); await remoteReady; if (remoteSaves.some((m) => m.id === id)) { const d = await fetchSave(id); if (d) resumeSave(d); } }).catch(() => {}); }
-    else if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); history.replaceState(null, '', location.pathname); }
-    else if (q.get('daily') || (pt && q.get('d') === '1')) { const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL); loadSource({ kind: 'daily', key: pk.painting.key, name: `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' '), url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); history.replaceState(null, '', location.pathname); }
-    else if (pt) { if (pn >= 6 && pn <= 2000) wantN = pn; loadSource({ kind: 'gallery', key: pt.key, name: T.paintingBy(pt.title[LI], pt.artist[LI], pt.year), url: `/jigsaw/${pt.key}.webp` }, true); history.replaceState(null, '', location.pathname); } }
+  // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
+  //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=1 내 사진 강조 · 없음 → 선택 화면
+  //   그림·오늘의 퍼즐·이어하기는 로딩 화면(썸네일·이름) → 판. 실패하면 로딩 화면을 걷고 선택 화면으로
+  async function boot() {
+    const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')), pt = WORKS.find((x) => x.key === k);
+    const clean = () => history.replaceState(null, '', location.pathname);
+    const bail = (msg?: string) => { fullLoad(false); clean(); scenes.go('title'); if (msg) toast(msg); };
+    if (q.get('room')) return joinRoom(q.get('room')!.toLowerCase());
+    if (q.get('resume')) {
+      const id = q.get('resume')!; clean(); fullLoad(true, T.opening);
+      let sv: SaveData | null = null; try { sv = (await saves.get(id)) ?? null; } catch {}
+      if (!sv) { await remoteReady; if (remoteSaves.some((m) => m.id === id)) sv = await fetchSave(id); }
+      if (!sv) return bail(T.saveGone);
+      fullLoad(true, T.opening, { img: sv.thumb, name: sv.name }); await resumeSave(sv); if (!img) bail(); return;
+    }
+    if (q.get('photo') === '1') { const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); clean(); return; }
+    if (q.get('daily') || (pt && q.get('d') === '1')) {
+      const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL);
+      const name = `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' ');
+      clean(); fullLoad(true, T.opening, { img: `/jigsaw/t-${pk.painting.key}.webp`, name });
+      await loadSource({ kind: 'daily', key: pk.painting.key, name, url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); if (!img) bail(); return;
+    }
+    if (pt) {
+      if (pn >= 6 && pn <= 2000) wantN = pn; const name = T.paintingBy(pt.title[LI], pt.artist[LI], pt.year);
+      clean(); fullLoad(true, T.opening, { img: `/jigsaw/t-${pt.key}.webp`, name });
+      await loadSource({ kind: 'gallery', key: pt.key, name, url: `/jigsaw/${pt.key}.webp` }, true); if (!img) bail(); return;
+    }
+    if (k) return bail(T.imgFail); // 모르는 key
+    fullLoad(false);
+  }
+  boot();
   $('jg-start').addEventListener('click', () => start());
   $('jg-retry').addEventListener('click', () => start());
   $('jg-title').addEventListener('click', () => scenes.go('title'));

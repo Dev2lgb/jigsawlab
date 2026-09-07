@@ -41,7 +41,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" />
   {ads && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5830650963828895" crossorigin="anonymous" is:inline></script>}
   <slot name="head" />
-  <script is:inline define:vars={{ i18n: { copied: T.foot.copied, shareFail: T.foot.shareFail } }}>window.__i18n = i18n;</script>
+  <script is:inline define:vars={{ i18n: { copied: T.foot.copied, shareFail: T.foot.shareFail, prev: T.catalog.prev, next: T.catalog.next } }}>window.__i18n = i18n;</script>
 </head>
 <body>
   <header class="top" id="top">
@@ -102,6 +102,8 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
     </div>
   </footer>
   <script>
+    import { initShelves } from '../lib/shelf';
+    initShelves(); // 가로 진열대: PC 화살표·드래그
     // 스크롤 리빌: [data-reveal] 요소가 화면에 들어오면 .in — 모션 최소화 설정이면 즉시 표시
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) els.forEach((e) => e.classList.add('in'));
@@ -248,8 +250,14 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   .boxw:hover .fav, .fav[aria-pressed="true"], .fav:focus-visible { opacity: 1; } .fav:hover { transform: scale(1.12); } @media (hover: none) { .fav { opacity: .9; } }
   .boxw.big .fav { width: 44px; height: 44px; font-size: 1.4rem; top: 10px; right: 6px; opacity: 1; }
   .search { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--bg); min-width: 240px; } .search input { border: 0; outline: 0; background: none; font: inherit; width: 100%; min-width: 0; } .search svg { color: var(--muted); flex: none; }
-  /* 가로 진열대: 스크롤 스냅, 스크롤바 숨김 */
-  .shelf-row { display: flex; gap: clamp(14px, 2vw, 28px); overflow-x: auto; padding: 18px var(--gutter) 26px; margin: 0 calc(var(--gutter) * -1); scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; } .shelf-row::-webkit-scrollbar { display: none; } .shelf-row > * { scroll-snap-align: start; }
+  /* 가로 진열대: 스크롤 스냅, 스크롤바 숨김. PC 는 lib/shelf.ts 가 .shelf-scroller 로 감싸 좌우 화살표·마우스 드래그를 붙인다 */
+  .shelf-row { display: flex; gap: clamp(14px, 2vw, 28px); overflow-x: auto; padding: 18px var(--gutter) 26px; margin: 0 calc(var(--gutter) * -1); scroll-snap-type: x proximity; scroll-padding: 0 var(--gutter); scrollbar-width: none; -webkit-overflow-scrolling: touch; } .shelf-row::-webkit-scrollbar { display: none; } .shelf-row > * { scroll-snap-align: start; }
+  .shelf-row.dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; } .shelf-row.dragging * { pointer-events: none; }
+  .shelf-scroller { position: relative; }
+  .shelf-arrow { position: absolute; top: 50%; z-index: 3; width: 44px; height: 44px; margin-top: -22px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(15,18,34,.45); opacity: 0; transition: opacity .15s, transform .15s var(--ease); }
+  .shelf-arrow.prev { left: calc(var(--gutter) * -1 + 6px); } .shelf-arrow.next { right: calc(var(--gutter) * -1 + 6px); }
+  .shelf-scroller:hover .shelf-arrow:not([hidden]), .shelf-arrow:focus-visible { opacity: 1; } .shelf-arrow:hover { transform: scale(1.08); } .shelf-arrow[hidden] { display: none; }
+  @media (hover: none), (pointer: coarse) { .shelf-arrow { display: none; } }
 
   .seo { color: var(--ink); } .seo h2 { font-size: 1.5rem; margin: 40px 0 10px; } .seo h3 { font-size: 1.08rem; margin: 22px 0 6px; } .seo p, .seo li { color: var(--ink-2); max-width: 72ch; } .seo .lead { font-size: 1.15rem; color: var(--ink); } .seo ol, .seo ul { padding-left: 20px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } html { scroll-behavior: auto; } }

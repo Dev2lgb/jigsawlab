@@ -17,13 +17,13 @@
 | `pnpm db:migrate:local` | 로컬 D1 마이그레이션 |
 | `pnpm db:migrate` | 실제 D1 마이그레이션 |
 | `pnpm preview` | 빌드 후 wrangler dev (실제 Worker 런타임) |
-| `pnpm deploy` | 빌드 후 `wrangler deploy` |
+| `pnpm run deploy` | 빌드 후 `wrangler deploy` (`pnpm deploy` 는 pnpm 내장 명령과 겹쳐 실패) |
 
 ## 처음 한 번
 1. `npx wrangler login`
 2. `npx wrangler d1 create jigsawlab-db` → 나온 `database_id` 를 `wrangler.jsonc` 에 넣기
 3. `pnpm db:migrate:local && pnpm db:migrate`
-4. `pnpm deploy` (커스텀 도메인은 wrangler.jsonc routes 로 자동 연결)
+4. `pnpm run deploy` (커스텀 도메인은 wrangler.jsonc routes 로 자동 연결)
 5. 구글 로그인 비밀값: Google Cloud 콘솔에서 OAuth 클라이언트(웹) 생성, 승인된 리디렉션 URI `https://jigsawlab.app/api/auth/callback`. 그 다음 `npx wrangler secret put GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `SESSION_SECRET`(긴 랜덤 문자열). 로컬은 `.dev.vars` 에 같은 키. 비밀값이 없으면 로그인 UI 가 자동으로 숨겨짐
 6. GitHub 자동 배포: 저장소 Secrets 에 `CLOUDFLARE_API_TOKEN`(Workers Scripts·D1 편집 권한), `CLOUDFLARE_ACCOUNT_ID` 등록 → main push 시 `.github/workflows/deploy.yml`
 
@@ -35,7 +35,8 @@
 - 작품 데이터: `src/data/works.ts` 가 전체 목록(WORKS·DAILY_POOL). 기존 22점 = `lib/jigsaw.ts` PAINTINGS + `paintings.ts`; AIC 204점 = `aic.json`(메타) + `worksText1~3.ts`(ko/ja 제목·3언어 소개); 추가 소스 197점(위키미디어 공용 명화·한국 회화·포토크롬, NASA 우주) = `extra.json`(메타·소장처·출처·라이선스) + `worksText4~5.ts`. 작가명 표기는 `artists.ts`, 카테고리(진열대) `catalog.ts` — 작품 cat 이 catalog 에 없으면 빌드가 실패함
 - 이미지: `public/jigsaw/<key>.webp`(1600) · `t-<key>.webp`(480) · `o-<key>.jpg`(OG 400²)
 - 카탈로그 확장 파이프라인 ① `scripts/met/`(AIC): `scan-aic.mjs`(시카고 미술관 API CC0 후보 수집 + 컨택트 시트) → 시트 보고 `select.mjs` 의 PICK 편집 → `build.mjs`(IIIF 1686px 다운로드·WebP 변환·aic.json). ② `scripts/extra/`(위키미디어 공용·NASA): `scan.mjs`(카테고리·검색·NASA API 로 후보 수집 → candidates.json + sheet-*.html) → `select.mjs`(고른 항목에 영문 제목·작가·연도·소장처 코드 지정 → selected.json) → `build.mjs`(1600px 썸네일 다운로드, 포토크롬은 스캔 테두리·색상띠 자동 크롭, WebP·썸네일·OG 생성 → extra.json) → 새 key 의 소개를 worksText4~5 에, 새 작가를 artists 에 추가. Met API 는 403 스로틀이 심해 보류, 미국 의회도서관 사이트는 Cloudflare 차단이라 Commons 경유
-- 딥링크: `/play/?daily=1` 오늘의 퍼즐, `/play/?photo=1` 내 사진 강조, `/play/?k=<key>&n=<조각>` 그림·조각 수 프리셀렉트
+- 딥링크(한 진입점 `/play/`): `?k=<key>&n=<조각>` 그림 즉시 시작, `?daily=1|YYYY-MM-DD` 오늘의 퍼즐, `?resume=<id>` 하던 퍼즐, `?room=<id>` 방, `?photo=1` 내 사진 강조, 없음 → 선택 화면. 부팅은 2단계: `PlayBoot.astro`(head 인라인, 첫 페인트 전에 `html[data-boot]` 로 로딩 화면·원본 preload) → `Jigsaw.astro` 의 `boot()`(실제 분기). 선택 화면은 URL 이 그림·방·이어하기를 가리키면 처음부터 안 그려짐
+- 가로 진열대 `.shelf-row` 는 `src/lib/shelf.ts` 가 PC 용 좌우 화살표·마우스 드래그를 붙임(Base.astro 에서 초기화)
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 테스트 훅: `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`
 

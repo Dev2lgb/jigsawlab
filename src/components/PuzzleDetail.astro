@@ -3,12 +3,13 @@
 import Base from '../layouts/Base.astro';
 import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { JIGSAW } from '../i18n/jigsaw';
 import { WORK_BY_KEY, WORKS } from '../data/works';
 import { CATEGORIES } from '../data/catalog';
 import { icon } from '../lib/icons';
 import { paintingFor } from '../lib/catalogView';
 const { lang = 'ko', key } = Astro.props as { lang?: Lang; key: string };
-const T = UI[lang], li = LI[lang], P = prefix(lang);
+const T = UI[lang], li = LI[lang], P = prefix(lang), J = JIGSAW[lang];
 const p = WORK_BY_KEY[key]!, a = p, cat = CATEGORIES.find((c) => c.id === p.cat)!;
 const title = p.title[li], artist = p.artist[li];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
@@ -29,13 +30,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <p class="by">{artist}</p>
         <dl class="meta"><div><dt>{T.detail.year}</dt><dd>{p.year}</dd></div><div><dt>{T.detail.museum}</dt><dd>{a.museum[li]}</dd></div>{p.medium && <div><dt>{T.detail.medium}</dt><dd>{p.medium}</dd></div>}</dl>
         <p class="about">{a.about[li]}</p>{p.source && <p class="src muted"><a href={p.source} rel="noopener">{T.detail.source} ({srcName})</a> · {p.license ?? 'CC0'}{p.credit && p.license?.startsWith('CC BY') && <> · {p.credit}</>}</p>}
-        <a class="btn primary lg daily-cta" id="daily-cta" href={`${P}/play/?daily=1`} hidden>{T.hero.today} · {T.hero.pieces(48)} {T.detail.startDaily}</a>
+        <a class="btn primary lg daily-cta" id="daily-cta" href={`${P}/play/?daily=1&k=${key}`} hidden>{T.hero.today} · {T.hero.pieces(48)} {T.detail.startDaily}</a>
         <h2 class="pick-h">{T.detail.pieces}</h2>
         <div class="presets" id="presets" role="radiogroup">{PRESETS.map((n) => <button type="button" class="preset" aria-pressed={n === 48 ? 'true' : 'false'} data-n={n}><b>{n}</b><small></small></button>)}</div>
         <p class="best muted" id="best" data-key={key}></p>
         <div class="go"><a class="btn primary lg" id="go-solo" href={`${P}/play/?k=${key}&n=48`}>{T.detail.start}</a><button type="button" class="btn lg" id="together" data-key={key}><Fragment set:html={icon('users', 18)} /> {T.play.together}</button></div>
         <p class="muted together-sub">{T.play.togetherSub}</p>
-        <div class="fullload" id="fullload" role="status"><span class="spin"></span><p>{T.play.creating}</p></div>
+        <div class="fullload" id="fullload" role="status"><span class="spin"></span><p id="fullload-txt" data-creating={T.play.creating} data-opening={J.opening}>{J.opening}</p></div>
       </div>
     </div>
     {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="shelf-row">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
@@ -76,12 +77,16 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
-    const fl = document.getElementById('fullload')!;
+    const fl = document.getElementById('fullload')!, flTxt = document.getElementById('fullload-txt')!;
     addEventListener('pageshow', () => { const b = document.getElementById('together') as HTMLButtonElement; b.disabled = false; fl.classList.remove('on'); });
-    document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = picked; b.disabled = true; fl.classList.add('on'); try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json(); if (d.id) { try { sessionStorage.setItem(`entered:${d.id}`, '1'); } catch {} } if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${d.id}`; else throw 0; } catch { b.disabled = false; fl.classList.remove('on'); } });
+    document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = picked; b.disabled = true; flTxt.textContent = flTxt.dataset.creating!; fl.classList.add('on'); try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json(); if (d.id) { try { sessionStorage.setItem(`entered:${d.id}`, '1'); } catch {} } if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${d.id}`; else throw 0; } catch { b.disabled = false; fl.classList.remove('on'); } });
     if (dailyPick(todayKST(), DAILY_POOL).painting.key === key) { const a = document.getElementById('daily-cta')!; a.hidden = false; if (new URLSearchParams(location.search).get('daily') === '1') { a.scrollIntoView({ block: 'center' }); history.replaceState(null, '', location.pathname); } }
     const P = LANG === 'ko' ? '' : `/${LANG}`; let picked = Number(localStorage.getItem('pieces') || 48) || 48; if (![48, 100, 200, 300, 500, 1000].includes(picked)) picked = 48;
     const solo = document.getElementById('go-solo') as HTMLAnchorElement; const bestEl = document.getElementById('best')!;
+    // 시작 버튼에 손이 가면 /play/ 문서와 원본 이미지를 미리 받아 두고, 누르면 새 페이지가 뜨기 전에도 로딩 화면을 바로 보여 준다(/play/ 는 첫 페인트부터 같은 로딩 화면으로 이어짐)
+    let warmed = false; const warm = () => { if (warmed) return; warmed = true; for (const [href, as] of [[`/jigsaw/${key}.webp`, 'image'], [`${P}/play/`, 'document']] as const) { const l = document.createElement('link'); l.rel = 'prefetch'; l.as = as; l.href = href; document.head.appendChild(l); } };
+    for (const ev of ['pointerenter', 'touchstart', 'focus'] as const) solo.addEventListener(ev, warm, { passive: true });
+    solo.addEventListener('click', (e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; flTxt.textContent = flTxt.dataset.opening!; fl.classList.add('on'); });
     const asp = () => (img.naturalWidth || 1200) / (img.naturalHeight || 950);
     const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/play/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmt(b)) : T.detail.noBest; };
     document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.addEventListener('click', () => select(Number(b.dataset.n))));

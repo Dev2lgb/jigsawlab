@@ -790,10 +790,13 @@ const shelves = shelvesFor(lang);
         if (hasIDB()) { try { blob = await images.get(ph); } catch {} }
         if (!blob) return bail(T.imgFail);
         images.del(ph).catch(() => {});
+        // n 이 함께 오면(=/photo/ 에서 조각 수까지 정하고 온 것) 다이얼로그 없이 바로 판을 편다
+        const auto = pn >= 6 && pn <= 2000; if (auto) wantN = pn;
         fullLoad(true, T.loading);
-        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) });
+        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) }, auto);
         if (!img) return bail(); // loadSource 가 실패하면 이미 토스트를 띄운다
-        fullLoad(false); return;
+        if (!auto) fullLoad(false); // auto 면 start() 가 화면을 넘긴다
+        return;
       }
       const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); clean(); return;
     }

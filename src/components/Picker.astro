@@ -49,7 +49,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
       </aside>
 
       <div class="pane">
-        <div class="pane-head">
+        <div class:list={['pane-head', { solo: here }]}>
           {!here && <h2 class="gal-h">{U.catalog.every}</h2>}
           <div class="tools">
             <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="pk-search" placeholder={U.catalog.search} autocomplete="off" /></label>
@@ -97,6 +97,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
   .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 40px; }
   .pane-head > .tools:only-child { margin-left: auto; }
   .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #pk-gallery { margin-top: 22px; } /* 안 주면 진열대 소제목이 검색칸에 딱 붙는다 */
   .none { padding-top: 12px; }
   .shelf { margin: 0 0 clamp(26px, 3vw, 40px); } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
   .picker .shelf-grid { --w: 180px; --h: 164px; --d: 38px; padding-top: 14px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-grid { --w: clamp(112px, 35vw, 168px); --h: calc(var(--w) * .92); --d: 28px; } }
@@ -108,7 +109,14 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     .cats-list { flex-direction: row; gap: 6px; overflow-x: auto; overflow-y: visible; scrollbar-width: none; } .cats-list::-webkit-scrollbar { display: none; }
     .cat { flex: none; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: .87rem; white-space: nowrap; }
     .cat.on { border-color: var(--ink); }
-    .pane-head { margin-top: 16px; }
+    /* 좁으면 제목·검색·개수가 세 줄로 흩어져서, 첫 줄에 제목과 개수를 같이 놓고 검색칸은 한 줄 통으로 */
+    .pane-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title count' 'search search'; align-items: center; gap: 12px 10px; margin-top: 18px; }
+    .tools { display: contents; }
+    .pane-head .gal-h { grid-area: title; }
+    .search { grid-area: search; min-width: 0; }
+    .chip { grid-area: count; justify-self: end; }
+    .pane-head.solo { grid-template-areas: 'search count'; } /* 제목이 없는 카테고리 판은 한 줄로 */
+    #pk-gallery { margin-top: 18px; }
   }
 
   .resume { margin-top: 26px; } .resume-list { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }

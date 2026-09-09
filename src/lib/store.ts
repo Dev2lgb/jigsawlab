@@ -10,8 +10,6 @@ export function saveBest(key: string, score: number, order: Order): boolean {
 }
 export const getNick = () => ls.get('nick') ?? '';
 export const setNick = (n: string) => ls.set('nick', n.trim().slice(0, 12));
-/** 기기 ID (랭킹 기기당 1건용) */
-export const deviceId = () => { let id = ls.get('dev:id'); if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(36)).join('').slice(0, 20); ls.set('dev:id', id); } return id; };
 /** 오늘 완료 처리 → 연속 일수 */
 export function bumpStreak(day: string): number {
   let s: { last: string; n: number } = { last: '', n: 0 }; try { s = JSON.parse(ls.get('daily:streak') ?? '') || s; } catch {}
@@ -21,7 +19,6 @@ export function bumpStreak(day: string): number {
 }
 export const getStreak = () => { try { return (JSON.parse(ls.get('daily:streak') ?? '{}') as { n?: number }).n ?? 0; } catch { return 0; } };
 
-export const api = (body: unknown) => fetch('/api/daily', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error ?? 'error'); return d; });
 
 /** 완성한 퍼즐 목록 (최근 200개) */
 export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number }

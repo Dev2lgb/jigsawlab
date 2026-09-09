@@ -54,6 +54,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       <button type="button" class="ib" id="jg-quit" title={t.toTitle}><Fragment set:html={icon('x', 18)} /></button>
     </div>
     <div class="progress" aria-hidden="true"><i id="jg-prog"></i></div>
+    <p class="roomnote" id="jg-roomnote" hidden></p>
     <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
       <canvas class="fx" id="jg-fx"></canvas>
     </div>
@@ -67,6 +68,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
         <h3 id="jg-pldlg-h">{U.play.players} <span class="muted" id="jg-pldlg-n"></span></h3>
         <p class="pl-lead" id="jg-pldlg-lead" hidden>{U.play.inviteLead}</p>
         <ul class="pl-list" id="jg-players"></ul>
+        <p class="muted note-solo" id="jg-plnote" hidden></p>
         <div class="row"><button type="button" class="btn primary" id="jg-invite2"><Fragment set:html={icon('user-plus', 16)} /><span>{U.play.invite}</span></button></div>
       </div>
     </div>
@@ -129,6 +131,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .gate .gate-guest { display: flex; gap: 8px; } .gate .gate-guest .input { flex: 1; min-width: 0; } .gate .gate-guest .btn { flex: none; }
   .gate[data-noauth="1"] .gate-login, .gate[data-noauth="1"] .gate-login + .gate-sub, .gate[data-noauth="1"] .gate-or { display: none; }
   .note-solo { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: .82rem; }
+  /* 사진 방장이 나갔을 때 판 위에 계속 떠 있는 안내 */
+  .roomnote { margin: 0; padding: 7px 12px; background: #fff6e5; color: #7a4b00; border-bottom: 1px solid #f2dcb0; font-size: .82rem; font-weight: 600; line-height: 1.35; text-align: center; }
   .pl-lead { margin: -4px 0 12px; color: var(--ink-2); font-size: .9rem; line-height: 1.5; }
   .pldlg h3 { margin: 0 0 12px; font-size: 1.05rem; } .pldlg h3 .muted { font-weight: 600; font-size: .9rem; }
   .pl-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -284,7 +288,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
-    closeSetup(); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
+    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
     scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -408,9 +412,11 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   function place(g: Group) {
     moves++;
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
-    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) send({ t: 'lock', g: g.sid }); snap(g, 0, 0, () => lockGroup(g)); return; }
+    // 방에서는 놓은 순간의 좌표를 같이 보낸다. mv 는 스로틀이 걸려 서버 좌표가 뒤처지는데, 그 좌표로 판정하면
+    // 서버가 조용히 거절해 "나는 맞췄는데 상대에겐 남의 손에 잡힌 채로 굳는" 어긋남이 생겼다
+    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); snap(g, 0, 0, () => lockGroup(g)); return; }
     const other = findNeighbor(g, tol);
-    if (other) { if (room && g.sid && other.sid) send({ t: 'merge', g: g.sid, into: other.sid }); snap(g, other.dx, other.dy, () => merge(g, other)); return; }
+    if (other) { if (room && g.sid && other.sid) send({ t: 'merge', g: g.sid, into: other.sid, dx: g.dx, dy: g.dy }); snap(g, other.dx, other.dy, () => merge(g, other)); return; }
     // 화면 밖에 놓이면(HUD 위에서 놓거나 위로 튕겨 꺼낸 경우) 보이는 곳까지 밀어 넣는다 — 안 그러면 조각이 사라진 것처럼 보인다
     const [kx, ky] = inViewTarget(g);
     if (room && g.sid) { room.holders.delete(g.sid); send({ t: 'drop', g: g.sid, dx: kx, dy: ky }); }
@@ -437,8 +443,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
-    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { snap(into, 0, 0, () => lockGroup(into)); return; }
-    let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
+    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); snap(into, 0, 0, () => lockGroup(into)); return; }
+    let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
     draw(); scheduleSave();
   }
   function lockGroup(g: Group) {
@@ -511,13 +517,14 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} dropRemote(saveId()); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
-  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; } goPick(); });
+  $('jg-quit').addEventListener('click', async () => { if (room && photoBlob && src?.kind === 'photo' && room.players.size > 1 && !confirm(U.quitHostAsk)) return; if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; } goPick(); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
   function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; if (room) { g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); send({ t: 'take', g: g.sid, dx: g.dx, dy: g.dy }); } return g; }
   function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; hoverTab(cx, cy); draw(); if (room && g.sid) netMove(g); }
-  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); const untake = () => { if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); } }; if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); draw(); } }
+  // 들어 올린 조각이 서버 거절로 이미 트레이에 돌아가 있으면 여기서 끝낸다
+  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; if (!groups.includes(g)) { p.el?.classList.remove('lift'); overTab?.classList.remove('over'); overTab = null; draw(); return; } overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); const untake = () => { if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); } }; if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); draw(); } }
   function bindTray(el: HTMLElement, p: Piece) {
     let sx = 0, sy = 0, id = -1, g: Group | null = null, isMouse = false;
     el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; sx = e.clientX; sy = e.clientY; id = e.pointerId; g = null; isMouse = e.pointerType === 'mouse'; try { el.setPointerCapture(id); } catch {} });
@@ -551,7 +558,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   function netGlide(g: Group, x: number, y: number) { tweens.set(g, { x0: g.dx, y0: g.dy, x1: x, y1: y, t0: performance.now(), dur: MV_MS * 1.15, lin: true, done: () => {} }); draw(); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
   function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
-  const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
+  const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) { renderPlayers(); const n = $('jg-plnote'); n.hidden = src?.kind !== 'photo'; n.textContent = U.photoHostNote; } };
   // 방을 만들자마자 퍼즐 화면만 떠서 초대를 해야 하는 줄 모르는 경우가 많다. 방을 연 사람이
   // 아직 혼자면 초대 안내를 한 번 띄운다. 링크로 들어온 손님에게는 띄우지 않는다
   function maybeInvite() {
@@ -584,8 +591,10 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     if (isPhoto) {
       // 내 사진 방: 사진은 서버에 없다. 방장이면 메모리(또는 이 브라우저 IndexedDB)에 있고, 아니면 방장에게 WebRTC 로 받는다
       if (!(keepImage && img && src?.kind === 'photo')) {
-        img = null; photoBlob = null; let pid = ''; try { pid = sessionStorage.getItem(`roomphoto:${id}`) ?? ''; } catch {}
+        img = null; photoBlob = null; let pid = ''; try { pid = localStorage.getItem(`roomphoto:${id}`) ?? sessionStorage.getItem(`roomphoto:${id}`) ?? ''; } catch {}
         if (pid && hasIDB()) { let blob: Blob | undefined; try { blob = await images.get(pid); } catch {} if (blob) await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob, photoId: pid }, false, true); }
+        // 내 사진이 없는데 방에 사진 가진 사람도 없다 = 방장이 나간 방. 90초 기다리다 실패하지 말고 바로 알려 준다
+        if (!img && info.hasPhoto === false) { room = null; return bail(U.photoGone); }
         if (!img) { src = { kind: 'photo', key: 'photo', name: T.myPhoto }; photoBlob = null; fullLoad(true, U.photoRecv); }
       }
     } else { await loadSource({ kind: 'gallery', key: w!.key, name: T.paintingBy(w!.title[LI], w!.artist[LI], w!.year), url: `/jigsaw/${w!.key}.webp` }, false, true); if (!img) { room = null; return bail(); } }
@@ -644,14 +653,23 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   // 화면 복귀·온라인 복귀 시 바로 확인: 죽어 있으면 즉시 재접속, 살아 있으면 ping 으로 검사
   const wakeWs = () => { if (!room || document.visibilityState === 'hidden') return; if (!room.ws || room.ws.readyState > 1) { wsTries = 0; clearTimeout(reconT); connectRoom(); } else if (room.ws.readyState === 1) pingWs(); };
   document.addEventListener('visibilitychange', wakeWs); addEventListener('online', wakeWs); addEventListener('pageshow', wakeWs);
+  // 서버와 판이 어긋났다는 신호를 받으면 전체 상태를 다시 받는다 (3초에 한 번까지)
+  let syncAt = 0;
+  const reqSync = () => { const now = Date.now(); if (now - syncAt < 3000) return; syncAt = now; send({ t: 'sync' }); };
+  const roomNote = (msg: string | null) => { const e = $('jg-roomnote'); e.textContent = msg ?? ''; e.hidden = !msg; };
   function onRoomMsg(m: any) {
     if (!room) return;
     switch (m.t) {
       case 'init': {
         room.me = m.you; room.players = new Map(); for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {})); room.bySid = new Map();
         if (!img) { renderPlayers(); maybeInvite(); requestPhoto(); return; }
-        const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i)) t.push(i); for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; })(), pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
-        wantN = st.total; start(rs).then(() => { renderPlayers(); maybeInvite(); fullLoad(false); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
+        const st = m.state;
+        // 같은 판을 다시 받는 것(재접속·재동기화)이면 더미와 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
+        const same = !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
+        const keepPiles = same ? piles.slice() : [U.pileAll]; const keepPile = same ? pieces.map((p) => p.pile) : [];
+        const prevTray = same ? [...tray.children].map((e) => pieces.indexOf((e as any).__p)).filter((i) => i >= 0) : [];
+        const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = prevTray.filter((i) => !used.has(i)); const seen = new Set(t); const rest: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i) && !seen.has(i)) rest.push(i); for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; } return t.concat(rest); })(), pile: keepPile, piles: keepPiles, elapsed: Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
+        wantN = st.total; start(rs).then(() => { renderPlayers(); maybeInvite(); fullLoad(false); if (m.dead) roomNote(U.hostGone); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
       // ── 내 사진 방: 사진 전달 (WebRTC). 서버는 신호만 중계
@@ -663,13 +681,20 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       case 'grab': room.holders.set(m.g, m.id); { const g = room.bySid.get(m.g); if (g) toFront(g); } draw(); return;
       case 'release': { room.holders.delete(m.g); const g = room.bySid.get(m.g); if (g) tweens.delete(g); draw(); return; }
-      case 'take': { const p = pieces[Number(m.g)]; if (!p || p.locked || p.g) return; p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); renderPiles(); draw(); return; }
+      // 이미 내 판에 있는 조각을 남이 꺼냈다고 하면 서버와 어긋난 것 — 상태를 다시 받는다
+      case 'take': { const p = pieces[Number(m.g)]; if (!p) return; if (p.locked || p.g) { reqSync(); return; } p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); renderPiles(); draw(); return; }
       case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; room.bySid.delete(m.g); room.holders.delete(m.g); tray.appendChild(trayEl(p)); applyEdgeFilter(); renderPiles(); draw(); return; }
-      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.remove(); p.el = undefined; room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } return; }
+      // 서버가 거절 — 예전엔 조각을 지우기만 해서 트레이에도 판에도 없이 사라졌다. 트레이로 되돌리고 상태를 다시 받는다
+      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.remove(); tray.appendChild(trayEl(p)); applyEdgeFilter(); room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } reqSync(); return; }
       case 'mv': { const g = room.bySid.get(m.g); if (g && g !== dragging) netGlide(g, m.dx, m.dy); return; }
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
-      case 'merge': { const g = room.bySid.get(m.g), into = room.bySid.get(m.into); if (g && into && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } into.dx = m.dx; into.dy = m.dy; tweens.delete(g); merge(g, into); } return; }
+      case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } tweens.delete(g); merge(g, into); } else draw(); return; }
       case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
+      case 'resync': reqSync(); return;
+      // ── 내 사진 방: 사진을 가진 사람이 모두 나가면 아무도 사진을 받을 수 없다
+      case 'hostaway': roomNote(U.hostAway); toast(U.hostAway); return;
+      case 'hostgone': roomNote(U.hostGone); toast(U.hostGone); return;
+      case 'hostback': roomNote(null); toast(U.hostBack); return;
     }
   }
   // 혼자 하다가 친구 초대: 지금 판을 서버 방으로 올리고 그 방으로 이동
@@ -678,7 +703,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     if (!src || !cut || room) return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
-    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) { sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); localStorage.setItem(`roomphoto:${d.id}`, src.photoId); } } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
       if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });

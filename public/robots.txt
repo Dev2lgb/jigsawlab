@@ -4,3 +4,5 @@ Disallow: /api/
 
 Sitemap: https://jigsawlab.app/sitemap-index.xml
 Sitemap: https://jigsawlab.app/sitemap-ko.xml
+Sitemap: https://jigsawlab.app/sitemap-en.xml
+Sitemap: https://jigsawlab.app/sitemap-ja.xml

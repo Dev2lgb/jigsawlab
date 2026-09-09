@@ -264,7 +264,16 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   function zoomAt(f: number, cx: number, cy: number) { const r = wrap.getBoundingClientRect(); const pxx = cx - r.left, pyy = cy - r.top; const ns = Math.max(minS(), Math.min(maxS(), view.s * f)); const k = ns / view.s; view.tx = pxx - (pxx - view.tx) * k; view.ty = pyy - (pyy - view.ty) * k; view.s = ns; draw(); }
 
   // 트레이 썸네일은 보일 때만 그린다 (1000조각 대비)
-  const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = (el as any).__p as Piece; if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; const k = 72 / Math.max(p.bmp.w, p.bmp.h); cv.width = Math.round(p.bmp.w * k); cv.height = Math.round(p.bmp.h * k); cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
+  /** 트레이 썸네일. 캔버스를 CSS 픽셀 크기로만 만들면 배율 높은 화면에서 브라우저가 2~3배 늘려 뿌옇게 나온다.
+   *  실제 픽셀은 화면 배율만큼 키우되, 조각 비트맵보다 크게 만들 이유는 없으니 거기서 자른다(조각 수가 많을수록 비트맵이 작다). */
+  function drawThumb(cv: HTMLCanvasElement, p: Piece) {
+    const fit = 72 / Math.max(p.bmp.w, p.bmp.h);          // 화면에 놓이는 CSS 크기
+    const s = Math.min(fit * dpr(), 1);                    // 캔버스 실제 픽셀
+    cv.width = Math.max(1, Math.round(p.bmp.w * s)); cv.height = Math.max(1, Math.round(p.bmp.h * s));
+    cv.style.width = `${(p.bmp.w * fit).toFixed(1)}px`; cv.style.height = `${(p.bmp.h * fit).toFixed(1)}px`;
+    cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height);
+  }
+  const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = (el as any).__p as Piece; if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; drawThumb(cv, p); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
 
   let cutSeed = 0;
   async function start(resume?: SaveData) {

@@ -9,6 +9,8 @@ export const POPULAR: Record<string, string[]> = {
   portrait: ['laughing-cavalier', 'blue-boy', 'straw-hat', 'watering-can', 'proserpine', 'vertumnus', 'rembrandt-old-man-gold', 'gogh-madame-roulin-rocking', 'modigliani-madam-pompadour', 'cezanne-madame-cezanne'],
   still: ['farm-garden', 'basket-fruit', 'cezanne-basket-apples', 'bosschaert-bouquet', 'gogh-grapes', 'redoute-rose', 'fantin-latour-roses-bowl', 'renoir-chrysanthemums', 'chardin-white-tablecloth', 'redon-still-life-flowers'],
   animal: ['surprised', 'pine-forest', 'audubon-flamingo', 'delacroix-lion-hunt', 'koson-crow', 'jakuchu-red-parrot-branch', 'geungjae-pajeok', 'bonheur-cattle-rest-hillside', 'kunisada-crouching-tiger', 'hokusai-chrysanthemum-horsefly'],
+  pets: ['wain-psychedelic-cat', 'reichert-four-graces', 'ronner-cat-three-kittens', 'barber-girl-sheltie', 'adam-four-kittens', 'wain-gothic-cat', 'barber-family-of-pugs', 'reichert-kittens-frog', 'aldin-hounds-chorus', 'kuniyoshi-cats-catfish'],
+  tale: ['bauer-tuvstarr', 'hughes-midsummer-eve', 'hughes-night-train-stars', 'sterrett-white-palace', 'fitzgerald-fairies-favourite', 'bauer-knight-rode', 'robinson-russian-princess', 'sterrett-good-doe', 'goble-swans', 'clarke-butterfly-design'],
   ukiyoe: ['redfuji', 'shower', 'plum-garden', 'three-beauties', 'wind-thunder', 'korin-irises', 'kajikazawa', 'ejiri', 'hida-bridge', 'hokusai-shower-below-summit'],
   korean: ['ssireum', 'dano', 'jeongseon-inwang', 'hyewon-wolha', 'danwon-seodang', 'minhwa-tiger-magpie', 'mudong', 'irworobongdo', 'jeongseon-geumgang', 'hyewon-ssanggeom'],
   photo: ['pc-eiffel', 'pc-venice', 'pc-neuschwanstein', 'pc-matterhorn', 'pc-colosseum', 'pc-mont-saint-michel', 'pc-niagara', 'pc-alhambra', 'pc-pisa', 'pc-tower-bridge'],

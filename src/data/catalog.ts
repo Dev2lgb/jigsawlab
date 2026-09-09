@@ -9,6 +9,8 @@ export const CATEGORIES: Category[] = [
   { id: 'portrait', name: ['초상', 'Portraits', '肖像'], daily: true },
   { id: 'still', name: ['꽃과 정물', 'Flowers & Still Life', '花と静物'], daily: true },
   { id: 'animal', name: ['동물', 'Animals', '動物'], daily: true },
+  { id: 'pets', name: ['고양이와 강아지', 'Cats & Dogs', '猫と犬'], daily: true },
+  { id: 'tale', name: ['동화와 판타지', 'Fairy Tales & Fantasy', '童話とファンタジー'], daily: true },
   { id: 'ukiyoe', name: ['우키요에·일본 회화', 'Ukiyo-e & Japanese Painting', '浮世絵・日本絵画'], daily: true },
   { id: 'korean', name: ['한국 회화', 'Korean Painting', '韓国絵画'], daily: true },
   { id: 'photo', name: ['빈티지 사진', 'Vintage Photographs', 'ヴィンテージ写真'], daily: true },

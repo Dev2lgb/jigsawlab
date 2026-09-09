@@ -7,6 +7,7 @@
 // 언어별로 독립된 크롤 대기열을 갖는다.
 import type { APIRoute } from 'astro';
 import { WORKS } from '../data/works';
+import { shelfIds } from '../lib/catalogView';
 import { LANGS, prefix, type Lang } from '../i18n/ui';
 
 // my/ 는 개인 화면이라 통합 사이트맵에서도 제외돼 있다 (astro.config 의 filter)
@@ -21,7 +22,8 @@ export const GET: APIRoute = ({ params, site }) => {
   const lang = params.lang as Lang;
   const base = (site ?? new URL('https://jigsawlab.app')).origin;
   const lastmod = new Date().toISOString();
-  const paths = [...STATIC, ...WORKS.map((w) => `/puzzle/${w.key}/`)];
+  // 카테고리 판(/play/<cat>/)은 '풍경 퍼즐' 같은 검색어가 착지하는 자리라 작품 상세와 같이 넣는다
+  const paths = [...STATIC, ...shelfIds().map((c) => `/play/${c}/`), ...WORKS.map((w) => `/puzzle/${w.key}/`)];
   const urls = paths.map((p) => {
     const alts = LANGS.map((l) => `<xhtml:link rel="alternate" hreflang="${l}" href="${esc(base + prefix(l) + p)}"/>`).join('')
       + `<xhtml:link rel="alternate" hreflang="x-default" href="${esc(base + p)}"/>`;

@@ -1,23 +1,32 @@
 ---
 // /play/ — 퍼즐 고르는 화면. 판은 /board/ 에 있고 여기서는 링크만 건다.
-// 오늘의 퍼즐·하던 퍼즐·내 사진(→ /photo/)·진열대. 상자는 전부 /puzzle/<key>/ 상세로 간다.
+// cat 을 받으면 그 카테고리 한 판(/play/<cat>/)이 된다. 카테고리는 진짜 주소라서 검색엔진이 따로 색인하고, 옆줄은 그 사이를 오가는 링크다.
+//   /play/        전체 — 오늘의 퍼즐·내 사진·하던 퍼즐 + 진열대마다 앞 10점(.capped). 검색은 여기서 전 작품을 훑는다
+//   /play/<cat>/  그 카테고리만 전부. 상자는 어느 쪽이든 /puzzle/<key>/ 상세로 간다
 import Base from '../layouts/Base.astro';
 import { JIGSAW } from '../i18n/jigsaw';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
-import { DAILY_POOL } from '../data/works';
+import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 import Box from './Box.astro';
-const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const { lang = 'ko', cat } = Astro.props as { lang?: Lang; cat?: string };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
 const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
-const shelves = shelvesFor(lang);
+const all = shelvesFor(lang), total = WORKS.length;
+const here = cat ? all.find((s) => s.id === cat) : null;
+if (cat && !here) throw new Error(`Picker: 카테고리 '${cat}' 에 작품이 없습니다`);
+const shelves = here ? [here] : all;
+const rel = here ? `/play/${here.id}/` : '/play/';
+const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle} · jigsawlab`;
+const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
 ---
-<Base title={`${t.seoTitle} · jigsawlab`} desc={t.seoDesc} lang={lang} alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path={`${P}/play/`} ads={false}>
+<Base title={title} desc={desc} lang={lang} alts={{ ko: rel, en: `/en${rel}`, ja: `/ja${rel}` }} path={`${P}${rel}`} ads={false}>
   <div class="wrap picker">
-    <h1 class="pick-title">{t.title}</h1>
-    <p class="pick-sub">{t.sub}</p>
-    <div class="sources">
+    <h1 class="pick-title">{here ? U.catalog.catH1(here.name) : t.title}</h1>
+    <p class="pick-sub">{here ? desc : t.sub}</p>
+
+    {!here && <div class="sources">
       <a class="src daily" id="pk-daily" href={`${P}/puzzle/${daily.painting.key}/?daily=1`} data-key={daily.painting.key}>
         <img id="pk-daily-thumb" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" width="240" height="190" />
         <span class="src-text"><b>{t.daily}</b><span id="pk-daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
@@ -26,30 +35,80 @@ const shelves = shelvesFor(lang);
         <span class="drop-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg></span>
         <span class="src-text"><b>{t.pick}</b><span>{U.photo.lead}</span><span class="src-go">{t.privacy}</span></span>
       </a>
-    </div>
-    <section class="resume" id="pk-resume" hidden><h2 class="gal-h">{U.play.resumeTitle}</h2><div class="resume-list" id="pk-resume-list"></div></section>
-    <div class="gal-head"><h2 class="gal-h">{t.gallery}</h2><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="pk-search" placeholder={U.catalog.search} autocomplete="off" /></label></div>
-    <div id="pk-gallery">
-      <div class="shelf" id="fav-shelf" hidden><h3>♥ {U.catalog.fav}<span class="muted fav-count">0</span></h3><div class="shelf-grid" id="fav-row"></div></div>
-      {shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-grid capped" id={`shelf-${sh.id}`}>{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>{sh.items.length > sh.top && <button type="button" class="shelf-more" aria-expanded="false" aria-controls={`shelf-${sh.id}`} data-more={U.catalog.more(sh.items.length - sh.top)} data-less={U.catalog.less}>{U.catalog.more(sh.items.length - sh.top)}</button>}</div>)}
+    </div>}
+    {!here && <section class="resume" id="pk-resume" hidden><h2 class="gal-h">{U.play.resumeTitle}</h2><div class="resume-list" id="pk-resume-list"></div></section>}
+
+    <div class="browse">
+      <aside class="cats">
+        <div class="cats-h">{U.catalog.cats}</div>
+        <div class="cats-list">
+          <a class:list={['cat', { on: !here }]} href={`${P}/play/`} aria-current={here ? undefined : 'page'}>{U.catalog.every}<b>{total}</b></a>
+          <a class="cat" id="pk-cat-fav" href={`${P}/play/#fav-shelf`} hidden>{`♥ ${U.catalog.fav}`}<b>0</b></a>
+          {all.map((sh) => <a class:list={['cat', { on: here?.id === sh.id }]} href={`${P}/play/${sh.id}/`} aria-current={here?.id === sh.id ? 'page' : undefined}>{sh.name}<b>{sh.items.length}</b></a>)}
+        </div>
+      </aside>
+
+      <div class="pane">
+        <div class="pane-head">
+          {!here && <h2 class="gal-h">{U.catalog.every}</h2>}
+          <div class="tools">
+            <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="pk-search" placeholder={U.catalog.search} autocomplete="off" /></label>
+            <span class="chip" id="pk-count" data-n={here ? here.items.length : total}>{U.catalog.all(here ? here.items.length : total)}</span>
+          </div>
+        </div>
+        <p class="none muted" id="pk-none" hidden>{U.catalog.none}{here && <> · <a id="pk-none-all" href={`${P}/play/`}>{U.catalog.noneAll}</a></>}</p>
+        <div id="pk-gallery">
+          {!here && <div class="shelf" id="fav-shelf" hidden><h3>{`♥ ${U.catalog.fav}`}<span class="muted fav-count">0</span></h3><div class="shelf-grid" id="fav-row"></div></div>}
+          {shelves.map((sh) => <div class="shelf">
+            {!here && <h3>{sh.name}<span class="muted">{sh.items.length}</span></h3>}
+            <div class:list={['shelf-grid', { capped: !here }]} id={`shelf-${sh.id}`}>{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>
+            {!here && sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{U.catalog.showAll(sh.items.length)}</a>}
+          </div>)}
+        </div>
+      </div>
     </div>
   </div>
 
   <style>
   .picker { padding-top: 28px; padding-bottom: 40px; }
-  .pick-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0 0 6px; letter-spacing: -.035em; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
+  .pick-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0 0 6px; letter-spacing: -.035em; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 46em; }
   .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 700px) { .sources { grid-template-columns: 1fr; } }
   .src { display: flex; align-items: center; text-decoration: none; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; font: inherit; transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; } .src:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -28px rgba(15,18,34,.5); }
   .src:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .src.drop { border-style: dashed; }
-  .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line-soft); }
+  .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line); }
   .drop-ic { display: grid; place-items: center; width: 92px; height: 74px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; }
   .src-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .src-text b { font-size: 1.05rem; } .src-text > span { color: var(--muted); font-size: .88rem; } .src-go { color: var(--accent) !important; font-weight: 600; margin-top: 4px; }
-  .gal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 34px 0 10px; } .gal-h { font-size: 1.5rem; margin: 0; }
-  .shelf { margin: 0 0 clamp(26px, 3vw, 40px); } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
-  .picker .shelf-grid { --w: 180px; --h: 164px; --d: 38px; padding-top: 10px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-grid { --w: clamp(112px, 35vw, 168px); --h: calc(var(--w) * .92); --d: 28px; } }
+  .gal-h { font-size: 1.5rem; margin: 0; }
 
+  /* 고르는 판: 왼쪽 카테고리 · 오른쪽 목록 */
+  .browse { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: clamp(20px, 3vw, 44px); align-items: start; margin-top: 34px; }
+  .cats { position: sticky; top: calc(var(--top-h) + 12px); display: flex; flex-direction: column; max-height: calc(100dvh - var(--top-h) - 24px); }
+  .cats-h { padding: 0 12px 10px; font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .cats-list { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-right: 2px; }
+  .cat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--ink-2); font-size: .93rem; font-weight: 600; transition: background .15s, color .15s; }
+  .cat:hover { background: var(--bg-3); color: var(--ink); text-decoration: none; }
+  .cat b { flex: none; font-weight: 600; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat.on { background: var(--ink); color: #fff; } .cat.on b { color: rgba(255,255,255,.6); } .cat.on:hover { background: var(--ink); color: #fff; }
+  .cat[hidden] { display: none; }
+
+  .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 40px; }
+  .pane-head > .tools:only-child { margin-left: auto; }
+  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .none { padding-top: 12px; }
+  .shelf { margin: 0 0 clamp(26px, 3vw, 40px); } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
+  .picker .shelf-grid { --w: 180px; --h: 164px; --d: 38px; padding-top: 14px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-grid { --w: clamp(112px, 35vw, 168px); --h: calc(var(--w) * .92); --d: 28px; } }
+
+  @media (max-width: 860px) {
+    .browse { grid-template-columns: 1fr; gap: 4px; margin-top: 26px; }
+    .cats { top: var(--top-h); z-index: 4; max-height: none; margin: 0 calc(var(--gutter) * -1); padding: 10px var(--gutter) 11px; background: var(--bg); border-bottom: 1px solid var(--line); }
+    .cats-h { display: none; }
+    .cats-list { flex-direction: row; gap: 6px; overflow-x: auto; overflow-y: visible; scrollbar-width: none; } .cats-list::-webkit-scrollbar { display: none; }
+    .cat { flex: none; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: .87rem; white-space: nowrap; }
+    .cat.on { border-color: var(--ink); }
+    .pane-head { margin-top: 16px; }
+  }
 
   .resume { margin-top: 26px; } .resume-list { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }
   .resume-list :global(.rs-wrap) { position: relative; flex: none; } .resume-list :global(.rs-cloud) { position: absolute; top: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(15,18,34,.6); color: #fff; font-size: .68rem; font-weight: 700; }
@@ -69,22 +128,44 @@ const shelves = shelvesFor(lang);
     import { JIGSAW } from '../i18n/jigsaw';
     import { UI } from '../i18n/ui';
 
-    const $ = (id: string) => document.getElementById(id)!;
+    const $ = (id: string) => document.getElementById(id);
     const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', li = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
     const P = LANG === 'ko' ? '' : `/${LANG}`;
     const U = UI[LANG], T = JIGSAW[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-    // 자정을 넘겨 열어 둔 탭이면 오늘의 그림이 바뀌어 있다
-    { const pick = dailyPick(todayKST(), DAILY_POOL); const a = $('pk-daily') as HTMLAnchorElement;
-      if (a.dataset.key !== pick.painting.key) { a.dataset.key = pick.painting.key; a.href = `${P}/puzzle/${pick.painting.key}/?daily=1`;
-        ($('pk-daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('pk-daily-cap').textContent = T.dailyCap(pick.painting.title[li], DAILY_PIECES); } }
+    // 자정을 넘겨 열어 둔 탭이면 오늘의 그림이 바뀌어 있다 (/play/ 에만 있는 칸)
+    { const a = $('pk-daily') as HTMLAnchorElement | null; const pick = dailyPick(todayKST(), DAILY_POOL);
+      if (a && a.dataset.key !== pick.painting.key) { a.dataset.key = pick.painting.key; a.href = `${P}/puzzle/${pick.painting.key}/?daily=1`;
+        ($('pk-daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('pk-daily-cap')!.textContent = T.dailyCap(pick.painting.title[li], DAILY_PIECES); } }
 
-    // 하던 퍼즐 — 누르면 판으로 넘긴다. 서버에만 있는 것도 /board/ 가 알아서 받아 온다
+    // 옆줄이 화면보다 길어 안에서 스크롤될 때(짧은 화면·모바일 가로 칩), 지금 고른 칸이 보이도록 맞춘다. 페이지는 건드리지 않는다
+    { const list = document.querySelector<HTMLElement>('.cats-list'), on = list?.querySelector<HTMLElement>('.cat.on');
+      if (list && on) { const r = on.getBoundingClientRect(), lr = list.getBoundingClientRect();
+        if (list.scrollHeight > list.clientHeight) list.scrollTop += r.top - lr.top - (lr.height - r.height) / 2;
+        if (list.scrollWidth > list.clientWidth) list.scrollLeft += r.left - lr.left - (lr.width - r.width) / 2; } }
+
+    // 검색 — 이 화면에 놓인 상자를 훑는다(/play/ 는 전 작품, 카테고리 판은 그 카테고리)
+    const count = $('pk-count')!, base = Number(count.dataset.n ?? 0), box = $('pk-search') as HTMLInputElement;
+    const q0 = new URLSearchParams(location.search).get('q'); if (q0) box.value = q0;
+    const noneAll = $('pk-none-all') as HTMLAnchorElement | null; // 카테고리 판에서 못 찾았을 때 전체로 넘어가는 길
+    initSearch(box, { onResult: (n, q) => {
+      count.textContent = q ? U.catalog.results(n) : U.catalog.all(base);
+      $('pk-none')!.hidden = !(q && n === 0);
+      if (noneAll) noneAll.href = `${P}/play/${q ? `?q=${encodeURIComponent(q)}` : ''}`;
+    } });
+
+    // 즐겨찾기가 있을 때만 옆줄에 그 칸을 세운다. 실제 진열대는 /play/ 위쪽에 있다
+    const favBtn = $('pk-cat-fav')!;
+    const syncFav = () => { const n = $('fav-row')?.children.length ?? favCount(); favBtn.hidden = n === 0; favBtn.querySelector('b')!.textContent = String(n); };
+    const favCount = () => { try { return (JSON.parse(localStorage.getItem('fav:keys') ?? '[]') as string[]).length; } catch { return 0; } };
+    initFavUI({ onToggle: syncFav }); syncFav();
+
+    // 하던 퍼즐 — 누르면 판으로 넘긴다. 서버에만 있는 것도 /board/ 가 알아서 받아 온다 (/play/ 에만)
     let remoteSaves: SaveMeta[] = [];
     const remoteReady = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
     async function listSaves() {
-      const box = $('pk-resume-list'), sec = $('pk-resume'); if (!hasIDB()) return;
+      const box = $('pk-resume-list'), sec = $('pk-resume'); if (!box || !sec || !hasIDB()) return;
       let list: (SaveData | (SaveMeta & { remote: true }))[] = []; try { list = await saves.all(); } catch {}
       await remoteReady; const have = new Set(list.map((x) => x.id));
       for (const m of remoteSaves) if (!have.has(m.id)) list.push({ ...m, remote: true });
@@ -109,7 +190,5 @@ const shelves = shelvesFor(lang);
 
     // 판에서 돌려보내며 남긴 말이 있으면 여기서 띄운다
     try { const m = sessionStorage.getItem('jl:toast'); if (m) { sessionStorage.removeItem('jl:toast'); toast(m); } } catch {}
-
-    initFavUI(); initSearch($('pk-search') as HTMLInputElement);
   </script>
 </Base>

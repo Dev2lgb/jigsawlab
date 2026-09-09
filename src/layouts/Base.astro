@@ -134,7 +134,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     // 모바일 메뉴
     const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
     const setMenu = (o: boolean) => { menu.hidden = !o; mb.setAttribute('aria-expanded', String(o)); document.documentElement.style.overflow = o ? 'hidden' : ''; };
-    mb.addEventListener('click', () => setMenu(menu.hidden)); document.getElementById('menu-bg')!.addEventListener('click', () => setMenu(false)); addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    mb.addEventListener('click', () => setMenu(!!menu.hidden)); document.getElementById('menu-bg')!.addEventListener('click', () => setMenu(false)); addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
     // 언어: 직접 고르면 기억, 첫 방문이면 브라우저 언어로
     document.querySelectorAll<HTMLAnchorElement>('a[data-lang]').forEach((a) => a.addEventListener('click', () => { try { localStorage.setItem('lang', a.dataset.lang!); } catch {} }));
     try { const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang'); const want = saved || (navigator.language || '').slice(0, 2); if (['ko', 'en', 'ja'].includes(want) && want !== pageLang && !saved) { localStorage.setItem('lang', want); const path = location.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/'; location.replace((want === 'ko' ? '' : '/' + want) + path + location.search); } } catch {}

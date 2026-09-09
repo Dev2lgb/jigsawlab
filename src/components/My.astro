@@ -50,7 +50,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
       const im = document.createElement('img'); im.src = o.img; im.alt = ''; im.loading = 'lazy'; a.appendChild(im);
       if (o.bar !== undefined) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = `<i style="width:${o.bar}%"></i>`; a.appendChild(b); }
-      const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.append(t, s);
+      const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.appendChild(t); a.appendChild(s);
       if (o.badge) { const b = document.createElement('span'); b.className = 'badge'; b.textContent = o.badge; a.appendChild(b); }
       if (o.onDel) { const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '✕'; x.title = M.del; x.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); o.onDel!(); }); a.appendChild(x); }
       return a;

@@ -188,10 +188,10 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
         const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.play.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmt(sv.elapsed / 1000)}`);
         const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
         if ('remote' in sv) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.play.cloud; a.appendChild(c); }
-        a.append(im, bar, ti, st);
+        for (const n of [im, bar, ti, st]) a.appendChild(n);
         const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕';
         del.addEventListener('click', async (e) => { e.preventDefault(); e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} remoteSaves = remoteSaves.filter((m) => m.id !== sv.id); syncDelSave(sv.id); listSaves(); });
-        wrap.append(a, del); box.appendChild(wrap);
+        wrap.appendChild(a); wrap.appendChild(del); box.appendChild(wrap);
       }
     }
     listSaves();

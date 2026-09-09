@@ -10,7 +10,34 @@ export const UI = {
     hero: { today: '오늘의 그림', pieces: (n: number) => `${n}조각`, solved: (n: number) => (n ? `오늘 ${n}명이 완성했어요` : ''), fastest: (t: string) => `가장 빠른 기록 ${t}`, cta: '오늘의 퍼즐 맞추기', photo: '내 사진으로 만들기', sameForAll: '', h1: '제대로 된 직소 퍼즐,\n폰에서도.', sub: '맞는 조각끼리 붙어서 뭉치로 움직이고, 색깔별로 더미를 나누고, 하던 판은 저장돼요. 링크 하나면 친구랑 같이 맞출 수 있어요.', feats: ['맞는 조각끼리 붙어서 뭉치로', '색깔별로 더미 나누기', '하던 판은 그대로 저장', '48조각부터 1000조각까지', '링크 하나로 친구랑 같이', '내 사진으로도'], pick: '퍼즐 고르기', statPuzzles: '퍼즐', statSolved: '완성된 판', todayLink: (t: string) => `오늘의 그림 · ${t} · 같이 맞추기` },
     how: { title: '이렇게 놀아요', steps: [['퍼즐 고르기', '마음에 드는 그림을 고르거나, 내 사진을 골라요.'], ['조각 수 정하기', '48조각으로 가볍게, 1000조각으로 제대로.'], ['끌어 올려 끼우기', '트레이에서 조각을 올려 놓으면 딸깍. 맞는 조각끼리는 붙어서 같이 움직여요.']] },
     catalog: { title: '퍼즐', sub: '', prev: '이전', next: '다음', all: (n: number) => `모두 ${n}점`, search: '제목·작가 검색', results: (n: number) => `${n}점`, none: '검색 결과가 없어요', fav: '즐겨찾기', favAdd: '즐겨찾기에 추가', favRemove: '즐겨찾기에서 빼기', more: (n: number) => `${n}점 더 보기`, less: '접기' },
-    photo: { title: '내 사진으로 만들기', body: '가족사진도, 여행 사진도, 아이가 그린 그림도. 사진은 폰 밖으로 나가지 않아요.', cta: '사진 고르기' },
+    // /photo/ 랜딩 — 히어로에서 바로 업로드, 아래는 SEO 본문(body 는 About 의 seo 와 같은 HTML 문자열 방식)
+    photo: {
+      seoTitle: '내 사진으로 퍼즐 만들기 — 무료 직소 퍼즐 제작',
+      seoDesc: '가족사진·여행 사진·아이가 그린 그림을 직소 퍼즐로 만들어 바로 맞춰요. 사진은 기기 밖으로 나가지 않고, 48조각부터 1000조각까지 원하는 만큼. 가입도 설치도 없이 무료.',
+      h1: '내 사진으로\n퍼즐 만들기',
+      lead: '가족사진도, 여행 사진도, 아이가 그린 그림도. 고르는 순간 조각으로 잘려요.',
+      cta: '사진 고르기', hint: '눌러서 고르거나 여기에 끌어다 놓기',
+      safe: '사진은 이 기기 안에서만 처리돼요. 서버로 올라가지 않습니다.',
+      steps: [
+        ['사진 고르기', '폰 앨범에서든 컴퓨터에서든. 가로세로 비율은 그대로 살려요.'],
+        ['조각 수 정하기', '48조각이면 몇 분, 1000조각이면 며칠. 사진 비율에 맞춰 격자를 잡아 줍니다.'],
+        ['맞추기', '맞는 조각끼리 붙어 뭉치로 움직여요. 하다 말면 그대로 저장됩니다.'],
+      ] as [string, string][],
+      body: `<h2>사진은 어디로 가나요</h2>
+<p>어디로도 가지 않습니다. 고른 사진은 브라우저 안에서 잘려 조각이 되고, 진행 상황은 이 기기의 저장소에만 남습니다. 저희 서버에 사진이 올라가는 일은 없고, 따라서 저희가 그 사진을 볼 방법도 없습니다.</p>
+<p>친구를 불러 같이 맞출 때도 마찬가지입니다. 사진은 방을 만든 사람의 브라우저에서 친구의 브라우저로 직접 건너갑니다. 서버는 두 브라우저가 서로를 찾도록 신호만 중계하고, 사진 자체는 지나가지 않습니다.</p>
+<p>퍼즐을 다 맞추거나 목록에서 지우면 사진도 함께 지워집니다. 브라우저 데이터를 비우면 그때도 사라집니다.</p>
+<h2>어떤 사진이 퍼즐로 잘 나오나요</h2>
+<p>조각마다 단서가 있어야 재미있습니다. 색과 무늬가 고르게 퍼진 사진이 좋고, 하늘이나 흰 벽처럼 넓고 밋밋한 면이 크게 차지하는 사진은 그 부분에서 손이 멈춥니다. 물론 그걸 일부러 노리는 분도 있습니다.</p>
+<p>인물 사진은 얼굴이 큼직하게 나온 쪽이 잘 맞춰집니다. 여러 명이 작게 찍힌 단체 사진은 조각 수를 낮추는 편이 낫습니다. 해상도는 긴 쪽이 1000픽셀만 넘으면 충분하고, 요즘 폰 사진은 전부 여유롭게 넘습니다.</p>
+<h2>몇 조각이 좋을까요</h2>
+<p>처음이라면 48조각이나 100조각으로 한 판 해 보고 정하시는 걸 권합니다. 대략 48조각은 몇 분, 200조각은 삼사십 분, 500조각은 두어 시간, 1000조각은 여러 날에 걸쳐 나눠 맞추게 됩니다. 직접 입력하면 2000조각까지 갑니다.</p>
+<p>가로세로 비율에 맞춰 격자를 잡기 때문에 실제 조각 수는 고른 숫자 근처에서 조금 달라집니다. 세로로 긴 사진에 1000조각을 고르면 990조각이나 1008조각이 되는 식입니다.</p>
+<h2>친구랑 같이 맞추기</h2>
+<p>판을 열고 초대 버튼을 누르면 링크가 나옵니다. 그 링크를 받은 사람은 가입도 설치도 없이 바로 들어와 같은 판을 함께 맞춥니다. 최대 여덟 명까지 되고, 누가 어떤 조각을 잡고 있는지 서로 보입니다.</p>
+<h2>선물로 만들 때</h2>
+<p>생일이나 기념일에 사진 한 장을 퍼즐로 만들어 링크를 보내는 식으로 쓰는 분들이 있습니다. 받는 사람은 링크만 누르면 되고, 다 맞추면 원래 사진이 완성됩니다. 조각 수를 너무 높이면 부담스러우니 100~300조각 정도가 무난합니다.</p>`,
+    },
     rank: { title: '오늘의 퍼즐 랭킹', sub: '자정에 새 그림이 걸려요', empty: '아직 완성한 사람이 없어요. 첫 번째가 되어 보세요.', fail: '랭킹을 불러오지 못했어요', total: (n: number) => `오늘 ${n}명 완성`, more: '오늘의 퍼즐 맞추기' },
     detail: { open: '이 그림으로 맞추기', start: '시작', pieces: '몇 조각으로 할까요?', best: (t: string) => `내 최고 기록 ${t}`, noBest: '아직 기록이 없어요', museum: '소장', year: '제작', medium: '재료', source: '작품 정보', sources: { aic: '시카고 미술관', commons: '위키미디어 공용', nasa: 'NASA' }, more: '이런 퍼즐도', back: '퍼즐', startDaily: '시작', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: '이어하기', resumeTitle: '하던 퍼즐', resumeHint: (pct: number, t: string) => `${pct}% 완성 · ${t}`, startOver: '처음부터', restartAsk: '지금 판을 지우고 처음부터 할까요?', saved: '저장됨', piles: '더미', pileAll: '전체', pileEdge: '테두리', pileNew: '+ 새 더미', moveTo: '이 조각을 어디로?', pileName: (n: number) => `더미 ${n}`, sortColor: '색상순', shuffle: '섞기', outline: '조각 윤곽선', dropHere: '여기에 놓기', toPile: (n: string) => `${n}(으)로 옮김`, streak: (n: number) => `${n}일 연속 완주`, past: '지난 오늘의 퍼즐', done: '완성', notYet: '아직', invite: '초대', inviteLead: '아직 혼자예요. 링크를 보내면 친구가 바로 들어와요', players: '접속자', photoSolo: '친구를 초대해도 사진은 서버를 거치지 않고 내 브라우저에서 친구 브라우저로 직접 전달돼요', inviteTitle: '같이 맞추자 🧩', inviteText: 'jigsawlab에서 같이 퍼즐 맞추기', me: '나', nickAsk: '닉네임을 정해 주세요', roomGone: '방이 없거나 끝났어요', disconnected: '연결이 끊겼어요. 다시 연결 중…', reconnected: '다시 연결됐어요', gate: { kicker: '퍼즐 방 초대', login: 'Google 로 로그인하고 들어가기', loginSub: '선택 사항이에요. 업적과 하던 퍼즐이 기기 사이에 이어져요. 이메일·이름은 저장하지 않아요', or: '또는', guest: '손님으로', nickPh: '닉네임', guestSub: '닉네임만 적고 바로 들어가요. 기록은 이 브라우저에만 남아요', online: (n: number) => `${n}명 접속 중` }, cloud: '동기화됨', cloudSave: '서버에 저장', cloudSaved: '서버에 저장했어요. 다른 기기에서 이어할 수 있어요', cloudFail: '저장이 안 됐어요. 잠시 뒤 다시 눌러 주세요', photoRecv: '방장에게서 사진 받는 중…', photoWait: '사진을 가진 사람이 아직 없어요. 방장이 들어오면 자동으로 받아요', photoFail: '사진을 받지 못했어요. 방장이 접속해 있어야 하고, 일부 네트워크에서는 연결이 안 될 수 있어요', joined: (n: string) => `${n} 들어옴`, heldBy: (n: string) => (n ? `${n}이 잡고 있어요` : '다른 사람이 잡고 있어요'), together: '친구랑 같이', togetherSub: '링크 하나로 같이 맞춰요. 가입 없음, 최대 8명', creating: '방 만드는 중…', joining: '방에 들어가는 중…', guest: '손님', rename: '이름 바꾸기', today: '오늘' },
@@ -26,7 +53,33 @@ export const UI = {
     hero: { today: "Today's picture", pieces: (n: number) => `${n} pieces`, solved: (n: number) => (n ? `${n} people finished it today` : ''), fastest: (t: string) => `Fastest time ${t}`, cta: "Solve today's puzzle", photo: 'Make one from my photo', sameForAll: '', h1: 'A real jigsaw,\non your phone.', sub: 'Pieces that fit snap together and move as a cluster, sort into piles by colour, and your board is saved when you leave. Send a link and solve it with friends.', feats: ['Matching pieces snap into clusters', 'Sort into piles by colour', 'Your board is saved as you go', 'From 48 to 1000 pieces', 'Play with friends from one link', 'Your own photos too'], pick: 'Pick a puzzle', statPuzzles: 'puzzles', statSolved: 'boards finished', todayLink: (t: string) => `Today's picture · ${t} · solve it together` },
     how: { title: 'How to play', steps: [['Pick a puzzle', 'A painting you like, or one of your own photos.'], ['Choose a piece count', '48 for a quick one, 1000 for the real thing.'], ['Drag up and snap', 'Pull a piece up from the tray and drop it. Matching pieces click together and move as one.']] },
     catalog: { title: 'Puzzles', sub: '', prev: 'Previous', next: 'Next', all: (n: number) => `${n} puzzles`, search: 'Search title or artist', results: (n: number) => `${n} puzzles`, none: 'No matches', fav: 'Favourites', favAdd: 'Add to favourites', favRemove: 'Remove from favourites', more: (n: number) => `Show ${n} more`, less: 'Show less' },
-    photo: { title: 'Make one from your photo', body: 'Family photos, holidays, a kid\'s drawing. Your photo never leaves your phone.', cta: 'Choose a photo' },
+    photo: {
+      seoTitle: 'Make a jigsaw puzzle from your own photo — free',
+      seoDesc: 'Turn a family photo, a holiday shot or a child\'s drawing into a jigsaw puzzle and solve it right away. Your photo never leaves your device. 48 to 1000 pieces, free, no sign-up.',
+      h1: 'Make a puzzle\nfrom your photo',
+      lead: 'Family photos, holidays, a drawing your kid brought home. Pick one and it is cut into pieces on the spot.',
+      cta: 'Choose a photo', hint: 'Tap to choose, or drop a photo here',
+      safe: 'Your photo is handled entirely on this device. It is never uploaded to a server.',
+      steps: [
+        ['Choose a photo', 'From your phone\'s album or your computer. The aspect ratio is kept as it is.'],
+        ['Pick the piece count', '48 pieces takes minutes, 1000 takes days. The grid is fitted to your photo\'s shape.'],
+        ['Solve it', 'Matching pieces snap together and move as a cluster. Stop anytime and the board is saved.'],
+      ] as [string, string][],
+      body: `<h2>Where does the photo go</h2>
+<p>Nowhere. The photo you pick is cut into pieces inside your browser, and your progress is kept in this device's own storage. Nothing is uploaded to our servers, which also means we have no way of seeing it.</p>
+<p>The same holds when you invite a friend. The photo travels straight from the host's browser to your friend's. Our server only relays the signals the two browsers need to find each other — the picture itself never passes through it.</p>
+<p>When you finish a puzzle or delete it from your list, the photo goes with it. Clearing your browser data removes it too.</p>
+<h2>Which photos make good puzzles</h2>
+<p>Every piece needs a clue on it. Photos with colour and detail spread evenly across the frame work best, while a big expanse of sky or a plain white wall will stall you right there — though some people pick those on purpose.</p>
+<p>Portraits work well when the face is large in the frame. Group shots where everyone is small are better at a lower piece count. As for resolution, anything over about 1000 pixels on the long edge is plenty, and every modern phone photo clears that comfortably.</p>
+<h2>How many pieces</h2>
+<p>If this is your first one, try 48 or 100 pieces and go from there. Roughly: 48 pieces takes a few minutes, 200 takes half an hour or so, 500 runs to a couple of hours, and 1000 is something you come back to over several days. Type your own number and it goes up to 2000.</p>
+<p>Because the grid is fitted to your photo's aspect ratio, the real count lands near the number you picked rather than exactly on it. Choose 1000 for a tall photo and you may get 990 or 1008.</p>
+<h2>Solving it with friends</h2>
+<p>Open a board, press invite, and you get a link. Whoever opens it joins the same board straight away — no sign-up, no install. Up to eight people at once, and you can see which piece each person is holding.</p>
+<h2>Making one as a gift</h2>
+<p>Some people turn a single photo into a puzzle for a birthday or an anniversary and send the link. The other person just taps it, and the original photo appears as they finish. Keep it around 100 to 300 pieces — much higher starts to feel like a chore rather than a present.</p>`,
+    },
     rank: { title: "Today's leaderboard", sub: 'A new picture at midnight KST', empty: 'Nobody has finished yet. Be the first.', fail: "Couldn't load the leaderboard", total: (n: number) => `${n} finished today`, more: "Solve today's puzzle" },
     detail: { open: 'Solve this painting', start: 'Start', pieces: 'How many pieces?', best: (t: string) => `Your best ${t}`, noBest: 'No record yet', museum: 'Collection', year: 'Painted', medium: 'Medium', source: 'Object record', sources: { aic: 'Art Institute of Chicago', commons: 'Wikimedia Commons', nasa: 'NASA' }, more: 'More like this', back: 'Puzzles', startDaily: 'start', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: 'Continue', resumeTitle: 'Puzzle in progress', resumeHint: (pct: number, t: string) => `${pct}% done · ${t}`, startOver: 'Start over', restartAsk: 'Clear this board and start over?', saved: 'Saved', piles: 'Piles', pileAll: 'All', pileEdge: 'Edges', pileNew: '+ New pile', moveTo: 'Move this piece to', pileName: (n: number) => `Pile ${n}`, sortColor: 'By colour', shuffle: 'Shuffle', outline: 'Piece outlines', dropHere: 'Drop here', toPile: (n: string) => `Moved to ${n}`, streak: (n: number) => `${n}-day streak`, past: 'Past daily puzzles', done: 'Done', notYet: 'Not yet', invite: 'Invite', inviteLead: 'Just you so far. Send the link and a friend can join right away', players: 'In the room', photoSolo: 'If you invite friends, the photo goes straight from your browser to theirs. It never touches our server', inviteTitle: 'Solve this with me 🧩', inviteText: 'Jigsaw together on jigsawlab', me: 'me', nickAsk: 'Pick a nickname', roomGone: 'That room is gone', disconnected: 'Connection lost. Reconnecting…', reconnected: 'Reconnected', gate: { kicker: 'Puzzle room invite', login: 'Sign in with Google and join', loginSub: 'Optional. Keeps your finished puzzles and boards in progress across devices. No email or name is stored', or: 'or', guest: 'Join as guest', nickPh: 'Nickname', guestSub: 'Just a nickname. Records stay in this browser only', online: (n: number) => `${n} online` }, cloud: 'Synced', cloudSave: 'Save to server', cloudSaved: 'Saved to the server. Continue on any device', cloudFail: "Couldn't save. Try again in a moment", photoRecv: 'Receiving the photo from the host…', photoWait: 'Nobody with the photo is here yet. It arrives automatically when the host is back', photoFail: "Couldn't receive the photo. The host must be online, and some networks block the direct connection", joined: (n: string) => `${n} joined`, heldBy: (n: string) => (n ? `${n} is holding that` : 'Someone else is holding that'), together: 'Play with friends', togetherSub: 'One link, up to 8 people, no sign-up', creating: 'Creating a room…', joining: 'Joining the room…', guest: 'Guest', rename: 'Change name', today: 'Today' },
@@ -42,7 +95,33 @@ export const UI = {
     hero: { today: '今日の絵', pieces: (n: number) => `${n}ピース`, solved: (n: number) => (n ? `今日 ${n}人が完成` : ''), fastest: (t: string) => `最速タイム ${t}`, cta: '今日のパズルを解く', photo: '自分の写真で作る', sameForAll: '', h1: '本物のジグソーを、\nスマホでも。', sub: '合うピースはくっついて塊で動き、色ごとに山に分け、途中の盤面は保存されます。リンク一つで友だちと一緒に組めます。', feats: ['合うピースはくっついて塊に', '色ごとに山を分ける', '途中の盤面はそのまま保存', '48ピースから1000ピースまで', 'リンク一つで友だちと一緒に', '自分の写真でも'], pick: 'パズルを選ぶ', statPuzzles: 'パズル', statSolved: '完成した盤面', todayLink: (t: string) => `今日の絵 · ${t} · 一緒に組む` },
     how: { title: '遊び方', steps: [['パズルを選ぶ', '好きな絵を選ぶか、自分の写真を。'], ['ピース数を決める', '48で軽く、1000で本格的に。'], ['引き上げてはめる', 'トレイからピースを上げて置くとカチッ。合うピース同士はくっついて一緒に動きます。']] },
     catalog: { title: 'パズル', sub: '', prev: '前へ', next: '次へ', all: (n: number) => `全${n}点`, search: '題名・作家で検索', results: (n: number) => `${n}点`, none: '該当なし', fav: 'お気に入り', favAdd: 'お気に入りに追加', favRemove: 'お気に入りから外す', more: (n: number) => `さらに${n}点`, less: '閉じる' },
-    photo: { title: '自分の写真で作る', body: '家族写真も、旅の写真も、子どもの絵も。写真は端末の外に出ません。', cta: '写真を選ぶ' },
+    photo: {
+      seoTitle: '自分の写真でジグソーパズルを作る — 無料',
+      seoDesc: '家族写真・旅の写真・子どもの絵をジグソーパズルにしてそのまま遊べます。写真は端末の外に出ません。48ピースから1000ピースまで、登録不要・無料。',
+      h1: '自分の写真で\nパズルを作る',
+      lead: '家族写真も、旅の写真も、子どもが描いた絵も。選んだそのときにピースへ切り分けます。',
+      cta: '写真を選ぶ', hint: 'タップして選ぶか、ここにドロップ',
+      safe: '写真はこの端末の中だけで処理されます。サーバーにアップロードされることはありません。',
+      steps: [
+        ['写真を選ぶ', 'スマホのアルバムからでもパソコンからでも。縦横比はそのまま活かします。'],
+        ['ピース数を決める', '48ピースなら数分、1000ピースなら数日。写真の比率に合わせて格子を組みます。'],
+        ['組む', '合うピース同士がくっついて塊で動きます。途中でやめてもそのまま保存されます。'],
+      ] as [string, string][],
+      body: `<h2>写真はどこへ行くのか</h2>
+<p>どこへも行きません。選んだ写真はブラウザの中で切り分けられ、進行状況はこの端末の保存領域にだけ残ります。私たちのサーバーに上がることはなく、したがって私たちがその写真を見る手段もありません。</p>
+<p>友だちを招いて一緒に組むときも同じです。写真は部屋を作った人のブラウザから友だちのブラウザへ直接渡ります。サーバーは二つのブラウザが互いを見つけるための信号を中継するだけで、写真そのものは通りません。</p>
+<p>パズルを完成させるか一覧から削除すると、写真も一緒に消えます。ブラウザのデータを消去したときも同様です。</p>
+<h2>どんな写真がパズルに向くか</h2>
+<p>ピースごとに手がかりが要ります。色や模様が画面全体に散らばっている写真が向いていて、空や白い壁のような広く平坦な面が大きく占める写真は、その部分で手が止まります。もっとも、それを承知で選ぶ人もいます。</p>
+<p>人物写真は顔が大きく写っているほうが組みやすくなります。全員が小さく写った集合写真は、ピース数を抑えたほうが快適です。解像度は長辺が1000ピクセルを超えていれば十分で、最近のスマホの写真はどれも余裕で超えています。</p>
+<h2>何ピースがいいか</h2>
+<p>初めてなら48ピースか100ピースで一度組んでから決めることをおすすめします。目安として48ピースは数分、200ピースは三、四十分、500ピースは二時間ほど、1000ピースは何日かに分けて組むことになります。自分で入力すれば2000ピースまで指定できます。</p>
+<p>縦横比に合わせて格子を組むため、実際のピース数は選んだ数の近くで少しずれます。縦長の写真で1000を選ぶと990や1008になる、といった具合です。</p>
+<h2>友だちと一緒に組む</h2>
+<p>盤面を開いて招待ボタンを押すとリンクが出ます。受け取った人は登録もインストールもなしにそのまま入って、同じ盤面を一緒に組めます。最大八人まで、誰がどのピースを持っているかも見えます。</p>
+<h2>贈り物として作る</h2>
+<p>誕生日や記念日に写真一枚をパズルにしてリンクを送る、という使い方をする人がいます。受け取る側はリンクを開くだけで、組み上がると元の写真が現れます。ピース数を上げすぎると負担になるので、100〜300ピースあたりが無難です。</p>`,
+    },
     rank: { title: '今日のランキング', sub: '0時に新しい絵に変わります', empty: 'まだ完成した人がいません。最初の一人に。', fail: 'ランキングを読み込めませんでした', total: (n: number) => `今日 ${n}人完成`, more: '今日のパズルを解く' },
     detail: { open: 'この絵で遊ぶ', start: 'スタート', pieces: '何ピースにしますか？', best: (t: string) => `自己ベスト ${t}`, noBest: 'まだ記録がありません', museum: '所蔵', year: '制作', medium: '素材', source: '作品情報', sources: { aic: 'シカゴ美術館', commons: 'ウィキメディア・コモンズ', nasa: 'NASA' }, more: 'こんなパズルも', back: 'パズル', startDaily: 'を始める', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: '続きから', resumeTitle: '途中のパズル', resumeHint: (pct: number, t: string) => `${pct}% 完成 · ${t}`, startOver: '最初から', restartAsk: 'この盤面を消して最初からやり直しますか？', saved: '保存済み', piles: '山', pileAll: '全部', pileEdge: '縁', pileNew: '+ 新しい山', moveTo: 'このピースをどこへ？', pileName: (n: number) => `山 ${n}`, sortColor: '色順', shuffle: 'シャッフル', outline: 'ピースの輪郭', dropHere: 'ここに置く', toPile: (n: string) => `${n}へ移動`, streak: (n: number) => `${n}日連続完成`, past: '過去の今日のパズル', done: '完成', notYet: 'まだ', invite: '招待', inviteLead: 'まだ一人です。リンクを送ればすぐに友だちが入れます', players: '参加者', photoSolo: '友だちを招待しても、写真はサーバーを経由せず自分のブラウザから友だちのブラウザへ直接送られます', inviteTitle: '一緒に組もう 🧩', inviteText: 'jigsawlabで一緒にジグソー', me: '自分', nickAsk: 'ニックネームを決めてください', roomGone: '部屋がないか終了しました', disconnected: '接続が切れました。再接続中…', reconnected: '再接続しました', gate: { kicker: 'パズル部屋への招待', login: 'Google でログインして入る', loginSub: '任意です。完成記録と途中のパズルが端末間で引き継がれます。メール・名前は保存しません', or: 'または', guest: 'ゲストで入る', nickPh: 'ニックネーム', guestSub: 'ニックネームだけで入れます。記録はこのブラウザにだけ残ります', online: (n: number) => `${n}人接続中` }, cloud: '同期済み', cloudSave: 'サーバーに保存', cloudSaved: 'サーバーに保存しました。他の端末でも続けられます', cloudFail: '保存できませんでした。しばらくしてもう一度押してください', photoRecv: 'ホストから写真を受信中…', photoWait: '写真を持っている人がまだいません。ホストが戻れば自動で受信します', photoFail: '写真を受信できませんでした。ホストが接続中である必要があり、一部のネットワークでは直接接続できないことがあります', joined: (n: string) => `${n} が参加`, heldBy: (n: string) => (n ? `${n} が持っています` : '他の人が持っています'), together: '友だちと一緒に', togetherSub: 'リンク一つで一緒に。登録不要、最大8人', creating: '部屋を作成中…', joining: '部屋に入っています…', guest: 'ゲスト', rename: '名前を変更', today: '今日' },

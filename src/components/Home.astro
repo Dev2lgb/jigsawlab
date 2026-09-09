@@ -19,7 +19,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
       <p class="sub">{T.hero.sub}</p>
       <ul class="feats">{T.hero.feats.map((f) => <li>{f}</li>)}</ul>
       <div class="nums"><div><b data-n={total}>{total}</b><span>{T.hero.statPuzzles}</span></div><div id="num-solved" hidden><b data-n="0">0</b><span>{T.hero.statSolved}</span></div></div>
-      <div class="cta"><a class="btn primary lg" href="#catalog">{T.hero.pick}</a><a class="btn lg" href={`${P}/play/?photo=1`}>{T.hero.photo}</a></div>
+      <div class="cta"><a class="btn primary lg" href="#catalog">{T.hero.pick}</a><a class="btn lg" href={`${P}/photo/`}>{T.hero.photo}</a></div>
       <p class="streak" id="hero-streak" hidden>🔥 <span></span></p>
     </div>
     <div class="hero-side">

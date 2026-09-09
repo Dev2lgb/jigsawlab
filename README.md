@@ -31,11 +31,11 @@
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`
 - `src/components/Home.astro` 랜딩(히어로·하는 법·상자 진열대·내 사진·랭킹·가이드), `Jigsaw.astro` 앱 본체(/play/: 선택·조각 수 다이얼로그·플레이·결과), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
 - `src/i18n/jigsaw.ts` 3개 국어 문구 + SEO 본문, `src/i18n/ui.ts` 사이트 공통
-- `src/pages/{,en/,ja/}` — `index.astro` 홈, `play.astro` 앱, `puzzle/[key].astro` 상세(22점 정적), `s/index.astro` 공유 카드(서버), `privacy.astro`; `api/daily.ts`(서버)
+- `src/pages/{,en/,ja/}` — `index.astro` 홈, `play.astro` 앱, `photo.astro` 내 사진 랜딩, `puzzle/[key].astro` 상세(22점 정적), `s/index.astro` 공유 카드(서버), `privacy.astro`; `api/daily.ts`(서버)
 - 작품 데이터: `src/data/works.ts` 가 전체 목록(WORKS·DAILY_POOL). 기존 22점 = `lib/jigsaw.ts` PAINTINGS + `paintings.ts`; AIC 204점 = `aic.json`(메타) + `worksText1~3.ts`(ko/ja 제목·3언어 소개); 추가 소스 197점(위키미디어 공용 명화·한국 회화·포토크롬, NASA 우주) = `extra.json`(메타·소장처·출처·라이선스) + `worksText4~5.ts`. 작가명 표기는 `artists.ts`, 카테고리(진열대) `catalog.ts` — 작품 cat 이 catalog 에 없으면 빌드가 실패함. 진열대 앞줄 순서는 `popular.ts`
 - 이미지: `public/jigsaw/<key>.webp`(1600) · `t-<key>.webp`(480) · `o-<key>.jpg`(OG 400²)
 - 카탈로그 확장 파이프라인 ① `scripts/met/`(AIC): `scan-aic.mjs`(시카고 미술관 API CC0 후보 수집 + 컨택트 시트) → 시트 보고 `select.mjs` 의 PICK 편집 → `build.mjs`(IIIF 1686px 다운로드·WebP 변환·aic.json). ② `scripts/extra/`(위키미디어 공용·NASA): `scan.mjs`(카테고리·검색·NASA API 로 후보 수집 → candidates.json + sheet-*.html) → `select.mjs`(고른 항목에 영문 제목·작가·연도·소장처 코드 지정 → selected.json) → `build.mjs`(1600px 썸네일 다운로드, 포토크롬은 스캔 테두리·색상띠 자동 크롭, WebP·썸네일·OG 생성 → extra.json) → 새 key 의 소개를 worksText4~5 에, 새 작가를 artists 에 추가. Met API 는 403 스로틀이 심해 보류, 미국 의회도서관 사이트는 Cloudflare 차단이라 Commons 경유
-- 딥링크(한 진입점 `/play/`): `?k=<key>&n=<조각>` 그림 즉시 시작, `?daily=1|YYYY-MM-DD` 오늘의 퍼즐, `?resume=<id>` 하던 퍼즐, `?room=<id>` 방, `?photo=1` 내 사진 강조, 없음 → 선택 화면. 부팅은 2단계: `PlayBoot.astro`(head 인라인, 첫 페인트 전에 `html[data-boot]` 로 로딩 화면·원본 preload) → `Jigsaw.astro` 의 `boot()`(실제 분기). 선택 화면은 URL 이 그림·방·이어하기를 가리키면 처음부터 안 그려짐
+- 딥링크(한 진입점 `/play/`): `?k=<key>&n=<조각>` 그림 즉시 시작, `?daily=1|YYYY-MM-DD` 오늘의 퍼즐, `?resume=<id>` 하던 퍼즐, `?room=<id>` 방, `?photo=<id>` `/photo/` 에서 고른 사진(IndexedDB 임시 저장 후 id 만 전달)·`?photo=1` 내 사진 강조, 없음 → 선택 화면. 부팅은 2단계: `PlayBoot.astro`(head 인라인, 첫 페인트 전에 `html[data-boot]` 로 로딩 화면·원본 preload) → `Jigsaw.astro` 의 `boot()`(실제 분기). 선택 화면은 URL 이 그림·방·이어하기를 가리키면 처음부터 안 그려짐
 - 진열대: 홈·`/play/` 는 세로 그리드 `.shelf-grid.capped` 로 카테고리마다 앞 10점만 보이고 `.shelf-more` 버튼으로 펼침(`shelf.ts` 의 `initShelfMore`, 검색 중엔 `.shelf.searching` 으로 전부 표시). 앞줄에 세울 대표작 순서는 `src/data/popular.ts`(키가 틀리면 빌드 실패). 상세 페이지의 가로 진열대 `.shelf-row` 는 `shelf.ts` 가 PC 용 좌우 화살표·마우스 드래그를 붙임(Base.astro 에서 초기화)
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 테스트 훅: `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`
@@ -44,5 +44,5 @@
 1. ✅ 뼈대·직소 이식·라이트 테마 → ✅ 리디자인(랜딩 홈·/play/·/puzzle/<key>/ 상세·상자 카탈로그·OG)
 2. ✅ 조각끼리 붙기·뭉치 이동·스냅 애니메이션·햅틱·딸깍 소리, 1000조각+(조각 단위 확대, 트레이 지연 렌더, 프리셋 48~1000, 직접 입력 2000)
 3. ✅ 진행 저장·이어하기(IndexedDB, 사진 포함), 트레이 다중 더미·색상 정렬, 판 위 조각 윤곽선, 연속 완주·지난 7일 데일리(과거 판 플레이 가능, 랭킹은 당일만). 상자→상세 페이지→조각 수 선택 즉시 시작(다이얼로그는 내 사진·이어하기 여부만)
-4. 도메인 연결·쿠팡 파트너스(명화→실물 퍼즐, 내 사진→사진퍼즐 제작)
-5. 카탈로그 확장·실시간 멀티(방 링크)
+4. 카탈로그 확장·실시간 멀티(방 링크)
+5. 유입 — 검색 의도별 랜딩 분리(`/photo/` 완료), Cloudflare Web Analytics·GSC·네이버

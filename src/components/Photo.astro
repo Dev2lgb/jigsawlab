@@ -1,0 +1,96 @@
+---
+// /photo/ — 내 사진으로 퍼즐 만들기. /play/ 와 달리 검색으로 들어온 사람을 받는 랜딩이라
+// 히어로에서 바로 업로드하고(선택 화면을 거치지 않음), 아래에 본문을 둔다.
+// 고른 사진은 IndexedDB 에 임시로 넣고 /play/?photo=<id> 로 넘긴다 — 파일은 URL 로 못 넘기니까.
+import Base from '../layouts/Base.astro';
+import { UI, prefix, type Lang } from '../i18n/ui';
+import { WORKS } from '../data/works';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang), F = T.photo;
+const toc = [...F.body.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `p${i + 1}`, text: m[1] }));
+let i = 0; const body = F.body.replace(/<h2>/g, () => `<h2 id="p${++i}">`);
+const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitle, description: F.seoDesc, step: F.steps.map(([h, b], n) => ({ '@type': 'HowToStep', position: n + 1, name: h, text: b })) };
+---
+<Base title={`${F.seoTitle} · jigsawlab`} desc={F.seoDesc} lang={lang} alts={{ ko: '/photo/', en: '/en/photo/', ja: '/ja/photo/' }} path={`${P}/photo/`}>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} slot="head" />
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <div>
+        <h1>{F.h1}</h1>
+        <p class="lead">{F.lead}</p>
+        <ol class="steps">{F.steps.map(([h, b]) => <li><b>{h}</b><span>{b}</span></li>)}</ol>
+      </div>
+      <div class="up-side">
+        <label class="drop" id="ph-drop">
+          <input type="file" id="ph-file" accept="image/*" hidden />
+          <span class="ic" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="3"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m4 17 4.5-4.5a2 2 0 0 1 2.8 0L16 17"/><path d="m14 14 1.6-1.6a2 2 0 0 1 2.8 0L21 15"/></svg>
+          </span>
+          <b>{F.cta}</b>
+          <small>{F.hint}</small>
+        </label>
+        <p class="safe">{F.safe}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec"><div class="wrap guide">
+    <nav class="toc" aria-label="guide">{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
+    <article class="seo body" set:html={body} />
+  </div></section>
+
+  <section class="sec"><div class="wrap end">
+    <p>{T.catalog.all(WORKS.length)}</p>
+    <a class="btn primary lg" href={`${P}/play/`}>{T.hero.pick}</a>
+  </div></section>
+
+  <style>
+    .hero { background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+    .hero-in { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 72px); align-items: center; padding-top: clamp(40px, 6vw, 90px); padding-bottom: clamp(40px, 6vw, 80px); }
+    @media (max-width: 900px) { .hero-in { grid-template-columns: 1fr; } .up-side { order: -1; } }
+    .hero h1 { font-family: var(--brand); font-size: clamp(2.2rem, 5vw, 3.9rem); letter-spacing: -.03em; line-height: 1.08; white-space: pre-line; }
+    .lead { margin: 18px 0 0; font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-2); max-width: 34em; }
+    .steps { list-style: none; margin: 28px 0 0; padding: 20px 0 0; border-top: 1px solid var(--line); display: grid; gap: 14px; counter-reset: s; }
+    .steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: baseline; counter-increment: s; }
+    .steps li::before { content: counter(s); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; background: var(--ink); color: #fff; font-size: .8rem; font-weight: 800; }
+    .steps b { display: block; } .steps span { color: var(--ink-2); font-size: .95rem; } .steps li > span { grid-column: 2; }
+    .steps li b + span { display: block; margin-top: 2px; }
+
+    .drop { display: grid; place-items: center; gap: 6px; padding: clamp(34px, 5vw, 56px) 24px; text-align: center; cursor: pointer; border: 2px dashed var(--line-2, rgba(15,18,34,.22)); border-radius: calc(var(--r) * 1.2); background: var(--bg); transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease); }
+    .drop:hover, .drop.over { border-color: var(--ink); background: var(--bg-2); transform: translateY(-2px); }
+    .drop.busy { pointer-events: none; opacity: .6; }
+    .drop .ic { color: var(--ink); opacity: .75; } .drop b { font-size: 1.15rem; } .drop small { color: var(--muted); }
+    .safe { margin: 14px 2px 0; color: var(--muted); font-size: .88rem; line-height: 1.6; }
+
+    .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+    .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; }
+    .toc a { color: var(--ink-2); font-size: .92rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; } .toc a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
+    .body :global(h2) { margin-top: 0; scroll-margin-top: calc(var(--top-h) + 20px); } .body :global(h2 + p) { margin-top: 8px; }
+    .body :global(h2:not(:first-of-type)) { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--line); }
+    .body :global(p) { max-width: 72ch; }
+    @media (max-width: 860px) { .guide { grid-template-columns: 1fr; } .toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } .toc a { background: var(--bg-2); } }
+    .end { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; } .end p { margin: 0; color: var(--ink-2); }
+  </style>
+
+  <script>
+    import { images, hasIDB } from '../lib/db';
+    const P = location.pathname.startsWith('/en/') ? '/en' : location.pathname.startsWith('/ja/') ? '/ja' : '';
+    const drop = document.getElementById('ph-drop')!;
+    const file = document.getElementById('ph-file') as HTMLInputElement;
+
+    // 파일은 URL 로 못 넘기니 IndexedDB 에 임시로 두고 id 만 넘긴다. IDB 가 없으면 /play/ 의 선택 화면으로.
+    async function hand(f: File) {
+      if (!f.type.startsWith('image/') || !hasIDB()) { location.href = `${P}/play/?photo=1`; return; }
+      drop.classList.add('busy');
+      const id = `pending-${Date.now().toString(36)}`;
+      try { await images.put(id, f); } catch { location.href = `${P}/play/?photo=1`; return; }
+      location.href = `${P}/play/?photo=${id}`;
+    }
+
+    file.addEventListener('change', () => { const f = file.files?.[0]; if (f) hand(f); });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) hand(f); });
+  </script>
+</Base>

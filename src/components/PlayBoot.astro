@@ -5,8 +5,9 @@
 ---
 <script is:inline>
 (function () {
-  var q = new URLSearchParams(location.search), h = document.documentElement, k = q.get('k');
-  var mode = q.get('room') ? 'room' : q.get('resume') ? 'resume' : q.get('daily') ? 'daily' : k ? 'work' : '';
+  var q = new URLSearchParams(location.search), h = document.documentElement, k = q.get('k'), ph = q.get('photo');
+  // photo 는 값이 있을 때만(=/photo/ 에서 사진을 들고 넘어온 경우). ?photo=1 은 선택 화면의 업로드 칸을 강조하는 것뿐이라 로딩 화면이 필요 없다
+  var mode = q.get('room') ? 'room' : q.get('resume') ? 'resume' : q.get('daily') ? 'daily' : k ? 'work' : (ph && ph !== '1') ? 'photo' : '';
   if (!mode) return;
   h.setAttribute('data-boot', mode);
   if (k && /^[a-z0-9-]{1,48}$/.test(k)) {

@@ -2,6 +2,8 @@ import type { Lang } from './ui';
 export const JIGSAW = {
   ko: {
     title: '뭘 맞춰볼까요?', sub: '오늘의 퍼즐, 내 사진, 아니면 아래에서 하나.',
+    // title/sub 는 화면에 보이는 문구, seoTitle/seoDesc 는 <title>·description 전용
+    seoTitle: '무료 온라인 직소퍼즐 423점 맞추기', seoDesc: '가입 없이 바로 시작하는 무료 직소 퍼즐. 명화·한국 회화·우주 사진 423점과 내 사진으로, 48조각부터 1000조각까지. 링크 하나로 친구랑 같이 맞춰요.',
     pick: '내 사진 고르기', drop: '눌러서 고르거나 여기에 끌어다 놓기', daily: '오늘의 퍼즐', dailyCap: (title: string, n: number) => `${title} · ${n}조각`, gallery: '퍼즐 고르기', pieces: '조각 수', custom: '직접 입력', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}조각`, noImg: '먼저 그림을 골라 주세요', chosen: '선택한 그림', myPhoto: '내 사진',
     start: '시작', privacy: '사진은 폰 밖으로 나가지 않아요', loading: '조각 자르는 중…', opening: '퍼즐 여는 중…', saveGone: '저장된 퍼즐이 없어요',
     time: '시간', moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', zoomIn: '확대', zoomOut: '축소', fit: '맞춤', trayHint: '조각을 위로 끌어 올려 놓기',
@@ -40,6 +42,7 @@ export const JIGSAW = {
   },
   en: {
     title: 'What shall we solve?', sub: "Today's puzzle, your own photo, or one from below.",
+    seoTitle: 'Free online jigsaw puzzles — 423 to choose from', seoDesc: 'Play free jigsaw puzzles online, no sign-up. 423 paintings, Korean art and space photos — or your own picture. 48 to 1000 pieces. Solve with a friend from one link.',
     pick: 'Choose my photo', drop: 'Drop a photo here or tap to choose', daily: "Today's puzzle", dailyCap: (title: string, n: number) => `${title} · ${n} pieces`, gallery: 'Pick a puzzle', pieces: 'Pieces', custom: 'Custom', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} pieces`, noImg: 'Choose a photo or a painting first', chosen: 'Selected picture', myPhoto: 'My photo',
     start: 'Start', privacy: 'Your photo never leaves your device', loading: 'Cutting pieces…', opening: 'Opening the puzzle…', saveGone: 'That saved puzzle is gone',
     time: 'Time', moves: 'Placed', left: (n: number) => `${n} pieces left`, edgeOnly: 'Edge pieces only', hint: 'Ghost image', zoomIn: 'Zoom in', zoomOut: 'Zoom out', fit: 'Fit', trayHint: 'Drag pieces up from the tray into place. Pinch to zoom, two fingers to pan',
@@ -78,6 +81,7 @@ export const JIGSAW = {
   },
   ja: {
     title: '何を組みましょう？', sub: '今日のパズル、自分の写真、それとも下から一つ。',
+    seoTitle: '無料オンラインジグソーパズル423点', seoDesc: '登録なしですぐ遊べる無料ジグソーパズル。名画・韓国絵画・宇宙写真423点と自分の写真で、48ピースから1000ピースまで。リンク一つで友だちと一緒に。',
     pick: '写真を選ぶ', drop: 'ここに写真をドロップ、またはタップして選択', daily: '今日のパズル', dailyCap: (title: string, n: number) => `${title} · ${n}ピース`, gallery: 'パズルを選ぶ', pieces: 'ピース数', custom: '自分で入力', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}ピース`, noImg: 'まず写真か名画を選んでください', chosen: '選んだ絵', myPhoto: '自分の写真',
     start: 'スタート', privacy: '写真は端末の外に出ません', loading: 'ピースを作っています…', opening: 'パズルを開いています…', saveGone: '保存したパズルがありません',
     time: 'タイム', moves: '置いた回数', left: (n: number) => `残り${n}ピース`, edgeOnly: '外周ピースのみ', hint: '下絵', zoomIn: '拡大', zoomOut: '縮小', fit: 'フィット', trayHint: '下のピースを上に引き上げてはめてください。2本指で拡大・移動',

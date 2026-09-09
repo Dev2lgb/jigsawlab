@@ -673,7 +673,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
-  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/board/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
+  // 초대는 /i/ 로 보낸다 — 서버 렌더라 방마다 그림·조각 수·인원이 들어간 OG 가 나간다(/board/ 는 정적이라 불가)
+  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/i/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
   $('jg-invite').addEventListener('click', inviteShare); $('jg-invite2').addEventListener('click', () => { openPlayers(false); inviteShare(); });
 
   // ── 완성

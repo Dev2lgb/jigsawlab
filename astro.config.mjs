@@ -14,7 +14,7 @@ export default defineConfig({
   session: false, // 세션 안 씀 (KV 바인딩 불필요)
   i18n: { defaultLocale: 'ko', locales: ['ko', 'en', 'ja'], routing: { prefixDefaultLocale: false } },
   integrations: [sitemap({
-    filter: (page) => !page.includes('/s/') && !page.includes('/api/') && !/\/my\/$/.test(page) && !/\/board\/$/.test(page), // 판은 콘텐츠가 없는 앱 화면이라 noindex
+    filter: (page) => !page.includes('/s/') && !page.includes('/i/') && !page.includes('/api/') && !/\/my\/$/.test(page) && !/\/board\/$/.test(page), // 판은 콘텐츠가 없는 앱 화면이라 noindex
     i18n: { defaultLocale: 'ko', locales: { ko: 'ko', en: 'en', ja: 'ja' } },
     serialize: (item) => ({ ...item, lastmod: BUILT }), // 배포 시각 — 작품을 늘려도 재크롤 신호가 가게
   })],

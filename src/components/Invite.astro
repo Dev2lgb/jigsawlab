@@ -1,0 +1,81 @@
+---
+// /i/?room=<id> — 방 초대 랜딩. 초대 링크를 받은 사람이 "무엇을 하러 들어가는지" 보고 들어오는 자리.
+//
+// /board/ 는 정적 페이지라 OG 가 빌드 시점에 박혀 있어, 어떤 방을 초대해도 사이트 공유와 똑같이 보였다.
+// 여기는 서버에서 방을 조회해 그림·조각 수·인원을 넣은 OG 를 만든다(크롤러는 JS 를 안 돌리므로 서버 렌더가 필수).
+import Base from '../layouts/Base.astro';
+import { env } from 'cloudflare:workers';
+import { WORK_BY_KEY } from '../data/works';
+import { prefix, type Lang } from '../i18n/ui';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang);
+
+interface Info { key: string; photo: boolean; n: number; total: number; locked: number; players: number; done: boolean }
+const id = (Astro.url.searchParams.get('room') ?? '').toLowerCase();
+let info: Info | null = null;
+if (/^[a-z0-9]{4,12}$/.test(id)) {
+  // worker.ts 가 /api/room/<id> 를 넘길 때와 같은 방식으로 같은 방에 닿는다. 방이 없으면 DO 가 404 를 준다
+  try { const r = await env.ROOMS.get(env.ROOMS.idFromName(id)).fetch('https://room/info'); if (r.ok) info = await r.json<Info>(); } catch {}
+}
+const S = {
+  ko: { h: '같이 맞추자는 초대예요', join: '같이 맞추기', other: '다른 퍼즐 고르기', photo: '누군가의 사진으로 만든 퍼즐', pieces: (n: number) => `${n}조각`,
+    prog: (a: number, b: number) => `${a} / ${b}조각 맞춰짐`, here: (n: number) => (n > 0 ? `지금 ${n}명이 맞추는 중` : '아직 아무도 없어요'),
+    done: '이미 완성된 판이에요', gone: '이 방은 사라졌어요', goneSub: '방은 마지막 사람이 나가고 이틀이 지나면 닫혀요. 새 퍼즐을 골라 보세요.', goneCta: '퍼즐 고르기' },
+  en: { h: 'You have been invited to solve this together', join: 'Solve it together', other: 'Pick another puzzle', photo: "A puzzle from someone's own photo", pieces: (n: number) => `${n} pieces`,
+    prog: (a: number, b: number) => `${a} of ${b} pieces placed`, here: (n: number) => (n > 0 ? `${n} solving right now` : 'Nobody here yet'),
+    done: 'This board is already finished', gone: 'This room is gone', goneSub: 'A room closes two days after the last person leaves. Pick a new puzzle instead.', goneCta: 'Pick a puzzle' },
+  ja: { h: '一緒に組もう、という招待です', join: '一緒に組む', other: '別のパズルを選ぶ', photo: '誰かの写真から作ったパズル', pieces: (n: number) => `${n}ピース`,
+    prog: (a: number, b: number) => `${a} / ${b}ピース完成`, here: (n: number) => (n > 0 ? `いま${n}人が組んでいます` : 'まだ誰もいません'),
+    done: 'この盤面はすでに完成しています', gone: 'この部屋はもうありません', goneSub: '部屋は最後の人が出てから二日で閉じます。新しいパズルを選んでみてください。', goneCta: 'パズルを選ぶ' },
+}[lang];
+
+const work = info && !info.photo ? WORK_BY_KEY[info.key] : null;
+const name = work ? work.title[li] : S.photo;
+const artist = work ? work.artist[li] : '';
+const title = info ? `${name} · ${S.pieces(info.total)} · ${S.join} — jigsawlab` : `${S.gone} · jigsawlab`;
+const desc = info
+  ? [artist, S.prog(info.locked, info.total), info.done ? S.done : S.here(info.players)].filter(Boolean).join(' · ')
+  : S.goneSub;
+const ogImage = work ? `/jigsaw/o-${work.key}.jpg` : '/og.png';
+const pct = info ? Math.round((info.locked / info.total) * 100) : 0;
+---
+<Base title={title} desc={desc} lang={lang} ogImage={ogImage} noindex path={`${P}/i/`} ads={false}>
+  <section class="scene page active inv">
+    {info ? (
+      <>
+        {work
+          ? <img class="pic" src={`/jigsaw/${work.key}.webp`} alt={name} width={work.w} height={work.h} />
+          : <div class="pic ph" aria-hidden="true">🧩</div>}
+        <p class="lead">{S.h}</p>
+        <h1>{name}</h1>
+        {artist && <p class="muted">{artist}</p>}
+        <p class="n">{S.pieces(info.total)}</p>
+        <div class="bar" role="img" aria-label={S.prog(info.locked, info.total)}><i style={`width:${pct}%`}></i></div>
+        <p class="muted small">{S.prog(info.locked, info.total)}</p>
+        <p class="here">{info.done ? S.done : S.here(info.players)}</p>
+        <a class="btn primary lg" href={`${P}/board/?room=${id}`}>{S.join}</a>
+        <p><a class="muted small" href={`${P}/play/`}>{S.other}</a></p>
+      </>
+    ) : (
+      <>
+        <div class="pic ph" aria-hidden="true">🧩</div>
+        <h1>{S.gone}</h1>
+        <p class="muted">{S.goneSub}</p>
+        <a class="btn primary lg" href={`${P}/play/`}>{S.goneCta}</a>
+      </>
+    )}
+  </section>
+  <style>
+    .inv { text-align: center; max-width: 32rem; margin: 0 auto; }
+    .pic { display: block; width: min(78vw, 320px); height: auto; max-height: 320px; object-fit: contain; margin: 0 auto 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--board); }
+    .pic.ph { display: grid; place-items: center; width: 140px; height: 140px; font-size: 3.4rem; }
+    .lead { margin: 0 0 6px; color: var(--accent); font-weight: 700; }
+    h1 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 0 0 4px; }
+    .n { margin: 10px 0 12px; font-weight: 700; font-size: 1.1rem; }
+    .bar { height: 8px; border-radius: 999px; background: var(--bg-3); overflow: hidden; margin: 0 auto; max-width: 22rem; }
+    .bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+    .small { font-size: .85rem; }
+    .here { margin: 14px 0 22px; font-weight: 600; }
+    .inv .btn { margin-bottom: 14px; }
+  </style>
+</Base>

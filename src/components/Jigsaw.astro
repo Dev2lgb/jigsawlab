@@ -727,6 +727,7 @@ const shelves = shelvesFor(lang);
     }
   }
   // 혼자 하다가 친구 초대: 지금 판을 서버 방으로 올리고 그 방으로 이동
+  // ※ 방을 만드는 곳은 여기와 PuzzleDetail.astro 두 곳뿐. 둘 다 host:<id> 를 심어야 초대 안내가 뜬다
   $('jg-tosolo-invite').addEventListener('click', async (e) => {
     if (!src || !cut || room) return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
     const idx = new Map(pieces.map((p, i) => [p, i]));

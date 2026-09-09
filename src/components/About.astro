@@ -3,6 +3,7 @@
 import Base from '../layouts/Base.astro';
 import { UI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
+import { WORKS } from '../data/works';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), A = T.about;
 const html = JIGSAW[lang].seo;
@@ -11,7 +12,7 @@ let i = 0; const guide = html.replace(/<h2>/g, () => `<h2 id="g${++i}">`);
 ---
 <Base title={`${T.nav.about} · jigsawlab`} desc={A.lead} lang={lang} alts={{ ko: '/about/', en: '/en/about/', ja: '/ja/about/' }} path={`${P}/about/`}>
   <section class="hero"><div class="wrap hero-in"><h1>{A.title}</h1><p class="lead">{A.lead}</p><a class="btn primary lg" href={`${P}/play/`}>{T.nav.play}</a></div></section>
-  <section class="sec"><div class="wrap"><div class="points">{A.points.map(([h, b], i) => <div class="pt" data-reveal={String(i)}><span class="n">{i + 1}</span><h2>{h}</h2><p>{b}</p></div>)}</div></div></section>
+  <section class="sec"><div class="wrap"><div class="points">{A.points(WORKS.length).map(([h, b], i) => <div class="pt" data-reveal={String(i)}><span class="n">{i + 1}</span><h2>{h}</h2><p>{b}</p></div>)}</div></div></section>
   <section class="sec"><div class="wrap guide">
     <nav class="toc" aria-label="guide"><p class="toc-h">{A.guide}</p>{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
     <article class="seo body" set:html={guide} />

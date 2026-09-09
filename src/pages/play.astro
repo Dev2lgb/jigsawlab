@@ -5,7 +5,7 @@ import PlayBoot from '../components/PlayBoot.astro';
 import { JIGSAW } from '../i18n/jigsaw';
 const t = JIGSAW.ko;
 ---
-<Base ads={false} title={`${t.title} · jigsawlab`} desc={t.sub} lang="ko" alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path="/play/">
+<Base ads={false} title={`${t.seoTitle} · jigsawlab`} desc={t.seoDesc} lang="ko" alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path="/play/">
   <PlayBoot slot="head" />
   <Jigsaw lang="ko" />
 </Base>

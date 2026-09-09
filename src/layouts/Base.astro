@@ -10,7 +10,7 @@ const fontCss = lang === 'ja' ? 'https://cdn.jsdelivr.net/gh/orioncactus/pretend
 const nav = [
   { href: `${P}/play/?daily=1`, label: T.nav.daily },
   { href: `${P}/play/`, label: T.nav.catalog },
-  { href: `${P}/play/?photo=1`, label: T.nav.photo },
+  { href: `${P}/photo/`, label: T.nav.photo },
   { href: `${P}/my/`, label: T.nav.my },
   { href: `${P}/about/`, label: T.nav.about },
 ];
@@ -101,7 +101,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       <div class="foot-links">
         <a href={`${P}/play/?daily=1`}>{T.nav.daily}</a>
         <a href={`${P}/play/`}>{T.nav.catalog}</a>
-        <a href={`${P}/play/?photo=1`}>{T.nav.photo}</a>
+        <a href={`${P}/photo/`}>{T.nav.photo}</a>
         <a href={`${P}/my/`}>{T.nav.my}</a>
         <a href={`${P}/about/`}>{T.nav.about}</a>
         <a href={`${P}/contact/`}>{T.foot.contact}</a>

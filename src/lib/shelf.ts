@@ -19,19 +19,3 @@ export function initShelves(root: ParentNode = document) {
     row.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
   });
 }
-
-// 세로 진열대(.shelf-grid.capped)의 '더보기' — 처음엔 앞 10점만 보이고, 누르면 그 진열대만 전부 펼친다(다시 누르면 접힘).
-// 여는 건 CSS 가 하고(.shelf.open), 버튼은 클래스와 글씨만 바꾼다
-export function initShelfMore(root: ParentNode = document) {
-  root.querySelectorAll<HTMLButtonElement>('.shelf-more').forEach((btn) => {
-    if (btn.dataset.ready) return; btn.dataset.ready = '1';
-    const shelf = btn.closest<HTMLElement>('.shelf'); if (!shelf) return;
-    btn.addEventListener('click', () => {
-      const open = shelf.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(open));
-      btn.textContent = open ? btn.dataset.less ?? '' : btn.dataset.more ?? '';
-      // 접을 때 진열대 머리가 화면 위로 밀려났으면 제자리로
-      if (!open && shelf.getBoundingClientRect().top < 0) shelf.scrollIntoView({ block: 'start' });
-    });
-  });
-}

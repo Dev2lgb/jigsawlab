@@ -15,6 +15,13 @@ const nav = [
   { href: `${P}/about/`, label: T.nav.about },
 ];
 const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
+// 홈에만 구조화 데이터 — 한글 브랜드명(직소랩)을 alternateName 으로 알려 주고, 게임 앱이라는 것도 함께
+const isHome = path === '/' || path === '/en/' || path === '/ja/';
+const brand = { name: 'jigsawlab', ...(T.altName ? { alternateName: T.altName } : {}) };
+const homeSchema = { '@context': 'https://schema.org', '@graph': [
+  { '@type': 'WebSite', ...brand, url: site.toString(), inLanguage: lang, description: desc },
+  { '@type': 'WebApplication', ...brand, url: canonical, inLanguage: lang, description: desc, applicationCategory: 'GameApplication', operatingSystem: 'Any', browserRequirements: 'Requires JavaScript', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+] };
 ---
 <!doctype html>
 <html lang={lang}>
@@ -31,7 +38,7 @@ const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
   <meta property="og:type" content="website" /><meta property="og:site_name" content="jigsawlab" />
   <meta property="og:title" content={title} /><meta property="og:description" content={desc} /><meta property="og:url" content={canonical} />
   <meta property="og:image" content={new URL(ogImage, site).toString()} /><meta property="og:locale" content={{ ko: 'ko_KR', en: 'en_US', ja: 'ja_JP' }[lang]} /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={desc} /><meta name="twitter:image" content={new URL(ogImage, site).toString()} />
-  {path === '/' || path === '/en/' || path === '/ja/' ? <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'jigsawlab', url: site.toString(), inLanguage: lang, description: desc })} /> : null}
+  {isHome && <script type="application/ld+json" set:html={JSON.stringify(homeSchema)} />}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />

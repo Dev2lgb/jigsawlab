@@ -16,7 +16,7 @@ export const UI = {
       seoDesc: '가족사진·여행 사진·아이가 그린 그림을 직소 퍼즐로 만들어 바로 맞춰요. 사진은 기기 밖으로 나가지 않고, 48조각부터 1000조각까지 원하는 만큼. 가입도 설치도 없이 무료.',
       h1: '내 사진으로\n퍼즐 만들기',
       lead: '가족사진도, 여행 사진도, 아이가 그린 그림도. 고르는 순간 조각으로 잘려요.',
-      cta: '사진 고르기', hint: '눌러서 고르거나 여기에 끌어다 놓기',
+      cta: '사진 고르기', hint: '눌러서 고르거나 여기에 끌어다 놓기', another: '다른 사진', gridTpl: '{c}×{r} = {n}조각',
       safe: '사진은 이 기기 안에서만 처리돼요. 서버로 올라가지 않습니다.',
       steps: [
         ['사진 고르기', '폰 앨범에서든 컴퓨터에서든. 가로세로 비율은 그대로 살려요.'],
@@ -58,7 +58,7 @@ export const UI = {
       seoDesc: 'Turn a family photo, a holiday shot or a child\'s drawing into a jigsaw puzzle and solve it right away. Your photo never leaves your device. 48 to 1000 pieces, free, no sign-up.',
       h1: 'Make a puzzle\nfrom your photo',
       lead: 'Family photos, holidays, a drawing your kid brought home. Pick one and it is cut into pieces on the spot.',
-      cta: 'Choose a photo', hint: 'Tap to choose, or drop a photo here',
+      cta: 'Choose a photo', hint: 'Tap to choose, or drop a photo here', another: 'Another photo', gridTpl: '{c}×{r} = {n} pieces',
       safe: 'Your photo is handled entirely on this device. It is never uploaded to a server.',
       steps: [
         ['Choose a photo', 'From your phone\'s album or your computer. The aspect ratio is kept as it is.'],
@@ -100,7 +100,7 @@ export const UI = {
       seoDesc: '家族写真・旅の写真・子どもの絵をジグソーパズルにしてそのまま遊べます。写真は端末の外に出ません。48ピースから1000ピースまで、登録不要・無料。',
       h1: '自分の写真で\nパズルを作る',
       lead: '家族写真も、旅の写真も、子どもが描いた絵も。選んだそのときにピースへ切り分けます。',
-      cta: '写真を選ぶ', hint: 'タップして選ぶか、ここにドロップ',
+      cta: '写真を選ぶ', hint: 'タップして選ぶか、ここにドロップ', another: '別の写真', gridTpl: '{c}×{r} = {n}ピース',
       safe: '写真はこの端末の中だけで処理されます。サーバーにアップロードされることはありません。',
       steps: [
         ['写真を選ぶ', 'スマホのアルバムからでもパソコンからでも。縦横比はそのまま活かします。'],

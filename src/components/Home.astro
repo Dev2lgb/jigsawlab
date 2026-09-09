@@ -23,8 +23,8 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
       <p class="streak" id="hero-streak" hidden>🔥 <span></span></p>
     </div>
     <div class="hero-side">
-      <a class="hero-art" id="hero-art" href={`${P}/play/?daily=1`} aria-label={T.hero.cta}><canvas id="hero-cv" width="720" height="560"></canvas></a>
-      <a class="today-link" id="hero-today" href={`${P}/play/?daily=1`}>{T.hero.todayLink(daily.painting.title[li])}<span class="stat" id="hero-stat" hidden> · <span id="hero-solved"></span></span></a>
+      <a class="hero-art" id="hero-art" href={`${P}/board/?daily=1`} aria-label={T.hero.cta}><canvas id="hero-cv" width="720" height="560"></canvas></a>
+      <a class="today-link" id="hero-today" href={`${P}/board/?daily=1`}>{T.hero.todayLink(daily.painting.title[li])}<span class="stat" id="hero-stat" hidden> · <span id="hero-solved"></span></span></a>
     </div>
   </div>
 </section>
@@ -59,7 +59,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
       <h2 class="sec-h">{T.rank.title}</h2>
       <p class="sec-sub">{T.rank.sub}</p>
       <p class="rank-total" id="rank-total"></p>
-      <a class="btn primary lg" href={`${P}/play/?daily=1`}>{T.rank.more}</a>
+      <a class="btn primary lg" href={`${P}/board/?daily=1`}>{T.rank.more}</a>
     </div>
     <div class="card rank-card" data-reveal="1"><ol class="lb" id="rank-list"><li class="empty">…</li></ol></div>
   </div>
@@ -146,7 +146,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
   const P = LANG === 'ko' ? '' : `/${LANG}`;
   { const st = getStreak(); if (st > 0) { const el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = T.play.streak(st); el.hidden = false; } }
-  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = new Date(Date.now() + 9 * 3600e3 - i * 86400e3).toISOString().slice(0, 10); const pk = dailyPick(d, DAILY_POOL); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/play/?daily=${i === 0 ? '1' : d}`; a.title = pk.painting.title[LI]; a.innerHTML = `<img src="/jigsaw/t-${pk.painting.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
+  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = new Date(Date.now() + 9 * 3600e3 - i * 86400e3).toISOString().slice(0, 10); const pk = dailyPick(d, DAILY_POOL); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.painting.title[LI]; a.innerHTML = `<img src="/jigsaw/t-${pk.painting.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
   { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.painting.title[LI]); }
   (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`;
   drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);

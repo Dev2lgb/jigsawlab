@@ -1,11 +1,4 @@
 ---
-import Base from '../../layouts/Base.astro';
-import Jigsaw from '../../components/Jigsaw.astro';
-import PlayBoot from '../../components/PlayBoot.astro';
-import { JIGSAW } from '../../i18n/jigsaw';
-const t = JIGSAW.ja;
+import Picker from '../../components/Picker.astro';
 ---
-<Base ads={false} title={`${t.seoTitle} · jigsawlab`} desc={t.seoDesc} lang="ja" alts={{ ko: '/play/', en: '/en/play/', ja: '/ja/play/' }} path="/ja/play/">
-  <PlayBoot slot="head" />
-  <Jigsaw lang="ja" />
-</Base>
+<Picker lang="ja" />

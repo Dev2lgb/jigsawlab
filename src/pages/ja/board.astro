@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import Jigsaw from '../../components/Jigsaw.astro';
+import PlayBoot from '../../components/PlayBoot.astro';
+import { JIGSAW } from '../../i18n/jigsaw';
+const t = JIGSAW.ja;
+---
+<Base ads={false} noindex title={`${t.boardTitle} · jigsawlab`} desc={t.seoDesc} lang="ja" path="/ja/board/">
+  <PlayBoot slot="head" />
+  <Jigsaw lang="ja" />
+</Base>

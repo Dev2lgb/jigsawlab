@@ -21,7 +21,7 @@ export function initFavUI(opts?: { onToggle?: (k: string, on: boolean) => void }
 export function initSearch(input: HTMLInputElement, opts?: { onResult?: (n: number, q: string) => void }) {
   const run = () => {
     const q = input.value.trim().toLowerCase(); let n = 0;
-    document.querySelectorAll<HTMLElement>('.shelf').forEach((sh) => { let vis = 0; sh.querySelectorAll<HTMLElement>('.boxw').forEach((b) => { const ok = !q || (b.dataset.q ?? '').includes(q); b.hidden = !ok; if (ok) vis++; }); sh.hidden = (q !== '' && vis === 0) || (sh.id === 'fav-shelf' && !sh.querySelector('#fav-row')?.children.length); n += vis; });
+    document.querySelectorAll<HTMLElement>('.shelf').forEach((sh) => { let vis = 0; sh.classList.toggle('searching', q !== ''); sh.querySelectorAll<HTMLElement>('.boxw').forEach((b) => { const ok = !q || (b.dataset.q ?? '').includes(q); b.hidden = !ok; if (ok) vis++; }); sh.hidden = (q !== '' && vis === 0) || (sh.id === 'fav-shelf' && !sh.querySelector('#fav-row')?.children.length); n += vis; });
     opts?.onResult?.(n, q);
   };
   input.addEventListener('input', run); run();

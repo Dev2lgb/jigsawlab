@@ -109,8 +109,9 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     </div>
   </footer>
   <script>
-    import { initShelves } from '../lib/shelf';
+    import { initShelves, initShelfMore } from '../lib/shelf';
     initShelves(); // 가로 진열대: PC 화살표·드래그
+    initShelfMore(); // 세로 진열대: 더보기/접기
     // 스크롤 리빌: [data-reveal] 요소가 화면에 들어오면 .in — 모션 최소화 설정이면 즉시 표시
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) els.forEach((e) => e.classList.add('in'));
@@ -265,6 +266,12 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .shelf-arrow.prev { left: calc(var(--gutter) * -1 + 6px); } .shelf-arrow.next { right: calc(var(--gutter) * -1 + 6px); }
   .shelf-scroller:hover .shelf-arrow:not([hidden]), .shelf-arrow:focus-visible { opacity: 1; } .shelf-arrow:hover { transform: scale(1.08); } .shelf-arrow[hidden] { display: none; }
   @media (hover: none), (pointer: coarse) { .shelf-arrow { display: none; } }
+  /* 세로 진열대: 가로 스크롤 없이 줄바꿈. .capped 는 처음에 앞 10점(popular.ts 의 SHELF_TOP)만 보이고 나머지는 '더보기'로 편다 */
+  .shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--w) + var(--d) * .55)), 1fr)); justify-items: center; gap: clamp(14px, 2vw, 26px) clamp(10px, 1.4vw, 20px); padding: 18px 0 26px; }
+  .shelf:not(.open):not(.searching) .shelf-grid.capped > .boxw:nth-child(n + 11) { display: none; }
+  .shelf-more { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; padding: 10px 20px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--bg); color: var(--ink); font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer; transition: border-color .15s, transform .15s var(--ease), box-shadow .15s; }
+  .shelf-more:hover { border-color: var(--ink); transform: translateY(-1px); box-shadow: 0 10px 20px -14px rgba(15,18,34,.6); }
+  .shelf.searching .shelf-more { display: none; }
 
   .seo { color: var(--ink); } .seo h2 { font-size: 1.5rem; margin: 40px 0 10px; } .seo h3 { font-size: 1.08rem; margin: 22px 0 6px; } .seo p, .seo li { color: var(--ink-2); max-width: 72ch; } .seo .lead { font-size: 1.15rem; color: var(--ink); } .seo ol, .seo ul { padding-left: 20px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } html { scroll-behavior: auto; } }

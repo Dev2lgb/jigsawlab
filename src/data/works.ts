@@ -4,6 +4,7 @@ import { ABOUT } from './paintings';
 import { TEXT } from './worksText';
 import { ARTISTS } from './artists';
 import { CATEGORIES } from './catalog';
+import { POPULAR } from './popular';
 import aic from './aic.json';
 import extra from './extra.json';
 import base from './base.json';
@@ -17,6 +18,8 @@ const EXTRA: Work[] = (extra as any[]).map((a) => { const t = TEXT[a.key], ar = 
 export const WORKS: Work[] = [...BASE, ...AIC, ...EXTRA];
 export const WORK_BY_KEY: Record<string, Work> = Object.fromEntries(WORKS.map((w) => [w.key, w]));
 { const cats = new Set(CATEGORIES.map((c) => c.id)); for (const w of WORKS) if (!cats.has(w.cat)) throw new Error(`works: '${w.key}' 의 카테고리 '${w.cat}' 가 catalog.ts 에 없습니다`); }
+// 진열대 앞줄(popular.ts)에 적어둔 키가 실제로 그 카테고리에 있는지 확인
+{ for (const [cat, keys] of Object.entries(POPULAR)) for (const k of keys) { const w = WORK_BY_KEY[k]; if (!w) throw new Error(`popular: '${cat}' 의 '${k}' 가 works 에 없습니다`); if (w.cat !== cat) throw new Error(`popular: '${k}' 는 '${cat}' 가 아니라 '${w.cat}' 입니다`); } }
 /** 오늘의 퍼즐 후보 (패턴·포스터·추상 제외) */
 const dailyCats = new Set(CATEGORIES.filter((c) => c.daily).map((c) => c.id));
 export const DAILY_POOL: Work[] = WORKS.filter((w) => dailyCats.has(w.cat));

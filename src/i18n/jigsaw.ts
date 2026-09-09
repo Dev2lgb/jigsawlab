@@ -9,7 +9,6 @@ export const JIGSAW = {
     time: '시간', moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', zoomIn: '확대', zoomOut: '축소', fit: '맞춤', trayHint: '조각을 위로 끌어 올려 놓기',
     viewResult: '결과 보기', done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '한 번 더', another: '다른 퍼즐', toTitle: '처음으로',
     share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '너도 해봐 🧩', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
-    nickLabel: '닉네임', nickPh: '랭킹에 올릴 이름', submit: '랭킹 등록', registered: (r: number) => `랭킹 ${r}위에 올랐어요!`, rankTotal: (n: number) => `오늘 ${n}명 완성`, rankEmpty: '1등 자리 비었어요', rankFail: '랭킹을 못 불러왔어요', lbTitle: '오늘의 퍼즐 랭킹', unit: '초', noRecord: '아직 기록이 없어요',
     imgFail: '이 사진은 못 열었어요. 다른 사진으로 해볼까요?', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
     seo: `<p class="lead">사진 한 장을 고르고 조각 수를 정하면 톱니가 맞물리는 진짜 직소 퍼즐이 됩니다. 아래 트레이에서 조각을 끌어 올려 제자리에 끼우고, 모바일에서는 두 손가락으로 확대·이동하며 맞춰요. 사진은 기기 밖으로 나가지 않고, 내장된 명화로는 매일 같은 판을 풀어 시간을 겨루는 오늘의 퍼즐도 있습니다.</p>
 <h2>어떻게 하나요</h2>
@@ -18,7 +17,7 @@ export const JIGSAW = {
   <li><b>조각 수</b>를 고릅니다. 48·100·200·300·500·1000 중 하나를 누르거나 직접 숫자(최대 2000)를 넣으면, 사진의 가로세로 비율에 맞춰 격자를 계산해 그 근처 개수로 잘립니다. 조각마다 톱니 모양이 무작위로 정해져 같은 사진도 매번 다른 판이 됩니다.</li>
   <li>START를 누르면 위에 빈 판, 아래에 조각 트레이가 나옵니다. 트레이는 가로로 넘겨 볼 수 있고, 조각을 <b>위로 끌어 올리면</b> 판으로 옮겨집니다. 제자리 근처에 놓으면 딸깍 소리 없이 끼워지며 잠기고, 아니면 판 위에 놓인 채로 남아 다시 옮길 수 있습니다.</li>
   <li>모바일에서는 <b>두 손가락으로 확대·축소하고 빈 곳을 끌어 이동</b>합니다. PC에서는 마우스 휠로 확대하고 빈 곳을 드래그해 이동하며, 오른쪽 위 버튼으로도 확대·축소·맞춤이 됩니다. <b>밑그림</b>을 켜면 완성 그림이 판에 흐리게 깔려 어디에 놓을지 힌트가 됩니다.</li>
-  <li>모든 조각이 잠기면 완성입니다. 걸린 시간과 놓은 횟수가 나오고, 같은 사진·같은 조각 수의 최고 기록이 이 브라우저에 저장됩니다. 결과는 링크로 공유할 수 있고, 오늘의 퍼즐이면 닉네임만 넣어 시간 랭킹에 올릴 수 있습니다.</li>
+  <li>모든 조각이 잠기면 완성입니다. 걸린 시간과 놓은 횟수가 나오고, 같은 사진·같은 조각 수의 최고 기록이 이 브라우저에 저장됩니다. 결과는 링크로 공유할 수 있습니다.</li>
 </ol>
 <h2>사진은 어디에도 올라가지 않습니다</h2>
 <p>고른 사진은 브라우저가 읽어 화면 안에서 자르고 그립니다. jigsawlab 서버로 전송되지 않고 저장도 되지 않아서, 가족 사진이나 아이 사진, 아직 공개하지 않은 사진으로도 마음 놓고 만들 수 있습니다. 공유 링크에는 결과(조각 수·시간)만 담기고 사진은 들어가지 않습니다. 친구와 같은 사진을 같이 맞추고 싶다면 아래 퍼즐 방을 쓰세요.</p>
@@ -26,7 +25,7 @@ export const JIGSAW = {
 <p>퍼즐 방을 만들면 초대 링크가 하나 생깁니다. 그 링크를 보내면 친구는 가입도 설치도 없이 바로 같은 판에 들어옵니다. 한 방에 여덟 명까지 들어와 조각을 나눠 맞출 수 있고, 누가 조각을 끼우면 다른 사람 화면에도 바로 나타납니다. 잠깐 나갔다 들어와도 판은 그대로 있습니다.</p>
 <p>내 사진으로 만든 방도 초대할 수 있습니다. 이때도 사진은 서버에 올라가지 않고, 방을 연 사람 기기에서 친구 기기로 곧장 갑니다. 그래서 가족 사진으로 방을 열어도 사진이 어디에도 남지 않습니다. 대신 방을 연 사람이 나가 있으면 친구가 사진을 못 받고, 회사나 학교 인터넷에서는 연결이 막히기도 합니다.</p>
 <h2>오늘의 퍼즐</h2>
-<p>내장된 퍼블릭 도메인 명화 200여 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 완성 시간이 짧은 순으로 랭킹이 매겨지고, 닉네임만 넣으면 등록됩니다. 자정(한국 시간)에 새 그림으로 바뀌며, 지난 기록은 그대로 남습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
+<p>내장된 퍼블릭 도메인 명화 200여 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 자정(한국 시간)에 새 그림으로 바뀌고, 지난 7일치는 그대로 남아 언제든 다시 풀 수 있습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
 <h2>조각 수 고르는 요령</h2>
 <p>48조각은 10분 안쪽으로 끝나는 가벼운 판이고, 100~200조각은 확대·축소를 쓰면서 30분쯤 붙잡는 표준입니다. 300~500조각은 실물 퍼즐 입문 규격과 같아 태블릿·PC에서 한두 시간, 1000조각은 실물 성인 표준 규격으로 며칠에 걸쳐 조각을 뭉치로 모아가며 맞추는 본격 퍼즐입니다. 조각끼리 맞대면 서로 붙어 뭉치째 옮길 수 있으니 큰 판일수록 색·구역별로 뭉치를 먼저 만드세요. 하늘이나 바다처럼 색이 비슷한 면이 넓은 사진은 같은 조각 수라도 훨씬 어렵고, 얼굴·글자·경계선이 많은 사진은 쉬워집니다. 세로 사진이면 격자도 세로로 길게 잡히니 조각 수를 조금 늘려도 됩니다.</p>
 <h2>자주 묻는 질문</h2>
@@ -48,7 +47,6 @@ export const JIGSAW = {
     time: 'Time', moves: 'Placed', left: (n: number) => `${n} pieces left`, edgeOnly: 'Edge pieces only', hint: 'Ghost image', zoomIn: 'Zoom in', zoomOut: 'Zoom out', fit: 'Fit', trayHint: 'Drag pieces up from the tray into place. Pinch to zoom, two fingers to pan',
     viewResult: 'See result', done: 'Complete!', resTime: 'Time', resPieces: 'Pieces', resMoves: 'Placements', best: (s: string) => `Your best: ${s}`, newBest: 'New record!', retry: 'Same photo again', another: 'Another puzzle', toTitle: 'Back to start',
     share: 'Share result', shareTitle: (n: number, t: string) => `Finished a ${n}-piece jigsaw in ${t}! 🧩`, shareText: 'Your turn 🧩', shareDaily: (n: number, t: string, title: string) => `Today's puzzle "${title}", ${n} pieces in ${t}! 🧩 Can you beat it?`,
-    nickLabel: 'Nickname', nickPh: 'Name for the leaderboard', submit: 'Submit', registered: (r: number) => `You're #${r} on the board!`, lbTitle: "Today's puzzle leaderboard", unit: 's', noRecord: 'No record yet',
     imgFail: "Couldn't open that image. Please use a JPG, PNG or HEIC photo", paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
     seo: `<p class="lead">Pick a photo, choose a piece count, and it becomes a real jigsaw with interlocking tabs. Drag pieces up from the tray into place, pinch to zoom on a phone, and finish against the clock. The photo never leaves your device, and a built-in gallery of public-domain paintings powers a daily puzzle where everyone races on the same cut.</p>
 <h2>How it works</h2>
@@ -57,7 +55,7 @@ export const JIGSAW = {
   <li>Choose the number of <b>pieces</b>: 48, 100, 200, 300, 500 or 1000, or type your own (up to 2000). The grid is fitted to the photo's aspect ratio, so the final count lands near your number. Tab shapes are random, so the same photo cuts differently every time.</li>
   <li>Press START. The empty board is above and the piece tray below. Swipe the tray sideways to browse, and <b>drag a piece upward</b> to lift it onto the board. Dropped near its place it snaps in and locks; dropped elsewhere it stays loose and can be moved again.</li>
   <li>On a phone, <b>pinch to zoom and drag empty space with two fingers to pan</b>. On desktop, scroll to zoom and drag empty space to pan; the buttons at the top right also zoom and fit. Turn on <b>Ghost image</b> to see the finished picture faintly on the board as a guide.</li>
-  <li>When every piece is locked, the puzzle is complete. You get your time and placement count, and your best for that photo and piece count is saved in this browser. Share the result as a link, and on the daily puzzle enter a nickname to post your time to the leaderboard.</li>
+  <li>When every piece is locked, the puzzle is complete. You get your time and placement count, and your best for that photo and piece count is saved in this browser. Share the result as a link.</li>
 </ol>
 <h2>Your photo is never uploaded</h2>
 <p>The browser reads the photo and cuts and draws it on screen. Nothing is sent to a jigsawlab server or stored, which makes it safe for family photos, kids and pictures you have not published. A share link carries only the result (pieces and time), never the photo. To solve the same photo together with a friend, use a puzzle room.</p>
@@ -65,7 +63,7 @@ export const JIGSAW = {
 <p>Open a puzzle room and you get one invite link. Send it and your friend joins the same board right away, with no sign-up and nothing to install. Up to eight people can share a room and split the pieces between them, and when someone drops a piece into place it shows up on everyone else's screen. Leave for a bit and the board is still there when you come back.</p>
 <p>You can invite people to a puzzle made from your own photo too. The photo still does not go to a server: it goes straight from the device of whoever opened the room to their friend's. That is why you can open a room with a family photo and it is left nowhere. The catch is that the person who opened the room has to stay in it for the others to get the photo, and some office and school networks block the connection.</p>
 <h2>The daily puzzle</h2>
-<p>Each day one of more than 200 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. Times are ranked fastest first and a nickname is all it takes to post one. The picture changes at midnight Korean time, and past records stay on the board. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
+<p>Each day one of more than 200 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. The picture changes at midnight Korean time, and the last seven days stay up so you can go back to any of them. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
 <h2>Choosing a piece count</h2>
 <p>Forty-eight pieces is a light round that finishes in under ten minutes; 100 to 200 is the standard half-hour puzzle with some zooming. 300 to 500 matches a real starter box and takes an hour or two on a tablet or desktop, and 1000 is the real adult standard: a multi-day puzzle where you gather pieces into clusters. Pieces that fit snap together and move as one cluster, so on big puzzles build clusters by colour or area first. Photos with large areas of similar colour, such as sky or sea, are much harder at the same count, while faces, text and edges make it easier. Portrait photos get a tall grid, so you can afford a few more pieces.</p>
 <h2>Frequently asked questions</h2>
@@ -87,7 +85,6 @@ export const JIGSAW = {
     time: 'タイム', moves: '置いた回数', left: (n: number) => `残り${n}ピース`, edgeOnly: '外周ピースのみ', hint: '下絵', zoomIn: '拡大', zoomOut: '縮小', fit: 'フィット', trayHint: '下のピースを上に引き上げてはめてください。2本指で拡大・移動',
     viewResult: '結果を見る', done: '完成！', resTime: 'タイム', resPieces: 'ピース', resMoves: '置いた回数', best: (s: string) => `自己ベスト ${s}`, newBest: '新記録！', retry: '同じ写真でもう一度', another: '別のパズル', toTitle: 'はじめに戻る',
     share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '次はあなたの番 🧩', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
-    nickLabel: 'ニックネーム', nickPh: 'ランキングに載せる名前', submit: 'ランキングに登録', registered: (r: number) => `ランキング${r}位に載りました！`, rankTotal: (n: number) => `${n} finished today`, rankEmpty: 'Nobody yet. First place is open!', rankFail: 'Could not load the board', rankTotal: (n: number) => `今日${n}人が完成`, rankEmpty: 'まだ誰もいません。1位が空いています！', rankFail: 'ランキングを読み込めませんでした', lbTitle: '今日のパズル ランキング', unit: '秒', noRecord: 'まだ記録がありません',
     imgFail: '画像を開けませんでした。JPG・PNG・HEICの写真か確認してください', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}、${y}`,
     seo: `<p class="lead">写真を1枚選んでピース数を決めると、凹凸がかみ合う本物のジグソーパズルになります。下のトレイからピースを引き上げてはめ、スマホでは2本指で拡大・移動しながら完成させましょう。写真は端末の外に出ず、内蔵のパブリックドメイン名画では毎日同じ盤面でタイムを競う「今日のパズル」も遊べます。</p>
 <h2>遊び方</h2>
@@ -96,7 +93,7 @@ export const JIGSAW = {
   <li><b>ピース数</b>を選びます。48・100・200・300・500・1000のどれかを押すか、自分で数字（最大2000）を入力すると、写真の縦横比に合わせて格子を計算し、その近くの数に切り分けます。ピースの凹凸はランダムなので、同じ写真でも毎回違う盤面になります。</li>
   <li>STARTを押すと、上に空の盤、下にピースのトレイが出ます。トレイは横にスワイプして眺め、ピースを<b>上に引き上げる</b>と盤に移ります。正しい場所の近くに置けばはまってロックされ、違う場所なら盤の上に置かれたまま、あとで動かせます。</li>
   <li>スマホでは<b>2本指で拡大・縮小し、空いた場所をドラッグして移動</b>します。PCではホイールで拡大、空いた場所をドラッグで移動、右上のボタンでも拡大・縮小・フィットができます。<b>下絵</b>をオンにすると完成図が盤にうすく表示され、置く場所のヒントになります。</li>
-  <li>すべてのピースがロックされたら完成です。タイムと置いた回数が表示され、同じ写真・同じピース数の自己ベストがこのブラウザに保存されます。結果はリンクで共有でき、今日のパズルならニックネームだけでタイムランキングに登録できます。</li>
+  <li>すべてのピースがロックされたら完成です。タイムと置いた回数が表示され、同じ写真・同じピース数の自己ベストがこのブラウザに保存されます。結果はリンクで共有できます。</li>
 </ol>
 <h2>写真はどこにもアップロードされません</h2>
 <p>選んだ写真はブラウザが読み込み、画面の中で切り分けて描きます。jigsawlabのサーバーには送信されず保存もされないので、家族や子どもの写真、まだ公開していない写真でも安心して使えます。共有リンクに入るのは結果（ピース数とタイム）だけで、写真は入りません。友達と同じ写真を一緒に組みたいときはパズル部屋を使ってください。</p>
@@ -104,7 +101,7 @@ export const JIGSAW = {
 <p>パズル部屋を作ると招待リンクが一つできます。それを送れば、友だちは登録もインストールもなしにそのまま同じ盤面に入れます。ひと部屋に八人まで入ってピースを分け合え、誰かがピースをはめると他の人の画面にもすぐ出てきます。少し抜けて戻っても盤面はそのままです。</p>
 <p>自分の写真で作った部屋にも招待できます。このときも写真はサーバーに上がらず、部屋を開いた人の端末から友だちの端末へまっすぐ届きます。だから家族の写真で部屋を開いても、写真はどこにも残りません。ただし部屋を開いた人が抜けていると友だちは写真を受け取れず、会社や学校のネットワークではつながらないこともあります。</p>
 <h2>今日のパズル</h2>
-<p>内蔵したパブリックドメインの名画200点余りから日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。完成タイムの速い順にランキングがつき、ニックネームを入れるだけで登録できます。日本時間の午前0時に新しい絵に切り替わり、過去の記録はそのまま残ります。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
+<p>内蔵したパブリックドメインの名画200点余りから日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。日本時間の午前0時に新しい絵に切り替わり、過去7日分はそのまま残るのでいつでも解き直せます。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
 <h2>ピース数の選び方</h2>
 <p>48ピースは10分以内で終わる軽い盤面、100〜200ピースはズームを使いながら30分ほど楽しむ標準サイズです。300〜500ピースは実物パズルの入門規格と同じでタブレットやPCで1〜2時間、1000ピースは大人向けの実物標準規格で、数日かけてピースを塊にまとめながら組む本格パズルです。合うピース同士はくっついて塊ごと動かせるので、大きな盤面ほど色や場所ごとに塊を先に作りましょう。</p>
 <h2>よくある質問</h2>

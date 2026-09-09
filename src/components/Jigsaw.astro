@@ -87,10 +87,6 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
         <a class="btn" href={`${P}/play/`}>{t.another}</a>
         <a class="btn ghost" href={`${P}/`}>{U.foot.toHome}</a>
       </div>
-      <form class="submit" id="jg-submit" hidden>
-        <div class="field"><label for="jg-nick">{t.nickLabel}</label><input class="input" id="jg-nick" maxlength="12" placeholder={t.nickPh} /></div>
-        <button class="btn primary" type="submit">{t.submit}</button>
-      </form>
     </div>
   </div>
 </section>
@@ -187,7 +183,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
   import { DAILY_POOL, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
-  import { getBest, saveBest, getNick, setNick, deviceId, api, bumpStreak, addDone } from '../lib/store';
+  import { getBest, saveBest, getNick, setNick, bumpStreak, addDone } from '../lib/store';
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
@@ -693,13 +689,9 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/photo/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
-    const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily' || src!.day !== todayKST() || !!room; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
-  // 오늘의 퍼즐 랭킹(날짜별, 기기당 최고 1건)
-  const loadRank = () => {}; // 랭킹 목록은 홈에서 보여줌
-  ($('jg-submit') as HTMLFormElement).addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target as HTMLFormElement; const nick = ($('jg-nick') as HTMLInputElement).value.trim(); if (!nick) return; try { setNick(nick); const r = await api({ action: 'solve', nick, device: deviceId(), ms: Number(form.dataset.score) * 1000, tries: moves }); if (r.error) throw new Error(r.error); toast(T.registered(r.rank)); form.hidden = true; loadRank(); } catch { toast(T.rankFail); } });
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });

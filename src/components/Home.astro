@@ -1,5 +1,5 @@
 ---
-// 랜딩 홈 — 풀블리드 히어로(오늘 그림의 색이 배경으로 번짐 + 조각 빠진 그림) → 흐르는 상자 마퀴 → 카테고리별 3D 상자 진열대 → 내 사진 → 오늘의 랭킹
+// 랜딩 홈 — 풀블리드 히어로(오늘 그림의 색이 배경으로 번짐 + 조각 빠진 그림) → 흐르는 상자 마퀴 → 카테고리별 3D 상자 진열대 → 내 사진
 import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
@@ -24,7 +24,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
     </div>
     <div class="hero-side">
       <a class="hero-art" id="hero-art" href={`${P}/board/?daily=1`} aria-label={T.hero.cta}><canvas id="hero-cv" width="720" height="560"></canvas></a>
-      <a class="today-link" id="hero-today" href={`${P}/board/?daily=1`}>{T.hero.todayLink(daily.painting.title[li])}<span class="stat" id="hero-stat" hidden> · <span id="hero-solved"></span></span></a>
+      <a class="today-link" id="hero-today" href={`${P}/board/?daily=1`}>{T.hero.todayLink(daily.painting.title[li])}</a>
     </div>
   </div>
 </section>
@@ -53,17 +53,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 </section>
 
 
-<section class="sec" id="rank" hidden>
-  <div class="wrap rank-in">
-    <div data-reveal>
-      <h2 class="sec-h">{T.rank.title}</h2>
-      <p class="sec-sub">{T.rank.sub}</p>
-      <p class="rank-total" id="rank-total"></p>
-      <a class="btn primary lg" href={`${P}/board/?daily=1`}>{T.rank.more}</a>
-    </div>
-    <div class="card rank-card" data-reveal="1"><ol class="lb" id="rank-list"><li class="empty">…</li></ol></div>
-  </div>
-</section>
 
 <style>
   /* 히어로 — 오늘 그림을 크게 흐려 배경으로 깔고, 위에 흰 그라데이션 */
@@ -126,11 +115,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .piece { position: absolute; left: 40%; top: 30%; width: 26%; fill: #fff; filter: drop-shadow(0 20px 30px rgba(0,0,0,.5)); animation: bob 4s ease-in-out infinite; } @keyframes bob { 50% { transform: translateY(-10px) rotate(6deg); } }
   @media (max-width: 760px) { .photo { grid-template-columns: 1fr; } .photo-art { order: -1; height: 180px; } }
 
-  /* 랭킹 */
-  .rank-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
-  .rank-total { margin: -14px 0 22px; font-weight: 700; color: var(--accent); min-height: 1.4em; }
-  .rank-card { padding: 10px 28px; box-shadow: 0 30px 60px -40px rgba(15,18,34,.4); }
-  @media (max-width: 760px) { .rank-in { grid-template-columns: 1fr; } }
 </style>
 
 <script>
@@ -153,14 +137,4 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
   fetch('/api/stats').then((r) => r.json()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
-  (async () => {
-    try {
-      const r = await fetch('/api/daily', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'ranking' }) }); const rk = await r.json();
-      if (rk.total) { document.getElementById('hero-solved')!.textContent = T.hero.solved(rk.total); document.getElementById('hero-stat')!.hidden = false; }
-      document.getElementById('rank-total')!.textContent = rk.total ? T.rank.total(rk.total) : '';
-      const ol = document.getElementById('rank-list')!; ol.innerHTML = '';
-      if (!rk.rows.length) return; document.getElementById('rank')!.hidden = false;
-      for (const [i, row] of (rk.rows as any[]).slice(0, 10).entries()) { const li = document.createElement('li'); const a = document.createElement('span'); a.className = 'rank'; a.textContent = String(i + 1); const b = document.createElement('span'); b.className = 'nick'; b.textContent = row.nick; const c = document.createElement('span'); c.className = 'score'; c.innerHTML = `${fmt(row.ms / 1000)}<small> · ${Number(row.tries)}</small>`; li.append(a, b, c); ol.appendChild(li); }
-    } catch { /* 랭킹 없으면 섹션 숨김 */ }
-  })();
 </script>

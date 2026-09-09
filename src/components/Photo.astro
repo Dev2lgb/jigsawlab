@@ -1,11 +1,12 @@
 ---
 // /photo/ — 내 사진으로 퍼즐 만들기. /play/ 와 달리 검색으로 들어온 사람을 받는 랜딩이라
 // 히어로에서 바로 업로드하고(선택 화면을 거치지 않음), 아래에 본문을 둔다.
-// 고른 사진은 IndexedDB 에 임시로 넣고 /play/?photo=<id> 로 넘긴다 — 파일은 URL 로 못 넘기니까.
+// 고른 사진은 IndexedDB 에 임시로 넣고 /board/?photo=<id>&n=<조각> 으로 넘긴다 — 파일은 URL 로 못 넘기니까.
 import Base from '../layouts/Base.astro';
 import { UI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORKS } from '../data/works';
+import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), F = T.photo, J = JIGSAW[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000], DEFAULT_N = 100;
@@ -33,11 +34,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
           <small>{F.hint}</small>
         </label>
         <!-- 사진을 고르면 여기서 조각 수까지 정한다. 판으로 넘어가는 건 시작을 누른 뒤 한 번뿐 -->
-        <div class="picked" id="ph-picked" hidden data-grid-tpl={F.gridTpl}>
+        <div class="picked" id="ph-picked" hidden data-grid-tpl={F.gridTpl} data-fail={F.fail}>
           <div class="prev"><img id="ph-thumb" alt="" /><div><b>{J.myPhoto}</b><span class="grid-lbl" id="ph-grid">…</span></div></div>
           <p class="lbl">{J.pieces}</p>
           <div class="pieces" id="ph-pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === DEFAULT_N }]}>{n}</button>)}<input class="input custom" id="ph-custom" type="number" min="6" max="2000" placeholder={J.custom} /></div>
-          <div class="row"><button type="button" class="btn primary lg" id="ph-start" data-n={DEFAULT_N}>{J.start}</button><button type="button" class="btn" id="ph-reset">{F.another}</button></div>
+          <div class="go"><button type="button" class="btn primary lg" id="ph-start" data-n={DEFAULT_N}>{J.start}</button><button type="button" class="btn lg" id="ph-together"><Fragment set:html={icon('users', 18)} /> {T.play.together}</button></div>
+          <p class="muted together-sub">{T.play.togetherSub}</p>
+          <button type="button" class="btn ghost sm" id="ph-reset">{F.another}</button>
         </div>
         <p class="safe">{F.safe}</p>
       </div>
@@ -80,7 +83,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     .pieces button { padding: 11px 0; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; transition: border-color .15s var(--ease), background .15s var(--ease); }
     .pieces button:hover { border-color: var(--ink); } .pieces button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
     .pieces .custom { grid-column: span 2; text-align: center; }
-    .row { display: flex; gap: 8px; margin-top: 18px; } .row .btn { flex: 1; } .row .btn:last-child { flex: 0 0 auto; }
+    .go { display: flex; gap: 8px; margin-top: 18px; } .go .btn { flex: 1; } .go .btn :global(svg) { flex: none; }
+    .together-sub { margin: 10px 2px 0; font-size: .85rem; }
+    #ph-reset { margin-top: 12px; width: 100%; }
+    @media (max-width: 460px) { .go { flex-direction: column; } }
 
     .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
     .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; }
@@ -95,12 +101,15 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
   <script>
     import { images, hasIDB } from '../lib/db';
     import { gridFor } from '../lib/jigsaw';
+    import { toast } from '../lib/share';
     const P = location.pathname.startsWith('/en/') ? '/en' : location.pathname.startsWith('/ja/') ? '/ja' : '';
     const $ = (id: string) => document.getElementById(id)!;
     const drop = $('ph-drop'), picked = $('ph-picked'), file = $('ph-file') as HTMLInputElement;
     const thumb = $('ph-thumb') as HTMLImageElement, grid = $('ph-grid'), startBtn = $('ph-start') as HTMLButtonElement;
-    const custom = $('ph-custom') as HTMLInputElement, tpl = picked.dataset.gridTpl!;
-    const bail = () => { location.href = `${P}/play/?photo=1`; }; // IDB 가 없거나 사진을 못 읽으면 /play/ 의 선택 화면으로
+    const togetherBtn = $('ph-together') as HTMLButtonElement;
+    const custom = $('ph-custom') as HTMLInputElement, tpl = picked.dataset.gridTpl!, failMsg = picked.dataset.fail!;
+    // IDB 가 없거나 사진을 못 읽는 드문 경우 — 넘길 데가 없으니 이 자리에서 알린다
+    const bail = () => { toast(failMsg); startBtn.disabled = false; drop.hidden = false; picked.hidden = true; };
 
     let chosen: File | null = null, aspect = 1, wantN = Number(startBtn.dataset.n);
     const showGrid = () => { const g = gridFor(wantN, aspect); grid.textContent = tpl.replace('{c}', String(g.cols)).replace('{r}', String(g.rows)).replace('{n}', String(g.cols * g.rows)); };
@@ -136,13 +145,15 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     });
     $('ph-reset').addEventListener('click', () => { chosen = null; file.value = ''; picked.hidden = true; drop.hidden = false; });
 
-    // 파일은 URL 로 못 넘기니 IndexedDB 에 임시로 두고 id 만 넘긴다. n 이 함께 가면 /play/ 는 다이얼로그 없이 바로 판을 편다
-    startBtn.addEventListener('click', async () => {
+    // 파일은 URL 로 못 넘기니 IndexedDB 에 임시로 두고 id 만 넘긴다. n 이 함께 가니 판은 다이얼로그 없이 바로 열린다
+    async function go(together: boolean) {
       if (!chosen) return;
-      startBtn.disabled = true;
+      startBtn.disabled = true; togetherBtn.disabled = true;
       const id = `pending-${Date.now().toString(36)}`;
-      try { await images.put(id, chosen); } catch { return bail(); }
-      location.href = `${P}/play/?photo=${id}&n=${wantN}`;
-    });
+      try { await images.put(id, chosen); } catch { togetherBtn.disabled = false; return bail(); }
+      location.href = `${P}/board/?photo=${id}&n=${wantN}${together ? '&together=1' : ''}`;
+    }
+    startBtn.addEventListener('click', () => go(false));
+    togetherBtn.addEventListener('click', () => go(true));
   </script>
 </Base>

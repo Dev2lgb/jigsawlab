@@ -1,36 +1,16 @@
 ---
-// 직소 퍼즐 앱 본체 — 홈 화면(오늘의 퍼즐·내 사진·명화) → 조각 수 다이얼로그 → 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과
+// 판(/board/) — 쿼리가 가리키는 퍼즐을 열어 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과.
+// 고르는 화면은 Picker.astro(/play/), 사진 만들기는 Photo.astro(/photo/) 가 맡는다
 import { JIGSAW } from '../i18n/jigsaw';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL } from '../data/works';
-import { shelvesFor } from '../lib/catalogView';
-import Box from './Box.astro';
 import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
 const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
-const shelves = shelvesFor(lang);
 ---
-<section class="scene page active picker" data-scene="title">
-  <h1 class="pick-title">{t.title}</h1>
-  <p class="pick-sub">{t.sub}</p>
-  <div class="sources">
-    <a class="src daily" id="jg-daily" href={`${P}/puzzle/${daily.painting.key}/?daily=1`} data-key={daily.painting.key}>
-      <img id="daily-thumb" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" width="240" height="190" />
-      <span class="src-text"><b>{t.daily}</b><span id="daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
-    </a>
-    <label class="src drop" id="jg-drop"><input type="file" id="jg-file" accept="image/*" hidden />
-      <span class="drop-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m21 15-4.8-4.8a1.5 1.5 0 0 0-2.1 0L6 18"/></svg></span>
-      <span class="src-text"><b>{t.pick}</b><span>{t.drop}</span><span class="src-go">{t.privacy}</span></span>
-    </label>
-  </div>
-  <section class="resume" id="jg-resume" hidden><h2 class="gal-h">{U.play.resumeTitle}</h2><div class="resume-list" id="jg-resume-list"></div></section>
-  <div class="gal-head"><h2 class="gal-h">{t.gallery}</h2><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="jg-search" placeholder={U.catalog.search} autocomplete="off" /></label></div>
-  <div id="jg-gallery"><div class="shelf" id="fav-shelf" hidden><h3>♥ {U.catalog.fav}<span class="muted fav-count">0</span></h3><div class="shelf-grid" id="fav-row"></div></div>{shelves.map((sh) => <div class="shelf"><h3>{sh.name}<span class="muted">{sh.items.length}</span></h3><div class="shelf-grid capped" id={`shelf-${sh.id}`}>{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>{sh.items.length > sh.top && <button type="button" class="shelf-more" aria-expanded="false" aria-controls={`shelf-${sh.id}`} data-more={U.catalog.more(sh.items.length - sh.top)} data-less={U.catalog.less}>{U.catalog.more(sh.items.length - sh.top)}</button>}</div>)}</div>
-</section>
-
 <!-- 로딩 화면 — 첫 페인트 전에 head 의 PlayBoot 가 html[data-boot] 로 먼저 띄우고(썸네일은 --boot-art), 엔진의 boot() 가 이어받는다 -->
 <div class="fullload" id="jg-fullload" role="status"><span class="fl-art" aria-hidden="true"></span><b class="fl-name" id="jg-fullload-name"></b><span class="spin"></span><p id="jg-fullload-txt"><span class="fl-t-open">{t.opening}</span><span class="fl-t-room">{U.play.joining}</span></p></div>
   <div class="modal" id="jg-gate" hidden>
@@ -104,7 +84,7 @@ const shelves = shelvesFor(lang);
       <div class="row">
         <button class="btn primary" id="jg-retry">{t.retry}</button>
         <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
-        <button class="btn" id="jg-title">{t.another}</button>
+        <a class="btn" href={`${P}/play/`}>{t.another}</a>
         <a class="btn ghost" href={`${P}/`}>{U.foot.toHome}</a>
       </div>
       <form class="submit" id="jg-submit" hidden>
@@ -116,26 +96,9 @@ const shelves = shelvesFor(lang);
 </section>
 
 <style>
-  .picker { max-width: var(--max); padding-top: 26px; }
-  .pick-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0 0 6px; letter-spacing: -.035em; } .pick-sub { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
-  .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 700px) { .sources { grid-template-columns: 1fr; } }
-  .src { display: flex; align-items: center; text-decoration: none; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; font: inherit; transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; } .src:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -28px rgba(15,18,34,.5); }
-  .src:hover, .src.pulse { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-  .src.drop { border-style: dashed; } .src.drop.over { background: var(--accent-soft); border-color: var(--accent); }
-  .src img { width: 92px; height: 74px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line-soft); }
-  .drop-ic { display: grid; place-items: center; width: 92px; height: 74px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; }
-  .src-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .src-text b { font-size: 1.05rem; } .src-text > span { color: var(--muted); font-size: .88rem; } .src-go { color: var(--accent) !important; font-weight: 600; margin-top: 4px; }
-  .gal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 34px 0 10px; } .gal-h { font-size: 1.5rem; margin: 0; }
-  .shelf { margin: 0 0 clamp(26px, 3vw, 40px); } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0 0 12px; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
-  .picker .shelf-grid { --w: 180px; --h: 164px; --d: 38px; padding-top: 10px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-grid { --w: clamp(112px, 35vw, 168px); --h: calc(var(--w) * .92); --d: 28px; } }
-  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); } 50% { box-shadow: 0 0 0 8px var(--accent-soft); } }
-  .src.pulse { animation: pulse 1.2s ease-in-out 3; }
-
   /* 방 들어가는 중 — 전체 화면 로더 */
   .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); }
   :global(html[data-boot]) .fullload, .fullload.on { display: flex; }
-  :global(html[data-boot]) .scene.picker { display: none; } /* URL 이 그림·방·이어하기를 가리키면 선택 화면은 처음부터 안 그린다 */
   .fl-art { display: none; width: min(240px, 62vw); aspect-ratio: 4 / 3; border-radius: 14px; background: var(--boot-art) center / cover no-repeat, var(--line); box-shadow: 0 18px 40px rgba(15, 18, 34, .16); }
   :global(html[data-boot-art]) .fl-art { display: block; }
   .fl-name { display: none; max-width: min(560px, 86vw); padding: 0 16px; text-align: center; color: var(--ink); font-weight: 700; line-height: 1.4; } .fl-name.on { display: block; }
@@ -157,12 +120,6 @@ const shelves = shelvesFor(lang);
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
   .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
 
-  .resume { margin-top: 26px; } .resume-list { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }
-  .resume-list :global(.rs-wrap) { position: relative; flex: none; } .resume-list :global(.rs-cloud) { position: absolute; top: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(15,18,34,.6); color: #fff; font-size: .68rem; font-weight: 700; }
-  .resume-list :global(.rs) { width: 200px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); overflow: hidden; cursor: pointer; text-align: left; padding: 0; font: inherit; color: var(--ink); transition: transform .2s var(--ease), box-shadow .2s; } .resume-list :global(.rs:hover) { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(15,18,34,.5); }
-  .resume-list :global(.rs img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); display: block; } .resume-list :global(.rs .rs-t) { padding: 8px 10px 2px; font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .resume-list :global(.rs .rs-s) { padding: 0 10px 10px; color: var(--muted); font-size: .8rem; }
-  .resume-list :global(.rs .bar) { height: 4px; background: var(--line); } .resume-list :global(.rs .bar i) { display: block; height: 100%; background: var(--accent); }
-  .resume-list :global(.rs-del) { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(15,18,34,.6); color: #fff; cursor: pointer; font-size: .8rem; }
   /* 플레이 */
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
   .hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: none; background: var(--bg-2); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
@@ -238,20 +195,18 @@ const shelves = shelvesFor(lang);
   import { openLogin, askNick } from '../lib/authui';
   import { setNickRemote } from '../lib/account';
   import { randomNick } from '../lib/nickgen';
-  import { initFavUI, initSearch } from '../lib/fav';
   import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
   const T = JIGSAW[LANG], U = UI[LANG].play; const scenes = initScenes();
-  scenes.onChange((n) => { if (n === 'title') history.replaceState(null, '', location.pathname); });
+  const PFX = LANG === 'ko' ? '' : `/${LANG}`;
+  // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다
+  const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
-  const dailyBtn = $('jg-daily') as HTMLAnchorElement;
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
-  dailyBtn.dataset.key = pick.painting.key; dailyBtn.href = `${LANG === 'ko' ? '' : '/' + LANG}/puzzle/${pick.painting.key}/?daily=1`;
-  ($('daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('daily-cap').textContent = T.dailyCap(pick.painting.title[LI], DAILY_PIECES);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; blob?: Blob; seed?: number; day?: string; fixedN?: number; photoId?: string };
@@ -263,7 +218,6 @@ const shelves = shelvesFor(lang);
   const MAXSIDE = 2400;
   async function loadSource(s: Source, auto = false, quiet = false) {
     src = s; img = null; pendingSave = null; setup.hidden = s.kind !== 'photo' || auto || quiet; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
-    document.querySelectorAll('#jg-gallery .box3d').forEach((b) => b.classList.toggle('on', s.kind === 'gallery' && (b as HTMLElement).dataset.key === s.key));
     const file = s.file ?? s.blob; const blobUrl = file ? URL.createObjectURL(file) : s.url!; thumb.src = blobUrl;
     try {
       let bmp: ImageBitmap | HTMLImageElement;
@@ -284,8 +238,6 @@ const shelves = shelvesFor(lang);
   const dropRemote = (id: string) => { remoteSaves = remoteSaves.filter((m) => m.id !== id); syncDelSave(id); };
   async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } } }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
-  $('jg-file').addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
-  const drop = $('jg-drop'); drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over')); drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer?.files?.[0]; if (f) loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: f }); });
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000) { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
 
@@ -401,28 +353,12 @@ const shelves = shelvesFor(lang);
     try { await saves.put(data); } catch {} if (flush) return syncSave(data); return false;
   }
   addEventListener('pagehide', () => { if (running) saveNow(true); }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) saveNow(true); });
-  // 하던 퍼즐 목록 (선택 화면)
-  async function listSaves() {
-    const box = $('jg-resume-list'), sec = $('jg-resume'); if (!hasIDB()) return; let list: (SaveData | (SaveMeta & { remote: true }))[] = []; try { list = await saves.all(); } catch {}
-    await remoteReady; const have = new Set(list.map((x) => x.id)); for (const m of remoteSaves) if (!have.has(m.id)) list.push({ ...m, remote: true }); list.sort((a, b) => b.savedAt - a.savedAt);
-    box.innerHTML = ''; sec.hidden = !list.length;
-    for (const sv of list.slice(0, 12)) {
-      const wrap = document.createElement('div'); wrap.className = 'rs-wrap';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'rs';
-      const im = document.createElement('img'); im.src = sv.thumb; im.alt = ''; const t = document.createElement('div'); t.className = 'rs-t'; t.textContent = sv.name; const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmt(sv.elapsed / 1000)}`); const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
-      if ('remote' in sv) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.cloud; b.appendChild(c); } b.append(im, bar, t, st); b.addEventListener('click', async () => { if ('remote' in sv) { const d = await fetchSave(sv.id); if (!d) { toast(U.roomGone); dropRemote(sv.id); listSaves(); return; } resumeSave(d); } else resumeSave(sv); });
-      const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕'; del.addEventListener('click', async (e) => { e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} dropRemote(sv.id); listSaves(); });
-      wrap.append(b, del); box.appendChild(wrap);
-    }
-  }
   async function resumeSave(sv: SaveData) {
-    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} listSaves(); return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false, true); }
+    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false, true); }
     else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp`, seed: sv.seed, day: sv.day, fixedN: sv.total }, false); }
     else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp` }, false); }
     if (!img) return; start(sv);
   }
-  listSaves(); scenes.onChange((n) => { if (n === 'title') listSaves(); });
-  initFavUI(); initSearch($('jg-search') as HTMLInputElement);
 
   // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
   type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void };
@@ -570,7 +506,7 @@ const shelves = shelvesFor(lang);
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; running = false; try { await saves.del(saveId()); } catch {} dropRemote(saveId()); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
-  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; history.replaceState(null, '', location.pathname); } scenes.go('title'); });
+  $('jg-quit').addEventListener('click', async () => { if (running && !complete) await saveNow(true); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; } goPick(); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
@@ -625,13 +561,13 @@ const shelves = shelvesFor(lang);
   };
   async function joinRoom(id: string, keepImage = false) {
     fullLoad(true, U.joining);
-    const bail = (msg: string = U.roomGone) => { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(msg); };
+    const bail = (msg: string = U.roomGone) => { fullLoad(false); goPick(msg); };
     let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
     if (!info || info.error) return bail();
     const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
     // 진입 화면: 로그인(선택) 또는 닉네임만 적고 손님으로. 로그인했거나 이 방에 이미 들어온 적 있으면 건너뜀
     const u = await me(); let entered = false; try { entered = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
-    if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); history.replaceState(null, '', location.pathname); scenes.go('title'); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
+    if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); goPick(); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
     room = { id, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
     let nick = getNick(); if (!nick) { nick = randomNick(LANG); setNick(nick); }
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; $('jg-hud-name').textContent = '';
@@ -691,7 +627,7 @@ const shelves = shelvesFor(lang);
     reconT = window.setTimeout(async () => {
       if (!room) return;
       // 몇 번 실패하면 방이 아직 있는지 확인. 없어졌으면(48시간 만료 등) 그만 두드리고 제목 화면으로
-      if (wsTries >= 3) { let ok = false; try { const r = await fetch(`/api/room/${room.id}`); ok = r.ok; } catch {} if (!room) return; if (!ok) { stopWs(); closePeers(); openPlayers(false); room = null; running = false; clearInterval(timer); history.replaceState(null, '', location.pathname); scenes.go('title'); toast(U.roomGone); return; } }
+      if (wsTries >= 3) { let ok = false; try { const r = await fetch(`/api/room/${room.id}`); ok = r.ok; } catch {} if (!room) return; if (!ok) { stopWs(); closePeers(); openPlayers(false); room = null; running = false; clearInterval(timer); goPick(U.roomGone); return; } }
       connectRoom(bail);
     }, wait);
   }
@@ -736,7 +672,7 @@ const shelves = shelvesFor(lang);
       if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
-  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/play/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
+  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/board/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
   $('jg-invite').addEventListener('click', inviteShare); $('jg-invite2').addEventListener('click', () => { openPlayers(false); inviteShare(); });
 
   // ── 완성
@@ -756,7 +692,7 @@ const shelves = shelvesFor(lang);
     { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now() }; addDone(entry); syncDone(entry); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
-    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/play/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
+    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/photo/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
     const form = $('jg-submit') as HTMLFormElement; form.hidden = src!.kind !== 'daily' || src!.day !== todayKST() || !!room; form.dataset.score = String(sec); ($('jg-nick') as HTMLInputElement).value = getNick();
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
@@ -768,12 +704,12 @@ const shelves = shelvesFor(lang);
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
-  //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id> /photo/ 에서 고른 사진 · ?photo=1 내 사진 강조 · 없음 → 선택 화면
+  //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로
   //   그림·오늘의 퍼즐·이어하기는 로딩 화면(썸네일·이름) → 판. 실패하면 로딩 화면을 걷고 선택 화면으로
   async function boot() {
     const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')), pt = WORKS.find((x) => x.key === k);
     const clean = () => history.replaceState(null, '', location.pathname);
-    const bail = (msg?: string) => { fullLoad(false); clean(); scenes.go('title'); if (msg) toast(msg); };
+    const bail = (msg?: string) => { fullLoad(false); goPick(msg); };
     if (q.get('room')) return joinRoom(q.get('room')!.toLowerCase());
     if (q.get('resume')) {
       const id = q.get('resume')!; clean(); fullLoad(true, T.opening);
@@ -792,13 +728,16 @@ const shelves = shelvesFor(lang);
         images.del(ph).catch(() => {});
         // n 이 함께 오면(=/photo/ 에서 조각 수까지 정하고 온 것) 다이얼로그 없이 바로 판을 편다
         const auto = pn >= 6 && pn <= 2000; if (auto) wantN = pn;
+        const together = auto && q.get('together') === '1'; // /photo/ 에서 '친구랑 같이' 로 온 경우
         fullLoad(true, T.loading);
-        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) }, auto);
+        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) }, auto && !together);
         if (!img) return bail(); // loadSource 가 실패하면 이미 토스트를 띄운다
+        // 사진 방은 판이 있어야 만들 수 있다(조각 상태를 함께 올린다). 판을 먼저 펴고 방 만들기를 누른다
+        if (together) { await start(); $('jg-tosolo-invite').click(); return; }
         if (!auto) fullLoad(false); // auto 면 start() 가 화면을 넘긴다
         return;
       }
-      const d = $('jg-drop'); d.classList.add('pulse'); d.scrollIntoView({ block: 'center' }); setTimeout(() => d.classList.remove('pulse'), 4000); clean(); return;
+      location.replace(`${PFX}/photo/`); return; // 사진 고르기는 /photo/ 가 맡는다
     }
     if (q.get('daily') || (pt && q.get('d') === '1')) {
       const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL);
@@ -812,10 +751,9 @@ const shelves = shelvesFor(lang);
       await loadSource({ kind: 'gallery', key: pt.key, name, url: `/jigsaw/${pt.key}.webp` }, true); if (!img) bail(); return;
     }
     if (k) return bail(T.imgFail); // 모르는 key
-    fullLoad(false);
+    goPick(); // 쿼리가 없으면 열 판이 없다
   }
   boot();
   $('jg-start').addEventListener('click', () => start());
   $('jg-retry').addEventListener('click', () => start());
-  $('jg-title').addEventListener('click', () => scenes.go('title'));
 </script>

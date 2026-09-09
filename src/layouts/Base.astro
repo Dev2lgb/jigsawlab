@@ -8,7 +8,7 @@ const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigs
 const canonical = new URL(path, site).toString();
 const fontCss = lang === 'ja' ? 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css' : 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
 const nav = [
-  { href: `${P}/play/?daily=1`, label: T.nav.daily },
+  { href: `${P}/board/?daily=1`, label: T.nav.daily },
   { href: `${P}/play/`, label: T.nav.catalog },
   { href: `${P}/photo/`, label: T.nav.photo },
   { href: `${P}/my/`, label: T.nav.my },
@@ -99,7 +99,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     <div class="wrap foot-in">
       <div class="foot-brand"><span class="mark-text">jigsawlab</span><p>{T.tagline}</p></div>
       <div class="foot-links">
-        <a href={`${P}/play/?daily=1`}>{T.nav.daily}</a>
+        <a href={`${P}/board/?daily=1`}>{T.nav.daily}</a>
         <a href={`${P}/play/`}>{T.nav.catalog}</a>
         <a href={`${P}/photo/`}>{T.nav.photo}</a>
         <a href={`${P}/my/`}>{T.nav.my}</a>

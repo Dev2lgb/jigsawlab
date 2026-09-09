@@ -84,15 +84,16 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
 
   /* 고르는 판: 왼쪽 카테고리 · 오른쪽 목록 */
   .browse { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: clamp(20px, 3vw, 44px); align-items: start; margin-top: 34px; }
-  .cats { position: sticky; top: calc(var(--top-h) + 12px); display: flex; flex-direction: column; max-height: calc(100dvh - var(--top-h) - 24px); }
+  .cats { position: sticky; top: calc(var(--top-h) + 12px); display: flex; flex-direction: column; min-width: 0; max-height: calc(100dvh - var(--top-h) - 24px); }
   .cats-h { padding: 0 12px 10px; font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-  .cats-list { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-right: 2px; }
+  .cats-list { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-right: 2px; }
   .cat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--ink-2); font-size: .93rem; font-weight: 600; transition: background .15s, color .15s; }
   .cat:hover { background: var(--bg-3); color: var(--ink); text-decoration: none; }
   .cat b { flex: none; font-weight: 600; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
   .cat.on { background: var(--ink); color: #fff; } .cat.on b { color: rgba(255,255,255,.6); } .cat.on:hover { background: var(--ink); color: #fff; }
   .cat[hidden] { display: none; }
 
+  .pane { min-width: 0; } /* 안 주면 안쪽 진열대 폭이 트랙을 밀어낸다 */
   .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 40px; }
   .pane-head > .tools:only-child { margin-left: auto; }
   .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -101,7 +102,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
   .picker .shelf-grid { --w: 180px; --h: 164px; --d: 38px; padding-top: 14px; padding-bottom: 18px; } @media (max-width: 640px) { .picker .shelf-grid { --w: clamp(112px, 35vw, 168px); --h: calc(var(--w) * .92); --d: 28px; } }
 
   @media (max-width: 860px) {
-    .browse { grid-template-columns: 1fr; gap: 4px; margin-top: 26px; }
+    .browse { grid-template-columns: minmax(0, 1fr); gap: 4px; margin-top: 26px; }
     .cats { top: var(--top-h); z-index: 4; max-height: none; margin: 0 calc(var(--gutter) * -1); padding: 10px var(--gutter) 11px; background: var(--bg); border-bottom: 1px solid var(--line); }
     .cats-h { display: none; }
     .cats-list { flex-direction: row; gap: 6px; overflow-x: auto; overflow-y: visible; scrollbar-width: none; } .cats-list::-webkit-scrollbar { display: none; }

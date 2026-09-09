@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - name: 타입 검사 (astro check)
+        run: pnpm check
       - run: pnpm build
       - name: D1 migrations
         uses: cloudflare/wrangler-action@v3

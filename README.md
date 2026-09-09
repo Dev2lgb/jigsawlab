@@ -14,6 +14,7 @@
 | 명령 | 설명 |
 |---|---|
 | `pnpm dev` | 개발 서버 (wrangler 프록시로 로컬 D1 바인딩까지 동작) |
+| `pnpm check` | 타입 검사 (astro check). main push 시 CI 가 배포 전에 돌린다 |
 | `pnpm db:migrate:local` | 로컬 D1 마이그레이션 |
 | `pnpm db:migrate` | 실제 D1 마이그레이션 |
 | `pnpm preview` | 빌드 후 wrangler dev (실제 Worker 런타임) |
@@ -25,6 +26,9 @@
 3. `pnpm db:migrate:local && pnpm db:migrate`
 4. `pnpm run deploy` (커스텀 도메인은 wrangler.jsonc routes 로 자동 연결)
 5. 구글 로그인 비밀값: Google Cloud 콘솔에서 OAuth 클라이언트(웹) 생성, 승인된 리디렉션 URI `https://jigsawlab.app/api/auth/callback`. 그 다음 `npx wrangler secret put GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `SESSION_SECRET`(긴 랜덤 문자열). 로컬은 `.dev.vars` 에 같은 키. 비밀값이 없으면 로그인 UI 가 자동으로 숨겨짐
+※ `typescript` 는 6.x 로 묶여 있다 — 7.x 네이티브 컴파일러는 `astro check` 가 쓰는 프로그래매틱 API 를 아직 안 내보낸다.
+※ 전역 `@cloudflare/workers-types` 가 DOM 타입 일부를 가린다: 브라우저 쪽 코드에서 `res.json()` 은 `unknown` 이라 `json<any>()` 로, `el.append(...)` 는 HTMLRewriter 쪽이 가려서 `appendChild` 로 쓴다.
+
 6. GitHub 자동 배포: 저장소 Secrets 에 `CLOUDFLARE_API_TOKEN`(Workers Scripts·D1 편집 권한), `CLOUDFLARE_ACCOUNT_ID` 등록 → main push 시 `.github/workflows/deploy.yml`
 
 ## 구조

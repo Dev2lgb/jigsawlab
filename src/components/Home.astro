@@ -134,5 +134,5 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
-  fetch('/api/stats').then((r) => r.json()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
+  fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
 </script>

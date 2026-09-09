@@ -14,6 +14,8 @@ const nav = [
   { href: `${P}/my/`, label: T.nav.my },
   { href: `${P}/about/`, label: T.nav.about },
 ];
+// Cloudflare Web Analytics — 쿠키 없이 방문 수만 센다. 대시보드 Web Analytics 에서 사이트 추가 후 나온 토큰을 여기에
+const CF_BEACON = '34fd6584be234e4b8b1e580413d95d1f';
 const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
 // 홈에만 구조화 데이터 — 한글 브랜드명(직소랩)을 alternateName 으로 알려 주고, 게임 앱이라는 것도 함께
 const isHome = path === '/' || path === '/en/' || path === '/ja/';
@@ -47,6 +49,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" />
   {ads && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5830650963828895" crossorigin="anonymous" is:inline></script>}
+  {CF_BEACON && import.meta.env.PROD && <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: CF_BEACON })} is:inline></script>}
   <slot name="head" />
   <script is:inline define:vars={{ i18n: { copied: T.foot.copied, shareFail: T.foot.shareFail, prev: T.catalog.prev, next: T.catalog.next } }}>window.__i18n = i18n;</script>
 </head>

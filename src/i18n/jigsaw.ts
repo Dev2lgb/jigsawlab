@@ -19,7 +19,10 @@ export const JIGSAW = {
   <li>모든 조각이 잠기면 완성입니다. 걸린 시간과 놓은 횟수가 나오고, 같은 사진·같은 조각 수의 최고 기록이 이 브라우저에 저장됩니다. 결과는 링크로 공유할 수 있고, 오늘의 퍼즐이면 닉네임만 넣어 시간 랭킹에 올릴 수 있습니다.</li>
 </ol>
 <h2>사진은 어디에도 올라가지 않습니다</h2>
-<p>고른 사진은 브라우저가 읽어 화면 안에서 자르고 그립니다. jigsawlab 서버로 전송되지 않고 저장도 되지 않아서, 가족 사진이나 아이 사진, 아직 공개하지 않은 사진으로도 마음 놓고 만들 수 있습니다. 그래서 내 사진으로 만든 퍼즐은 링크로 다른 사람에게 보낼 수 없고, 대신 결과(조각 수·시간)만 공유됩니다. 친구와 같은 판을 겨루고 싶다면 오늘의 퍼즐을 쓰세요.</p>
+<p>고른 사진은 브라우저가 읽어 화면 안에서 자르고 그립니다. jigsawlab 서버로 전송되지 않고 저장도 되지 않아서, 가족 사진이나 아이 사진, 아직 공개하지 않은 사진으로도 마음 놓고 만들 수 있습니다. 공유 링크에는 결과(조각 수·시간)만 담기고 사진은 들어가지 않습니다. 친구와 같은 사진을 같이 맞추고 싶다면 아래 퍼즐 방을 쓰세요.</p>
+<h2>친구랑 같이 맞추기</h2>
+<p>퍼즐 방을 만들면 초대 링크가 하나 생깁니다. 그 링크를 보내면 친구는 가입도 설치도 없이 바로 같은 판에 들어옵니다. 한 방에 여덟 명까지 들어와 조각을 나눠 맞출 수 있고, 누가 조각을 끼우면 다른 사람 화면에도 바로 나타납니다. 잠깐 나갔다 들어와도 판은 그대로 있습니다.</p>
+<p>내 사진으로 만든 방도 초대할 수 있습니다. 이때도 사진은 서버에 올라가지 않고, 방을 연 사람 기기에서 친구 기기로 곧장 갑니다. 그래서 가족 사진으로 방을 열어도 사진이 어디에도 남지 않습니다. 대신 방을 연 사람이 나가 있으면 친구가 사진을 못 받고, 회사나 학교 인터넷에서는 연결이 막히기도 합니다.</p>
 <h2>오늘의 퍼즐</h2>
 <p>내장된 퍼블릭 도메인 명화 200여 점 중 하나를 날짜로 골라 48조각으로 자릅니다. 톱니 모양도 날짜로 정해지기 때문에 그날 방문한 모든 사람이 완전히 같은 판을 풉니다. 완성 시간이 짧은 순으로 랭킹이 매겨지고, 닉네임만 넣으면 등록됩니다. 자정(한국 시간)에 새 그림으로 바뀌며, 지난 기록은 그대로 남습니다. 명화는 저작권이 끝난 작품과 그 사진만 골라 썼습니다.</p>
 <h2>조각 수 고르는 요령</h2>
@@ -54,7 +57,10 @@ export const JIGSAW = {
   <li>When every piece is locked, the puzzle is complete. You get your time and placement count, and your best for that photo and piece count is saved in this browser. Share the result as a link, and on the daily puzzle enter a nickname to post your time to the leaderboard.</li>
 </ol>
 <h2>Your photo is never uploaded</h2>
-<p>The browser reads the photo and cuts and draws it on screen. Nothing is sent to a jigsawlab server or stored, which makes it safe for family photos, kids and pictures you have not published. It also means a puzzle made from your own photo cannot be sent to someone else as a link; only the result (pieces and time) is shared. To race a friend on the same puzzle, use the daily puzzle.</p>
+<p>The browser reads the photo and cuts and draws it on screen. Nothing is sent to a jigsawlab server or stored, which makes it safe for family photos, kids and pictures you have not published. A share link carries only the result (pieces and time), never the photo. To solve the same photo together with a friend, use a puzzle room.</p>
+<h2>Solving together with friends</h2>
+<p>Open a puzzle room and you get one invite link. Send it and your friend joins the same board right away, with no sign-up and nothing to install. Up to eight people can share a room and split the pieces between them, and when someone drops a piece into place it shows up on everyone else's screen. Leave for a bit and the board is still there when you come back.</p>
+<p>You can invite people to a puzzle made from your own photo too. The photo still does not go to a server: it goes straight from the device of whoever opened the room to their friend's. That is why you can open a room with a family photo and it is left nowhere. The catch is that the person who opened the room has to stay in it for the others to get the photo, and some office and school networks block the connection.</p>
 <h2>The daily puzzle</h2>
 <p>Each day one of more than 200 built-in public-domain paintings is chosen by the date and cut into 48 pieces. The tab shapes are seeded by the date too, so everyone who visits that day solves exactly the same puzzle. Times are ranked fastest first and a nickname is all it takes to post one. The picture changes at midnight Korean time, and past records stay on the board. Only works whose copyright has expired, and public-domain reproductions of them, are used.</p>
 <h2>Choosing a piece count</h2>
@@ -89,7 +95,10 @@ export const JIGSAW = {
   <li>すべてのピースがロックされたら完成です。タイムと置いた回数が表示され、同じ写真・同じピース数の自己ベストがこのブラウザに保存されます。結果はリンクで共有でき、今日のパズルならニックネームだけでタイムランキングに登録できます。</li>
 </ol>
 <h2>写真はどこにもアップロードされません</h2>
-<p>選んだ写真はブラウザが読み込み、画面の中で切り分けて描きます。jigsawlabのサーバーには送信されず保存もされないので、家族や子どもの写真、まだ公開していない写真でも安心して使えます。そのため、自分の写真で作ったパズルをリンクで他の人に送ることはできず、共有されるのは結果（ピース数とタイム）だけです。友達と同じ盤面で競いたいときは今日のパズルを使ってください。</p>
+<p>選んだ写真はブラウザが読み込み、画面の中で切り分けて描きます。jigsawlabのサーバーには送信されず保存もされないので、家族や子どもの写真、まだ公開していない写真でも安心して使えます。共有リンクに入るのは結果（ピース数とタイム）だけで、写真は入りません。友達と同じ写真を一緒に組みたいときはパズル部屋を使ってください。</p>
+<h2>友だちと一緒に組む</h2>
+<p>パズル部屋を作ると招待リンクが一つできます。それを送れば、友だちは登録もインストールもなしにそのまま同じ盤面に入れます。ひと部屋に八人まで入ってピースを分け合え、誰かがピースをはめると他の人の画面にもすぐ出てきます。少し抜けて戻っても盤面はそのままです。</p>
+<p>自分の写真で作った部屋にも招待できます。このときも写真はサーバーに上がらず、部屋を開いた人の端末から友だちの端末へまっすぐ届きます。だから家族の写真で部屋を開いても、写真はどこにも残りません。ただし部屋を開いた人が抜けていると友だちは写真を受け取れず、会社や学校のネットワークではつながらないこともあります。</p>
 <h2>今日のパズル</h2>
 <p>内蔵したパブリックドメインの名画200点余りから日付で1点を選び、48ピースに切ります。凹凸の形も日付で決まるので、その日に訪れた全員がまったく同じ盤面を解きます。完成タイムの速い順にランキングがつき、ニックネームを入れるだけで登録できます。日本時間の午前0時に新しい絵に切り替わり、過去の記録はそのまま残ります。名画は著作権が切れた作品とそのパブリックドメインの複製だけを使っています。</p>
 <h2>ピース数の選び方</h2>

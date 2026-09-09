@@ -64,7 +64,7 @@ const shelves = shelvesFor(lang);
       <span class="chip" id="jg-left"></span>
       <span class="hud-name muted" id="jg-hud-name"></span>
       <button type="button" class="tb" id="jg-tosolo-invite" hidden><Fragment set:html={icon('users', 15)} /><span>{U.play.together}</span></button>
-      <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('send', 15)} /><span>{U.play.invite}</span></button></span>
+      <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('user-plus', 15)} /><span>{U.play.invite}</span></button></span>
       <span class="sp"></span>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false"><Fragment set:html={icon('eye', 18)} /></button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false"><Fragment set:html={icon('edge', 18)} /></button>
@@ -85,8 +85,9 @@ const shelves = shelvesFor(lang);
       <div class="dialog pldlg" role="dialog" aria-modal="true" aria-labelledby="jg-pldlg-h">
         <button type="button" class="close" id="jg-pldlg-close" aria-label={t.toTitle}>✕</button>
         <h3 id="jg-pldlg-h">{U.play.players} <span class="muted" id="jg-pldlg-n"></span></h3>
+        <p class="pl-lead" id="jg-pldlg-lead" hidden>{U.play.inviteLead}</p>
         <ul class="pl-list" id="jg-players"></ul>
-        <div class="row"><button type="button" class="btn primary" id="jg-invite2"><Fragment set:html={icon('send', 16)} /><span>{U.play.invite}</span></button></div>
+        <div class="row"><button type="button" class="btn primary" id="jg-invite2"><Fragment set:html={icon('user-plus', 16)} /><span>{U.play.invite}</span></button></div>
       </div>
     </div>
   </div>
@@ -175,6 +176,7 @@ const shelves = shelvesFor(lang);
   .gate .gate-guest { display: flex; gap: 8px; } .gate .gate-guest .input { flex: 1; min-width: 0; } .gate .gate-guest .btn { flex: none; }
   .gate[data-noauth="1"] .gate-login, .gate[data-noauth="1"] .gate-login + .gate-sub, .gate[data-noauth="1"] .gate-or { display: none; }
   .note-solo { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: .82rem; }
+  .pl-lead { margin: -4px 0 12px; color: var(--ink-2); font-size: .9rem; line-height: 1.5; }
   .pldlg h3 { margin: 0 0 12px; font-size: 1.05rem; } .pldlg h3 .muted { font-weight: 600; font-size: .9rem; }
   .pl-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .pl-list :global(li) { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg-2); font-weight: 700; font-size: .92rem; }
@@ -602,8 +604,18 @@ const shelves = shelvesFor(lang);
   let mvT = 0, curT = 0;
   function netMove(g: Group) { const now = performance.now(); if (now - mvT < 40) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
-  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
+  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
+  // 방을 만들자마자 퍼즐 화면만 떠서 초대를 해야 하는 줄 모르는 경우가 많다. 방을 연 사람이
+  // 아직 혼자면 초대 안내를 한 번 띄운다. 링크로 들어온 손님에게는 띄우지 않는다
+  function maybeInvite() {
+    if (!room || room.players.size > 1) return;
+    let host = false, shown = true;
+    try { host = sessionStorage.getItem(`host:${room.id}`) === '1'; shown = sessionStorage.getItem(`invited:${room.id}`) === '1'; } catch { return; }
+    if (!host || shown) return;
+    try { sessionStorage.setItem(`invited:${room.id}`, '1'); } catch {}
+    openPlayers(true);
+  }
   $('jg-players-btn').addEventListener('click', () => openPlayers(true)); $('jg-pldlg-bg').addEventListener('click', () => openPlayers(false)); $('jg-pldlg-close').addEventListener('click', () => openPlayers(false));
   // 전체 화면 로딩. art 를 주면 썸네일·이름을 함께 보여 준다(상세 페이지에서 넘어올 때 같은 상자가 이어지도록). 끄면 head 가 걸어 둔 data-boot 도 함께 걷는다
   const fullLoad = (on: boolean, txt?: string, art?: { img?: string; name?: string }) => {
@@ -691,9 +703,9 @@ const shelves = shelvesFor(lang);
     switch (m.t) {
       case 'init': {
         room.me = m.you; room.players = new Map(); for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {})); room.bySid = new Map();
-        if (!img) { renderPlayers(); requestPhoto(); return; }
+        if (!img) { renderPlayers(); maybeInvite(); requestPhoto(); return; }
         const st = m.state; const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i)) t.push(i); for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; })(), pile: [], piles: [U.pileAll], elapsed: Date.now() - st.createdAt, moves: 0, savedAt: 0, thumb: '', done: st.locked.length };
-        wantN = st.total; start(rs).then(() => { renderPlayers(); fullLoad(false); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
+        wantN = st.total; start(rs).then(() => { renderPlayers(); maybeInvite(); fullLoad(false); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
       // ── 내 사진 방: 사진 전달 (WebRTC). 서버는 신호만 중계
@@ -719,7 +731,7 @@ const shelves = shelvesFor(lang);
     if (!src || !cut || room) return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
     const idx = new Map(pieces.map((p, i) => [p, i]));
     const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
-    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
       if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });

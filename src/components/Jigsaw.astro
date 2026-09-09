@@ -357,14 +357,14 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   }
 
   // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
-  type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void };
+  type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void; lin?: boolean };
   const tweens = new Map<Group, Tween>();
   let drawQueued = false, restShadow = false; // restShadow: 판 위 느슨한 조각에 옅은 그림자 (조각이 적을 때만)
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
   function drawNow() {
     if (!cut) return; const now = performance.now(); const finished: Group[] = [];
-    for (const [g, tw] of tweens) { const t = Math.min(1, (now - tw.t0) / tw.dur), e = easeOut(t); g.dx = tw.x0 + (tw.x1 - tw.x0) * e; g.dy = tw.y0 + (tw.y1 - tw.y0) * e; if (t >= 1) finished.push(g); }
+    for (const [g, tw] of tweens) { const t = Math.min(1, (now - tw.t0) / tw.dur), e = tw.lin ? t : easeOut(t); g.dx = tw.x0 + (tw.x1 - tw.x0) * e; g.dy = tw.y0 + (tw.y1 - tw.y0) * e; if (t >= 1) finished.push(g); }
     const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(0, 0, cut.W, cut.H);
@@ -488,7 +488,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     }
     if (dragging) { const b = toBoard(e.clientX, e.clientY); dragging.dx = b.x - dragOff.x; dragging.dy = b.y - dragOff.y; draw(); if (room && dragging.sid) netMove(dragging); }
     else if (ptrs.size === 1) { view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; draw(); }
-    if (room) netCursor(e.clientX, e.clientY);
+    if (room && !dragging && !lifting) netCursor(e.clientX, e.clientY); // 끄는 중엔 조각 자체가 보이므로 커서는 생략
   });
   const up = (e: PointerEvent) => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (dragging && ptrs.size === 0) { const g = dragging; dragging = null; canvas.classList.remove('drag'); place(g); } };
   for (const ev of ['touchstart', 'touchmove'] as const) canvas.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
@@ -534,7 +534,12 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
 
   // ── 멀티 방: 연결·수신·전송
   let mvT = 0, curT = 0;
-  function netMove(g: Group) { const now = performance.now(); if (now - mvT < 40) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
+  // 조각을 끄는 동안 보내는 좌표. 웹소켓 메시지 하나가 곧 Durable Object 요청 하나라 간격이 그대로 비용이 된다.
+  // 100ms(10/s)로 띄엄띄엄 보내고, 받는 쪽에서 그 사이를 선형으로 메워 부드럽게 보이게 한다
+  const MV_MS = 100;
+  function netMove(g: Group) { const now = performance.now(); if (now - mvT < MV_MS) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
+  /** 남이 끄는 조각을 다음 좌표까지 선형으로 미끄러뜨린다(도착점은 drop 이 정확히 맞춰 준다) */
+  function netGlide(g: Group, x: number, y: number) { tweens.set(g, { x0: g.dx, y0: g.dy, x1: x, y1: y, t0: performance.now(), dur: MV_MS * 1.15, lin: true, done: () => {} }); draw(); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
   function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) renderPlayers(); };
@@ -648,12 +653,12 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       case 'leave': room.players.delete(m.id); for (const [g, h] of room.holders) if (h === m.id) room.holders.delete(g); renderPlayers(); draw(); return;
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       case 'grab': room.holders.set(m.g, m.id); { const g = room.bySid.get(m.g); if (g) toFront(g); } draw(); return;
-      case 'release': room.holders.delete(m.g); draw(); return;
+      case 'release': { room.holders.delete(m.g); const g = room.bySid.get(m.g); if (g) tweens.delete(g); draw(); return; }
       case 'take': { const p = pieces[Number(m.g)]; if (!p || p.locked || p.g) return; p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); renderPiles(); draw(); return; }
       case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; room.bySid.delete(m.g); room.holders.delete(m.g); tray.appendChild(trayEl(p)); applyEdgeFilter(); renderPiles(); draw(); return; }
       case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.remove(); p.el = undefined; room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } return; }
-      case 'mv': { const g = room.bySid.get(m.g); if (g && g !== dragging) { g.dx = m.dx; g.dy = m.dy; draw(); } return; }
-      case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { g.dx = m.dx; g.dy = m.dy; draw(); } return; }
+      case 'mv': { const g = room.bySid.get(m.g); if (g && g !== dragging) netGlide(g, m.dx, m.dy); return; }
+      case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'merge': { const g = room.bySid.get(m.g), into = room.bySid.get(m.into); if (g && into && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } into.dx = m.dx; into.dy = m.dy; tweens.delete(g); merge(g, into); } return; }
       case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
     }

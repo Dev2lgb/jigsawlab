@@ -11,7 +11,7 @@ export const TOTAL_SHELVES = CATEGORIES.length;
 // 빨리 푸는 사람이 아니라 많이 맞춘 사람이 위로 가는 편이 랭킹으로도 건강하다)
 export const XP_PER_PIECE = 1;
 export const DAILY_BONUS = 1.5;   // 오늘의 퍼즐
-export const REPEAT_RATE = 0.25;  // 이미 그만큼 깬 그림을 다시 (오늘의 퍼즐은 하루 한 판뿐이라 제외)
+export const REPEAT_RATE = 0.25;  // 이미 그만큼 깬 그림을 다시 (오늘의 퍼즐도 다시 열 수 있으므로 똑같이 적용)
 export const DAY_CAP = 5000;      // 하루에 받을 수 있는 XP 상한
 export const MIN_SEC_PER_PIECE = 0.25; // 조각 하나에 이보다 빠르면 사람 손이 아니라고 보고 XP 도 지표도 안 준다 (기록 자체는 남는다)
 

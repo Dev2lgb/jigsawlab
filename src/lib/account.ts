@@ -28,7 +28,13 @@ const awardOf = async (r: Response | null): Promise<Award | null> => { if (!r?.o
 /** 로그인 상태면 완성 기록 1건 올림 → 받은 XP·레벨·새 업적 */
 export async function syncDone(entry: unknown): Promise<Award | null> { if (!(await me())) return null; return awardOf(await post({ action: 'done', entry })); }
 /** 모두의 퍼즐 한 회차에 내가 보탠 조각 (완성 기록 목록에는 안 남고 XP·업적에만 반영) */
-export async function syncLive(key: string, n: number, mine: number): Promise<Award | null> { if (mine <= 0 || !(await me())) return null; return awardOf(await post({ action: 'live', key, n, mine })); }
+export async function syncLive(key: string, n: number, mine: number, paid = 0): Promise<Award | null> { if (mine <= 0 || !(await me())) return null; return awardOf(await post({ action: 'live', key, n, mine, paid })); }
+/** 맞추는 도중 제자리에 놓은 조각을 모아서 올림 — 완성까지 안 가도 XP 가 붙는다.
+ *  조각마다 보내면 무료 티어 요청·D1 쓰기가 남아나지 않아 Jigsaw.astro 가 모았다가 부른다 */
+export async function syncPieces(kind: string, key: string, n: number, placed: number): Promise<Award | null> {
+  if (placed <= 0 || !(await me())) return null;
+  return awardOf(await post({ action: 'pieces', kind, key, n, placed }));
+}
 /** 로그인 직후 한 번: 이 기기의 완성 기록을 서버에 합침 */
 export async function mergeLocalDone(): Promise<Award | null> { if (ss.get('auth:merged')) return null; const l = getDone(); ss.set('auth:merged', '1'); return l.length ? awardOf(await post({ action: 'merge', entries: l })) : null; }
 

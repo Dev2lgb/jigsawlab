@@ -1,6 +1,6 @@
 // 서버 전용 — 완성 기록을 받아 XP·누적 지표·업적·주간 랭킹에 반영한다. 규칙 자체는 lib/level.ts
 import { WORK_BY_KEY, WORKS } from '../data/works';
-import { EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, weekOf, xpFor, type Solve, type Stats } from './level';
+import { EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, weekOf, xpFor, type Kind, type Solve, type Stats } from './level';
 
 /** 카테고리(진열대)마다 그림이 몇 점인지 — '진열대 완주' 판정용 */
 const CAT_TOTAL: Record<string, number> = {};
@@ -114,4 +114,41 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
 
   const level = levelOf(s.xp);
   return { xp: s.xp, gained, level, prevLevel, levelUp: level > prevLevel, badges: fresh, stats, capped };
+}
+
+/**
+ * 조각을 놓는 동안 쌓이는 XP. 완성 정산(award)과 달리 XP·주간 XP 만 건드린다 —
+ * 업적은 전부 완성 지표(solved·pieces·works…)에 걸려 있어 여기서 새로 딸 것이 없고,
+ * 누적 지표도 완성 때 한 번에 세는 편이 어긋날 여지가 없다.
+ * 두 번 주지 않기: 여기서 준 조각 수를 클라이언트가 세어 두었다가 완성 기록에 paid 로 실어 보내면
+ * 그만큼 빼고 정산한다(xpFor). 그래서 완성 시점에는 아직 안 보낸 나머지만 붙는다.
+ *
+ * 조각마다 서버를 두드리면 무료 티어가 남아나지 않으므로 클라이언트가 모아서 보낸다(Jigsaw.astro 의 flushXp).
+ */
+export async function awardPieces(DB: D1Database, uid: string, p: { kind: Kind; key: string; n: number; placed: number; at: number }): Promise<AwardResult | null> {
+  // user_stats 행이 없는 회원은 옛 기록 접어 넣기(award 의 백필)를 먼저 돌려야 한다.
+  // 여기서 덜컥 행을 만들어 버리면 그 백필이 영영 안 돈다
+  let srow = await DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(uid).first<Row>();
+  if (!srow) { await award(DB, uid, []); srow = await DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(uid).first<Row>(); }
+  const s: Row = { ...ZERO, ...(srow ?? {}) };
+  const stats: Stats = { xp: s.xp, solved: s.solved, pieces: s.pieces, best_n: s.best_n, works: s.works, shelves: s.shelves, daily_n: s.daily_n, streak: s.streak, streak_best: s.streak_best, photo_n: s.photo_n, room_n: s.room_n, live_n: s.live_n, night_n: s.night_n, fast_n: s.fast_n };
+  const prevLevel = levelOf(s.xp);
+  const flat = (gained: number, capped: boolean): AwardResult => ({ xp: s.xp + gained, gained, level: levelOf(s.xp + gained), prevLevel, levelUp: levelOf(s.xp + gained) > prevLevel, badges: [], stats: { ...stats, xp: s.xp + gained }, capped });
+
+  const work = p.kind === 'gallery' || p.kind === 'daily' ? WORK_BY_KEY[p.key] : undefined;
+  const prevN = work ? (await DB.prepare('SELECT n FROM user_cleared WHERE user_id = ? AND key = ?').bind(uid, p.key).first<{ n: number }>())?.n ?? null : null;
+  const day = kstDay(p.at), week = weekOf(day);
+  const used = s.day_key === day ? s.day_xp : 0;
+  const want = xpFor({ kind: p.kind, key: p.key, n: p.n, sec: 0, mine: p.placed, at: p.at }, prevN);
+  const capped = want > DAY_CAP - used;
+  const xp = Math.max(0, Math.min(want, DAY_CAP - used));
+  if (xp <= 0) return flat(0, capped);
+
+  // xp = xp + ? 로 더해야 다른 탭에서 동시에 올린 것을 덮어쓰지 않는다. 실제 합계는 RETURNING 으로 받아 레벨업을 판정
+  const row = await DB.prepare(`INSERT INTO user_stats (user_id, xp, day_xp, day_key, updated_at) VALUES (?, ?, ?, ?, unixepoch())
+      ON CONFLICT(user_id) DO UPDATE SET xp = user_stats.xp + ?, day_xp = ?, day_key = ?, updated_at = unixepoch()
+      RETURNING xp`).bind(uid, xp, used + xp, day, xp, used + xp, day).first<{ xp: number }>();
+  await DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, xp).run();
+  const total = row?.xp ?? s.xp + xp, level = levelOf(total);
+  return { xp: total, gained: xp, level, prevLevel: levelOf(total - xp), levelUp: level > levelOf(total - xp), badges: [], stats: { ...stats, xp: total }, capped };
 }

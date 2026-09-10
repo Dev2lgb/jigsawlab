@@ -14,14 +14,24 @@ const ZERO: Row = { ...EMPTY_STATS, last_day: null, day_xp: 0, day_key: null };
 /**
  * solves 를 순서대로 반영한다. 호출 쪽에서 이미 기록으로 인정된 판만 넘겨야 한다
  * (user_done 에 실제로 새로 들어간 행만 — 같은 기록을 여러 기기에서 두 번 올려도 XP 는 한 번)
+ *
+ * user_stats 행이 없으면 = 레벨 기능 전부터 쓰던 회원이거나 첫 판이다. 이때 user_done 에 이미
+ * 쌓여 있는 옛 기록을 한 번에 접어 넣는다 — 안 그러면 그 기록들은 merge 때 INSERT OR IGNORE 로
+ * 걸러져 영영 XP 가 안 붙는다. 접어 넣고 나면 user_stats 행이 생기므로 두 번 돌지 않는다
  */
 export async function award(DB: D1Database, uid: string, solves: Solve[]): Promise<AwardResult | null> {
-  if (!solves.length) return null;
   solves = [...solves].sort((a, b) => a.at - b.at);
+  const srow = await DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(uid).first<Row>();
+  if (!srow) {
+    const old = await DB.prepare('SELECT at, key, kind, n, sec, day FROM user_done WHERE user_id = ? ORDER BY at ASC LIMIT 500').bind(uid).all<{ at: number; key: string; kind: string; n: number; sec: number; day: string | null }>();
+    const have = new Set(solves.map((x) => x.at));
+    const back = (old.results ?? []).filter((r) => !have.has(r.at)).map((r): Solve => ({ kind: r.kind as Solve['kind'], key: r.key, n: r.n, sec: r.sec, at: r.at, day: r.day }));
+    if (back.length) solves = [...back, ...solves].sort((a, b) => a.at - b.at);
+  }
+  if (!solves.length) return null;
   const keys = [...new Set(solves.filter((s) => s.kind === 'gallery' || s.kind === 'daily').map((s) => s.key))];
 
-  const [srow, brow, crow, krow] = await Promise.all([
-    DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(uid).first<Row>(),
+  const [brow, crow, krow] = await Promise.all([
     DB.prepare('SELECT code FROM user_badges WHERE user_id = ?').bind(uid).all<{ code: string }>(),
     keys.length ? DB.prepare('SELECT cat, COUNT(*) AS c FROM user_cleared WHERE user_id = ? GROUP BY cat').bind(uid).all<{ cat: string; c: number }>() : Promise.resolve({ results: [] as { cat: string; c: number }[] }),
     keys.length ? DB.prepare(`SELECT key, n FROM user_cleared WHERE user_id = ? AND key IN (${keys.map(() => '?').join(',')})`).bind(uid, ...keys).all<{ key: string; n: number }>() : Promise.resolve({ results: [] as { key: string; n: number }[] }),

@@ -7,7 +7,7 @@ import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 import { earnFor } from '../lib/level';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const T = UI[lang], li = LI[lang], P = prefix(lang);
+const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
 const day = todayKST(), daily = dailyPick(day, DAILY_POOL), shelves = shelvesFor(lang), total = WORKS.length;
 const all = shelves.flatMap((s) => s.items);
 const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
@@ -65,6 +65,23 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
     <div class="plank" aria-hidden="true"></div>
     {sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{T.catalog.showAll(sh.items.length)}</a>}
   </div>)}
+</section>
+
+<!-- 레벨·업적·랭킹 — 왼쪽 설명은 늘 서 있고(사람이 없어도 빈 띠로 안 보이게), 오른쪽 표만 /api/rank 로 채운다 -->
+<section class="sec lvl-sec">
+  <div class="wrap lvl-in" data-reveal>
+    <div class="lvl-txt">
+      <h2 class="sec-h">{V.homeTitle}</h2>
+      <p class="sec-sub">{V.homeLead}</p>
+      <ul class="lvl-pts">{V.homeCards.map(([t, d]) => <li><b>{t}</b><span>{d}</span></li>)}</ul>
+      <div class="lvl-cta"><a class="btn primary" href={`${P}/rank/`}>{V.seeRank} →</a><a class="btn" id="lvl-my" href={`${P}/my/`}>{V.seeMy}</a></div>
+    </div>
+    <div class="lvl-board">
+      <p class="lvl-bh"><span class="lvl-bb">{V.homeRank}</span><small id="lvl-me"></small></p>
+      <ol class="lb" id="lvl-top"><li class="empty">{V.loading}</li></ol>
+      <a class="lvl-all" href={`${P}/rank/`}>{V.seeRank} →</a>
+    </div>
+  </div>
 </section>
 
 
@@ -142,6 +159,23 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .shelf-all { margin-top: 18px; }
   @media (max-width: 640px) { .shelf-grid { --w: clamp(112px, 35vw, 172px); --h: calc(var(--w) * .9); --d: 28px; } }
 
+  /* 레벨·업적·이번 주 랭킹 */
+  .lvl-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: clamp(28px, 5vw, 64px); align-items: center; }
+  .lvl-txt .sec-sub { max-width: 34em; }
+  .lvl-pts { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 12px; }
+  .lvl-pts li { display: flex; flex-direction: column; gap: 2px; padding-left: 16px; position: relative; }
+  .lvl-pts li::before { content: ''; position: absolute; left: 0; top: .5em; width: 7px; height: 7px; border-radius: 2px; background: var(--gold); }
+  .lvl-pts b { font-size: 1.02rem; letter-spacing: -.02em; } .lvl-pts span { color: var(--muted); font-size: .88rem; }
+  .lvl-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+  .lvl-board { padding: 18px 20px 14px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); }
+  .lvl-bh { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
+  .lvl-bb { display: inline-flex; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .74rem; font-weight: 800; }
+  .lvl-bh small { margin-left: auto; color: var(--accent); font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; }
+  .lvl-board .lb :global(li) { padding: 10px 0; } .lvl-board .lb :global(li.empty) { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+  .lvl-board :global(.lv-chip) { display: inline-flex; padding: 3px 9px; border-radius: 999px; background: var(--bg-3); color: var(--ink-2); font-size: .74rem; font-weight: 800; flex: none; }
+  .lvl-all { display: inline-block; margin-top: 12px; font-size: .86rem; font-weight: 700; }
+  @media (max-width: 860px) { .lvl-in { grid-template-columns: 1fr; } }
+
   /* 내 사진 */
   .photo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: center; padding: clamp(28px, 5vw, 64px); border-radius: calc(var(--r) * 1.4); background: var(--ink); color: #fff; overflow: hidden; position: relative; transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
   .photo:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 40px 70px -40px rgba(15,18,34,.8); }
@@ -174,6 +208,19 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
+  // 이번 주 랭킹 top 5 — 아직 아무도 없으면 안내 한 줄. 로그인했으면 내 순위를 머리에 얹는다
+  (async () => {
+    const { fetchRank } = await import('../lib/account');
+    const d = await fetchRank('week'); const box = document.getElementById('lvl-top')!;
+    const li = (cls?: string) => { const e = document.createElement('li'); if (cls) e.className = cls; return e; };
+    const sp = (cls: string, t: string) => { const e = document.createElement('span'); e.className = cls; e.textContent = t; return e; };
+    box.innerHTML = '';
+    if (!d) { box.appendChild(li('empty')).textContent = T.lv.fail; return; }
+    if (d.me) { document.getElementById('lvl-me')!.textContent = d.me.rank ? T.lv.homeMe(d.me.rank, d.me.level) : T.lv.homeMeNone(d.me.level); }
+    else { const my = document.getElementById('lvl-my') as HTMLAnchorElement; my.href = '#'; my.textContent = T.lv.loginBtn; my.addEventListener('click', (e) => { e.preventDefault(); (window as any).__authui?.openLogin(); }); }
+    if (!d.top.length) { box.appendChild(li('empty')).textContent = T.lv.empty; return; }
+    for (const r of d.top.slice(0, 5)) { const e = li(); e.appendChild(sp('rank', String(r.r))); e.appendChild(sp('nick', r.nick)); e.appendChild(sp('lv-chip', T.lv.lvl(r.level))); e.appendChild(sp('score', T.lv.xp(r.xp))); box.appendChild(e); }
+  })();
   fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
   // 상설 공개 판 — 지금 어떤 그림을 몇 %까지 맞췄는지. 못 받으면 띠를 숨긴 채로 둔다
   fetch('/api/live', { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json<any>() : null)).then((d) => {

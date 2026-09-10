@@ -11,7 +11,7 @@ import { shelfIds } from '../lib/catalogView';
 import { LANGS, prefix, type Lang } from '../i18n/ui';
 
 // my/ 는 개인 화면이라 통합 사이트맵에서도 제외돼 있다 (astro.config 의 filter)
-const STATIC = ['/', '/about/', '/contact/', '/photo/', '/play/', '/privacy/', '/terms/'];
+const STATIC = ['/', '/about/', '/contact/', '/photo/', '/play/', '/privacy/', '/terms/', '/together/'];
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 export function getStaticPaths() {

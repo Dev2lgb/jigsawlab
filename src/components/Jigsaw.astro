@@ -16,7 +16,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   <div class="modal" id="jg-gate" hidden>
     <div class="modal-bg"></div>
     <div class="dialog gate" role="dialog" aria-modal="true" aria-labelledby="jg-gate-h">
-      <p class="gate-k">{U.play.gate.kicker}</p>
+      <p class="gate-k" id="jg-gate-k">{U.play.gate.kicker}</p>
       <div class="chosen"><img id="jg-gate-img" alt="" /><div><b id="jg-gate-h"></b><span class="grid-lbl" id="jg-gate-sub"></span></div></div>
       <button type="button" class="btn primary lg gate-login" id="jg-gate-login"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></button>
       <p class="muted gate-sub">{U.play.gate.loginSub}</p>
@@ -184,7 +184,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
 
 <script>
   import { JIGSAW } from '../i18n/jigsaw';
-  import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
+  import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, LIVE_ID, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
   import { DAILY_POOL, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
   import { getBest, saveBest, getNick, setNick, bumpStreak, addDone } from '../lib/store';
@@ -197,7 +197,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { randomNick } from '../lib/nickgen';
   import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
-  const T = JIGSAW[LANG], U = UI[LANG].play; const scenes = initScenes();
+  const T = JIGSAW[LANG], U = UI[LANG].play, L = UI[LANG].live; const scenes = initScenes();
   const PFX = LANG === 'ko' ? '' : `/${LANG}`;
   // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다
   const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
@@ -246,12 +246,13 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; pile: number; hue: number; lum: number };
   let piles: string[] = [], activePile = 0; // piles[0] = 전체(기본)
   // 멀티 방
-  let room: { id: string; ws: WebSocket | null; me: { id: string; nick: string; color: string } | null; players: Map<string, { id: string; nick: string; color: string; x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
+  let room: { id: string; live: boolean; ws: WebSocket | null; me: { id: string; nick: string; color: string } | null; players: Map<string, { id: string; nick: string; color: string; x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
   const send = (m: unknown) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
   let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
   let complete = false, completeAlpha = 0, gid = 0;
+  let myLocked = 0; // 공개 판에서 이번 회차에 내가 제자리에 놓은 조각 수 (여럿이 며칠에 걸쳐 맞추므로 시간·수순 대신 이걸 보여 준다)
   let dragging: Group | null = null, lifting: Group | null = null;
   const canvas = $('jg-board') as HTMLCanvasElement, ctx = canvas.getContext('2d')!, wrap = $('jg-boardwrap'), tray = $('jg-tray');
   const view = { s: 1, tx: 0, ty: 0 }; let fitS = 1; const dpr = () => Math.min(2, window.devicePixelRatio || 1);
@@ -289,7 +290,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false;
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -414,7 +415,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
     // 방에서는 놓은 순간의 좌표를 같이 보낸다. mv 는 스로틀이 걸려 서버 좌표가 뒤처지는데, 그 좌표로 판정하면
     // 서버가 조용히 거절해 "나는 맞췄는데 상대에겐 남의 손에 잡힌 채로 굳는" 어긋남이 생겼다
-    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); snap(g, 0, 0, () => lockGroup(g)); return; }
+    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) { send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); myLocked += g.pieces.length; } snap(g, 0, 0, () => lockGroup(g)); return; }
     const other = findNeighbor(g, tol);
     if (other) { if (room && g.sid && other.sid) send({ t: 'merge', g: g.sid, into: other.sid, dx: g.dx, dy: g.dy }); snap(g, other.dx, other.dy, () => merge(g, other)); return; }
     // 화면 밖에 놓이면(HUD 위에서 놓거나 위로 튕겨 꺼낸 경우) 보이는 곳까지 밀어 넣는다 — 안 그러면 조각이 사라진 것처럼 보인다
@@ -443,7 +444,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
-    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); snap(into, 0, 0, () => lockGroup(into)); return; }
+    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) { send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); myLocked += into.pieces.length; } snap(into, 0, 0, () => lockGroup(into)); return; }
     let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
     draw(); scheduleSave();
   }
@@ -578,14 +579,15 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   };
   async function joinRoom(id: string, keepImage = false) {
     fullLoad(true, U.joining);
-    const bail = (msg: string = U.roomGone) => { fullLoad(false); goPick(msg); };
+    const live = id === LIVE_ID;
+    const bail = (msg: string = live ? L.full : U.roomGone) => { fullLoad(false); goPick(msg); };
     let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
     if (!info || info.error) return bail();
     const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
     // 진입 화면: 로그인(선택) 또는 닉네임만 적고 손님으로. 로그인했거나 이 방에 이미 들어온 적 있으면 건너뜀
     const u = await me(); let entered = false; try { entered = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
     if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); goPick(); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
-    room = { id, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
+    room = { id, live, ws: null, me: null, players: new Map(), holders: new Map(), bySid: new Map() };
     let nick = getNick(); if (!nick) { nick = randomNick(LANG); setNick(nick); }
     scenes.go('play'); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; $('jg-hud-name').textContent = '';
     if (isPhoto) {
@@ -604,6 +606,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   function roomGate(info: any, w: (typeof WORKS)[number] | null): Promise<string | null> {
     return new Promise((res) => {
       fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
+      $('jg-gate-k').textContent = info.live ? L.gateKicker : U.gate.kicker;
       const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = `/jigsaw/t-${w.key}.webp`; $('jg-gate-h').textContent = w ? T.paintingBy(w.title[LI], w.artist[LI], w.year) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
       $('jg-gate-login').onclick = () => openLogin(location.pathname + location.search);
       const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement;
@@ -657,19 +660,24 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   let syncAt = 0;
   const reqSync = () => { const now = Date.now(); if (now - syncAt < 3000) return; syncAt = now; send({ t: 'sync' }); };
   const roomNote = (msg: string | null) => { const e = $('jg-roomnote'); e.textContent = msg ?? ''; e.hidden = !msg; };
+  /** 서버가 준 판 상태를 화면에 펼친다. fresh = 다른 그림으로 갈아 끼우는 것(공개 판의 다음 회차) —
+   *  더미와 트레이 순서를 물려받지 않는다 */
+  function applyRoomState(st: any, o: { dead?: boolean; fresh?: boolean } = {}) {
+    const fresh = !!o.fresh;
+    // 같은 판을 다시 받는 것(재접속·재동기화)이면 더미와 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
+    const same = !fresh && !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
+    const keepPiles = same ? piles.slice() : [U.pileAll]; const keepPile = same ? pieces.map((p) => p.pile) : [];
+    const prevTray = same ? [...tray.children].map((e) => pieces.indexOf((e as any).__p)).filter((i) => i >= 0) : [];
+    const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = prevTray.filter((i) => !used.has(i)); const seen = new Set(t); const rest: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i) && !seen.has(i)) rest.push(i); for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; } return t.concat(rest); })(), pile: keepPile, piles: keepPiles, elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
+    wantN = st.total; return start(rs).then(() => { renderPlayers(); if (!fresh) maybeInvite(); fullLoad(false); roomNote(o.dead ? U.hostGone : null); if (wsDropped) { wsDropped = false; toast(U.reconnected); } });
+  }
   function onRoomMsg(m: any) {
     if (!room) return;
     switch (m.t) {
       case 'init': {
         room.me = m.you; room.players = new Map(); for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {})); room.bySid = new Map();
         if (!img) { renderPlayers(); maybeInvite(); requestPhoto(); return; }
-        const st = m.state;
-        // 같은 판을 다시 받는 것(재접속·재동기화)이면 더미와 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
-        const same = !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
-        const keepPiles = same ? piles.slice() : [U.pileAll]; const keepPile = same ? pieces.map((p) => p.pile) : [];
-        const prevTray = same ? [...tray.children].map((e) => pieces.indexOf((e as any).__p)).filter((i) => i >= 0) : [];
-        const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = prevTray.filter((i) => !used.has(i)); const seen = new Set(t); const rest: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i) && !seen.has(i)) rest.push(i); for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; } return t.concat(rest); })(), pile: keepPile, piles: keepPiles, elapsed: Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
-        wantN = st.total; start(rs).then(() => { renderPlayers(); maybeInvite(); fullLoad(false); if (m.dead) roomNote(U.hostGone); if (wsDropped) { wsDropped = false; toast(U.reconnected); } }); return;
+        applyRoomState(m.state, { dead: !!m.dead }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
       // ── 내 사진 방: 사진 전달 (WebRTC). 서버는 신호만 중계
@@ -690,6 +698,16 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } tweens.delete(g); merge(g, into); } else draw(); return; }
       case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
+      // 공개 판: 한 판이 끝나거나 너무 오래 멈춰 있으면 서버가 다음 그림으로 갈아 끼운다
+      case 'next': {
+        const st = m.state; const w = WORKS.find((x) => x.key === st.key); if (!w) { location.reload(); return; }
+        const name = T.paintingBy(w.title[LI], w.artist[LI], w.year);
+        roomNote(null); fullLoad(true, L.opening, { img: `/jigsaw/t-${w.key}.webp`, name });
+        loadSource({ kind: 'gallery', key: w.key, name, url: `/jigsaw/${w.key}.webp` }, false, true).then(() => {
+          if (!room || !img) return; applyRoomState(st, { fresh: true }).then(() => toast(L.nextToast(name)));
+        });
+        return;
+      }
       case 'resync': reqSync(); return;
       // ── 내 사진 방: 사진을 가진 사람이 모두 나가면 아무도 사진을 받을 수 없다
       case 'hostaway': roomNote(U.hostAway); toast(U.hostAway); return;
@@ -708,7 +726,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
   // 초대는 /i/ 로 보낸다 — 서버 렌더라 방마다 그림·조각 수·인원이 들어간 OG 가 나간다(/board/ 는 정적이라 불가)
-  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${LANG === 'ko' ? '' : '/' + LANG}/i/?room=${room.id}`; const r = await share({ title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
+  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${PFX}${room.live ? '/together/' : `/i/?room=${room.id}`}`; const r = await share(room.live ? { title: L.shareTitle, text: L.shareText, url } : { title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
   $('jg-invite').addEventListener('click', inviteShare); $('jg-invite2').addEventListener('click', () => { openPlayers(false); inviteShare(); });
 
   // ── 완성
@@ -717,7 +735,10 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     complete = true; if (hasIDB() && src && !room) { saves.del(saveId()).catch(() => {}); dropRemote(saveId()); if (src.kind === 'photo' && src.photoId) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     requestAnimationFrame(() => { resize(); fit(); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
-    navigator.vibrate?.([10, 40, 20]); prepareResult(sec);
+    navigator.vibrate?.([10, 40, 20]);
+    // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
+    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); roomNote(L.doneNote(myLocked)); celebrate(() => {}); return; }
+    prepareResult(sec);
     celebrate(() => scenes.go('result'));
   }
   function prepareResult(sec: number) {

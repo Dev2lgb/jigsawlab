@@ -55,9 +55,12 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
     const mine = sv.mine === undefined ? n : Math.max(0, Math.min(n, Math.round(sv.mine)));
     const clean = plausible(sv, mine);
     const day = kstDay(sv.at);
+    // 이 그림을 처음 깨는가. 오늘의 퍼즐은 날마다 그림이 달라서 '그 날 것을 처음 깼는가' 와 같은 뜻이다
+    const firstClear = !!work && cleared.get(sv.key) === undefined;
 
-    // XP (하루 상한 안에서)
-    let xp = xpFor(sv, work && sv.kind !== 'daily' ? cleared.get(sv.key) ?? null : null);
+    // XP (하루 상한 안에서). 오늘의 퍼즐도 재도전 감산을 그대로 받는다 —
+    // 판을 몇 번이고 다시 열 수 있어서, 빼 주면 48조각짜리를 계속 돌려 XP 를 캘 수 있다
+    let xp = xpFor(sv, work ? cleared.get(sv.key) ?? null : null);
     const used = dayXp.get(day) ?? 0;
     if (xp > DAY_CAP - used) capped = true; // 하루 상한에 걸려 깎였다는 것만 알려 준다
     xp = Math.max(0, Math.min(xp, DAY_CAP - used));
@@ -75,7 +78,7 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
     if (kstHour(sv.at) < 5) s.night_n += 1;
     if (!sv.room && n >= 300 && sv.sec > 0 && sv.sec <= n * 2) s.fast_n += 1;
     if (sv.kind === 'daily') {
-      s.daily_n += 1;
+      if (firstClear) s.daily_n += 1; // 같은 날 것을 여러 번 맞춰도 한 판으로 (오늘의 퍼즐 100번 업적)
       const d = sv.day || day;
       // 어제 것 다음에 오늘 것이면 이어지고, 하루라도 비면 1 부터. 이미 센 날짜보다 과거는 건드리지 않는다
       if (!s.last_day || d > s.last_day) { s.streak = s.last_day && prevDay(d) === s.last_day ? s.streak + 1 : 1; s.last_day = d; if (s.streak > s.streak_best) s.streak_best = s.streak; }

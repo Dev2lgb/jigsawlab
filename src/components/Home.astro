@@ -51,22 +51,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   </a>
 </section>
 
-<section class="marq" aria-hidden="true">
-  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.webp`} alt="" loading="lazy" width="240" height="190" />)}</div>
-</section>
-
-<section class="sec" id="catalog">
-  <div class="wrap">
-    <div class="sec-head" data-reveal><div><h2 class="sec-h">{T.catalog.title}</h2>{T.catalog.sub && <p class="sec-sub">{T.catalog.sub}</p>}</div><div class="tools"><a class="btn" href={`${P}/play/`}>{T.catalog.all(total)} →</a></div></div>
-  </div>
-  {shelves.map((sh, i) => <div class="shelf wrap" data-reveal={String(Math.min(i, 3))}>
-    <h3><span>{sh.name}</span><small>{sh.items.length}</small></h3>
-    <div class="shelf-grid" id={`shelf-${sh.id}`}>{sh.items.slice(0, sh.top).map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>
-    <div class="plank" aria-hidden="true"></div>
-    {sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{T.catalog.showAll(sh.items.length)}</a>}
-  </div>)}
-</section>
-
 <!-- 레벨·업적·랭킹 — 왼쪽 설명은 늘 서 있고(사람이 없어도 빈 띠로 안 보이게), 오른쪽 표만 /api/rank 로 채운다 -->
 <section class="sec lvl-sec">
   <div class="wrap lvl-in" data-reveal>
@@ -84,7 +68,21 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   </div>
 </section>
 
+<section class="marq" aria-hidden="true">
+  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.webp`} alt="" loading="lazy" width="240" height="190" />)}</div>
+</section>
 
+<section class="sec" id="catalog">
+  <div class="wrap">
+    <div class="sec-head" data-reveal><div><h2 class="sec-h">{T.catalog.title}</h2>{T.catalog.sub && <p class="sec-sub">{T.catalog.sub}</p>}</div><div class="tools"><a class="btn" href={`${P}/play/`}>{T.catalog.all(total)} →</a></div></div>
+  </div>
+  {shelves.map((sh, i) => <div class="shelf wrap" data-reveal={String(Math.min(i, 3))}>
+    <h3><span>{sh.name}</span><small>{sh.items.length}</small></h3>
+    <div class="shelf-grid" id={`shelf-${sh.id}`}>{sh.items.slice(0, sh.top).map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>
+    <div class="plank" aria-hidden="true"></div>
+    {sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{T.catalog.showAll(sh.items.length)}</a>}
+  </div>)}
+</section>
 
 <style>
   /* 상설 공개 판 띠 */

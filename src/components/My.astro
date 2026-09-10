@@ -27,7 +27,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       </div>
       <div class="lvl-stats" id="lvl-stats"></div>
     </section>
-    <section class="blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div></section>
+    <section class="blk bdg-blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div><button type="button" class="shelf-all bdg-more" id="bdg-more"></button></section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
@@ -50,7 +50,17 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     .lvl-stats:empty { display: none; }
     .lvl-stats :global(div) { display: flex; flex-direction: column; gap: 2px; } .lvl-stats :global(b) { font-size: 1.15rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .lvl-stats :global(small) { color: var(--muted); font-size: .76rem; font-weight: 600; }
     /* 업적 */
-    .bdgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+    /* 24가지를 다 펼치면 하던 퍼즐이 한참 아래로 밀린다 — 처음엔 첫 줄만(가장 좁을 땐 3개) */
+    .bdgs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 1000px) { .bdgs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 760px) { .bdgs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .bdgs { grid-template-columns: 1fr; } }
+    .bdg-blk:not(.open) .bdgs :global(> :nth-child(n + 5)) { display: none; }
+    @media (max-width: 1000px) { .bdg-blk:not(.open) .bdgs :global(> :nth-child(n + 4)) { display: none; } }
+    @media (max-width: 760px) { .bdg-blk:not(.open) .bdgs :global(> :nth-child(n + 3)) { display: none; } }
+    /* 한 칸짜리 너비에서는 한 장만 보이면 목록 같지가 않아 3장까지. 앞 쿼리에서 숨긴 3번째를 되살려 놓는다 */
+    @media (max-width: 520px) { .bdg-blk:not(.open) .bdgs :global(> :nth-child(-n + 3)) { display: flex; } .bdg-blk:not(.open) .bdgs :global(> :nth-child(n + 4)) { display: none; } }
+    .bdg-more { margin-top: 14px; }
     .bdgs :global(.bd) { display: flex; gap: 11px; align-items: flex-start; padding: 12px 13px; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid transparent; }
     .bdgs :global(.bd.on) { border-color: var(--accent); background: var(--bg); }
     .bdgs :global(.bd.off) { opacity: .55; } .bdgs :global(.bd.off .bd-i) { filter: grayscale(1); }
@@ -149,7 +159,12 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
         tx.appendChild(nm); tx.appendChild(ds); w.appendChild(i); w.appendChild(tx); grid.appendChild(w);
       }
       $('c-bdg').textContent = V.badgeCount(got.size, BADGES.length);
-      $('blk-bdg').hidden = false;
+      // 딴 업적이 앞에 오도록 정렬돼 있어서 접어 둬도 첫 줄에 내 것이 보인다
+      const blk = $('blk-bdg'), more = $('bdg-more') as HTMLButtonElement;
+      const label = () => { more.textContent = blk.classList.contains('open') ? V.awLess : V.awAll(BADGES.length); };
+      more.onclick = () => { blk.classList.toggle('open'); label(); };
+      label();
+      blk.hidden = false;
     }
     renderProg(); renderDone(); renderFav(); renderAcct(); renderLevel();
   </script>

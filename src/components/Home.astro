@@ -2,7 +2,7 @@
 // 랜딩 홈 — 풀블리드 히어로(오늘 그림의 색이 배경으로 번짐 + 조각 빠진 그림) → 흐르는 상자 마퀴 → 카테고리별 3D 상자 진열대 → 내 사진
 import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
-import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
+import { DAILY_PIECES, LIVE_ID, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
@@ -34,6 +34,21 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   <div class="past-row" id="past-row"></div>
 </section>
 
+<!-- 상설 공개 판 — 지금 진행 중인 판 하나를 그대로 보여 준다. 방 목록이 아니라 판 하나라서 접속자가 0명이어도 살아 있어 보인다.
+     상태를 못 받으면 통째로 숨긴 채 둔다(빈 띠가 남지 않게) -->
+<section class="live wrap" id="live-strip" hidden>
+  <a class="live-in" href={`${P}/board/?room=${LIVE_ID}`}>
+    <img class="live-art" id="live-img" alt="" width="128" height="96" loading="lazy" decoding="async" />
+    <div class="live-txt">
+      <p class="live-k"><span class="live-badge">{T.live.badge}</span><small id="live-round"></small></p>
+      <b id="live-title"></b>
+      <small id="live-online"></small>
+    </div>
+    <div class="live-prog"><div class="live-bar"><i id="live-fill"></i></div><b id="live-pct"></b></div>
+    <span class="btn primary live-cta">{T.live.cta}</span>
+  </a>
+</section>
+
 <section class="marq" aria-hidden="true">
   <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.webp`} alt="" loading="lazy" width="240" height="190" />)}</div>
 </section>
@@ -53,6 +68,29 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 
 
 <style>
+  /* 상설 공개 판 띠 */
+  .live { margin-block: clamp(20px, 3vw, 34px); }
+  .live-in { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 220px) auto; gap: clamp(12px, 2vw, 22px); align-items: center; padding: 14px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); color: inherit; text-decoration: none; transition: border-color .2s var(--ease), transform .2s var(--ease); }
+  .live-in:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .live-art { width: 128px; height: 96px; object-fit: cover; border-radius: 10px; background: var(--board, #e9e6df); }
+  .live-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .live-txt b { font-size: 1.05rem; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .live-txt small { color: var(--muted); font-size: .84rem; font-weight: 600; }
+  .live-k { display: flex; align-items: center; gap: 8px; margin: 0; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: #fff; font-size: .72rem; font-weight: 800; }
+  .live-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: live-pulse 1.8s ease-in-out infinite; }
+  @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  .live-prog { display: flex; align-items: center; gap: 10px; }
+  .live-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .live-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); transition: width .6s var(--ease); }
+  .live-prog b { font-variant-numeric: tabular-nums; font-weight: 800; font-size: .95rem; white-space: nowrap; }
+  .live-cta { flex: none; pointer-events: none; }
+  @media (max-width: 860px) {
+    .live-in { grid-template-columns: auto minmax(0, 1fr); }
+    .live-prog, .live-cta { grid-column: 1 / -1; }
+    .live-cta { justify-content: center; }
+  }
+
   /* 히어로 — 오늘 그림을 크게 흐려 배경으로 깔고, 위에 흰 그라데이션 */
   .hero { position: relative; overflow: hidden; background: var(--bg); }
   .glow { position: absolute; inset: -20%; z-index: 0; pointer-events: none; } .glow img { width: 100%; height: 100%; object-fit: cover; filter: blur(70px) saturate(1.5); opacity: .5; transform: scale(1.1); }
@@ -135,4 +173,17 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
   fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
+  // 상설 공개 판 — 지금 어떤 그림을 몇 %까지 맞췄는지. 못 받으면 띠를 숨긴 채로 둔다
+  fetch('/api/live', { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json<any>() : null)).then((d) => {
+    if (!d || !d.total || !d.work) return;
+    const g = (id: string) => document.getElementById(id)!;
+    const pct = Math.min(100, Math.floor((d.locked / d.total) * 100));
+    const im = g('live-img') as HTMLImageElement; im.src = `/jigsaw/t-${d.work.key}.webp`; im.alt = d.work.title[LI];
+    g('live-title').textContent = d.work.title[LI];
+    g('live-round').textContent = T.live.round((d.round ?? 0) + 1);
+    g('live-online').textContent = d.players > 0 ? T.live.online(d.players) : T.live.alone;
+    g('live-pct').textContent = T.live.pct(pct);
+    g('live-strip').hidden = false;
+    requestAnimationFrame(() => { (g('live-fill') as HTMLElement).style.width = `${pct}%`; });
+  }).catch(() => {});
 </script>

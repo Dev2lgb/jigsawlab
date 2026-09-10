@@ -101,6 +101,9 @@ export const PAINTINGS: Painting[] = [
   { key: 'shower', artist: ['우타가와 히로시게', 'Utagawa Hiroshige', '歌川広重'], title: ['오하시 아타케의 소나기', 'Sudden Shower over Shin-Ōhashi Bridge and Atake', '大はしあたけの夕立'], year: '1857' },
 ];
 export const DAILY_PIECES = 48;
+/** 상설 공개 판 — 사이트가 굴리는 방 하나. 방 id·조각 수는 서버(room.ts)·판(Jigsaw)·랜딩(/together/)이 같이 쓴다 */
+export const LIVE_ID = 'live';
+export const LIVE_PIECES = 1000;
 /** KST 날짜 문자열과 그날의 퍼즐(명화·시드) */
 export function todayKST(): string { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
 export function dailyPick(day: string, available: Painting[]) { const h = hashStr('jigsaw:' + day); return { painting: available[h % available.length], seed: h }; }

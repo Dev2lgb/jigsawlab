@@ -6,7 +6,7 @@ export const langOf = (pathname: string): Lang => (pathname.startsWith('/en') ? 
 export const UI = {
   ko: {
     name: 'jigsawlab', altName: '직소랩', tagline: '직소랩 — 온라인 직소 퍼즐. 명화와 내 사진으로, 폰에서도.', langName: '한국어', seoTitle: '직소랩(jigsawlab) — 온라인 직소 퍼즐, 명화와 내 사진으로', seoDesc: (n: number) => `직소랩은 명화·사진 ${n}점과 내 사진으로 맞추는 무료 온라인 직소 퍼즐이에요. 링크 하나로 친구를 불러 같이 맞추고, 맞는 조각끼리 붙고, 하던 판은 저장돼요. 48조각부터 1000조각까지, 가입 없이 폰에서도.`,
-    nav: { daily: '오늘의 퍼즐', catalog: '퍼즐', photo: '내 사진으로', play: '지금 맞추기', about: '소개', my: '내 퍼즐' },
+    nav: { daily: '오늘의 퍼즐', catalog: '퍼즐', together: '다 같이', photo: '내 사진으로', play: '지금 맞추기', about: '소개', my: '내 퍼즐' },
     hero: { today: '오늘의 그림', pieces: (n: number) => `${n}조각`, cta: '오늘의 퍼즐 맞추기', photo: '내 사진으로 만들기', sameForAll: '', h1: '제대로 된 직소 퍼즐,\n폰에서도.', sub: '맞는 조각끼리 붙어서 뭉치로 움직이고, 색깔별로 더미를 나누고, 하던 판은 저장돼요. 링크 하나면 친구랑 같이 맞출 수 있어요.', feats: ['맞는 조각끼리 붙어서 뭉치로', '색깔별로 더미 나누기', '하던 판은 그대로 저장', '48조각부터 1000조각까지', '링크 하나로 친구랑 같이', '내 사진으로도'], pick: '퍼즐 고르기', statPuzzles: '퍼즐', statSolved: '완성된 판', todayLink: (t: string) => `오늘의 그림 · ${t} · 같이 맞추기` },
     how: { title: '이렇게 놀아요', steps: [['퍼즐 고르기', '마음에 드는 그림을 고르거나, 내 사진을 골라요.'], ['조각 수 정하기', '48조각으로 가볍게, 1000조각으로 제대로.'], ['끌어 올려 끼우기', '트레이에서 조각을 올려 놓으면 딸깍. 맞는 조각끼리는 붙어서 같이 움직여요.']] },
     catalog: { title: '퍼즐', sub: '', cats: '카테고리', every: '전체', catH1: (name: string) => `${name} 퍼즐`, catTitle: (name: string, n: number) => `${name} 퍼즐 ${n}점 — 무료 온라인 직소 퍼즐`, catDesc: (name: string, n: number) => `${name} 그림 ${n}점을 온라인 직소 퍼즐로. 48조각부터 1000조각까지 원하는 만큼 잘라 맞춰요. 가입도 설치도 없이 무료.`, showAll: (n: number) => `${n}점 전부 보기`, prev: '이전', next: '다음', all: (n: number) => `모두 ${n}점`, search: '제목·작가 검색', results: (n: number) => `${n}점`, none: '검색 결과가 없어요', noneAll: '전체에서 찾아보기 →', fav: '즐겨찾기', favAdd: '즐겨찾기에 추가', favRemove: '즐겨찾기에서 빼기', more: (n: number) => `${n}점 더 보기`, less: '접기' },
@@ -40,6 +40,35 @@ export const UI = {
     },
     detail: { open: '이 그림으로 맞추기', start: '시작', pieces: '몇 조각으로 할까요?', best: (t: string) => `내 최고 기록 ${t}`, noBest: '아직 기록이 없어요', museum: '소장', year: '제작', medium: '재료', source: '작품 정보', sources: { aic: '시카고 미술관', commons: '위키미디어 공용', nasa: 'NASA' }, more: '이런 퍼즐도', back: '퍼즐', startDaily: '시작', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: '이어하기', resumeTitle: '하던 퍼즐', resumeHint: (pct: number, t: string) => `${pct}% 완성 · ${t}`, startOver: '처음부터', restartAsk: '지금 판을 지우고 처음부터 할까요?', saved: '저장됨', piles: '더미', pileAll: '전체', pileEdge: '테두리', pileNew: '+ 새 더미', moveTo: '이 조각을 어디로?', pileName: (n: number) => `더미 ${n}`, sortColor: '색상순', shuffle: '섞기', outline: '조각 윤곽선', dropHere: '여기에 놓기', toPile: (n: string) => `${n}(으)로 옮김`, streak: (n: number) => `${n}일 연속 완주`, past: '지난 오늘의 퍼즐', done: '완성', notYet: '아직', invite: '초대', inviteLead: '아직 혼자예요. 링크를 보내면 친구가 바로 들어와요', players: '접속자', photoSolo: '친구를 초대해도 사진은 서버를 거치지 않고 내 브라우저에서 친구 브라우저로 직접 전달돼요', inviteTitle: '같이 맞추자 🧩', inviteText: 'jigsawlab에서 같이 퍼즐 맞추기', me: '나', nickAsk: '닉네임을 정해 주세요', roomGone: '방이 없거나 끝났어요', disconnected: '연결이 끊겼어요. 다시 연결 중…', reconnected: '다시 연결됐어요', gate: { kicker: '퍼즐 방 초대', login: 'Google 로 로그인하고 들어가기', loginSub: '선택 사항이에요. 업적과 하던 퍼즐이 기기 사이에 이어져요. 이메일·이름은 저장하지 않아요', or: '또는', guest: '손님으로', nickPh: '닉네임', guestSub: '닉네임만 적고 바로 들어가요. 기록은 이 브라우저에만 남아요', online: (n: number) => `${n}명 접속 중` }, cloud: '동기화됨', cloudSave: '서버에 저장', cloudSaved: '서버에 저장했어요. 다른 기기에서 이어할 수 있어요', cloudFail: '저장이 안 됐어요. 잠시 뒤 다시 눌러 주세요', photoRecv: '방장에게서 사진 받는 중…', photoWait: '사진을 가진 사람이 아직 없어요. 방장이 들어오면 자동으로 받아요', photoFail: '사진을 받지 못했어요. 방장이 접속해 있어야 하고, 일부 네트워크에서는 연결이 안 될 수 있어요', joined: (n: string) => `${n} 들어옴`, heldBy: (n: string) => (n ? `${n}이 잡고 있어요` : '다른 사람이 잡고 있어요'), photoHostNote: '내 사진으로 만든 방이에요. 사진을 올린 사람이 나가면 방이 끝나요 — 그 사람은 창을 열어 두세요', hostAway: '사진을 올린 분의 연결이 끊겼어요. 돌아오지 않으면 이 방은 곧 끝나요', hostGone: '사진을 올린 분이 나갔어요. 새로 들어올 수 없고, 새로 고치면 사진을 다시 받을 수 없어요', hostBack: '사진을 올린 분이 돌아왔어요', photoGone: '사진을 올린 분이 나가서 이 방은 열 수 없어요. 방장이 다시 들어오면 열려요', quitHostAsk: '나가면 사진을 보낼 사람이 없어 이 방이 끝나요. 나갈까요?', together: '친구랑 같이', togetherSub: '링크 하나로 같이 맞춰요. 가입 없음, 최대 8명', creating: '방 만드는 중…', joining: '방에 들어가는 중…', guest: '손님', rename: '이름 바꾸기', today: '오늘' },
+    // 상설 공개 판 — 사이트가 굴리는 방 하나(/together/ → /board/?room=live). 유저가 만들지 않고, 한 판이 끝나면 다음 그림으로 이어진다
+    live: {
+      seoTitle: '다 같이 맞추는 1000조각 퍼즐 — 공개 판 · 직소랩',
+      seoDesc: '누구나 들어와서 몇 조각 놓고 갈 수 있는 공개 퍼즐 판. 1000조각을 여럿이 나눠 맞추고, 다 맞추면 다음 그림이 시작돼요. 가입도 설치도 없이 무료.',
+      h1: '다 같이 맞추는\n1000조각 퍼즐',
+      lead: '판은 하나뿐이고 늘 열려 있어요. 몇 조각만 놓고 나가도 됩니다 — 다음 사람이 이어서 맞춰요.',
+      badge: '공개 판', cta: '이어서 맞추기', ctaFirst: '들어가서 맞추기', now: '지금 맞추는 그림',
+      round: (n: number) => `${n}번째 판`, pct: (n: number) => `${n}% 완성`, left: (n: number) => `${n}조각 남음`,
+      online: (n: number) => `${n}명이 맞추는 중`, alone: '지금은 아무도 없어요', loading: '판을 보는 중…',
+      offline: '판을 불러오지 못했어요. 들어가면 바로 이어집니다',
+      gateKicker: '지금 다 같이 맞추는 중',
+      doneNote: (n: number) => `다 맞췄어요! 이번 판에서 내가 놓은 조각 ${n}개 · 곧 다음 그림이 시작돼요`,
+      opening: '다음 그림을 펴는 중…', nextToast: (t: string) => `다음 그림 · ${t}`,
+      shareTitle: '다 같이 퍼즐 맞추자 🧩', shareText: 'jigsawlab 공개 판에서 1000조각 같이 맞추기',
+      full: '지금 자리가 다 찼어요. 잠시 뒤에 다시 들어와 주세요',
+      steps: [
+        ['들어가기', '가입도 설치도 없어요. 닉네임만 정하면 바로 판 위에 섭니다.'],
+        ['몇 조각 놓기', '한 조각만 놓고 나가도 됩니다. 놓인 조각은 그대로 남아요.'],
+        ['다음 그림', '1000조각을 다 맞추면 새 그림이 깔리고 처음부터 다시 시작해요.'],
+      ] as [string, string][],
+      body: `<h2>공개 판이 뭔가요</h2>
+<p>사이트가 굴리는 퍼즐 판 하나입니다. 방을 만들 필요도, 누구를 기다릴 필요도 없습니다. 링크를 열면 지금 진행 중인 1000조각 판 위에 바로 서게 되고, 다른 사람이 놓아 둔 조각이 이미 자리를 잡고 있습니다.</p>
+<p>조각을 몇 개 놓고 나가도 괜찮습니다. 맞춰 놓은 자리는 그대로 남고, 다음에 들어온 사람이 이어서 맞춥니다. 며칠에 걸쳐 조금씩 채워지는 판이라 어제와 오늘의 진행률이 다릅니다.</p>
+<h2>언제 다음 그림으로 넘어가나요</h2>
+<p>정해진 기간은 없습니다. 1000조각이 전부 제자리에 들어가면 완성된 그림을 잠깐 함께 보고, 곧바로 새 그림이 깔립니다. 오래 아무도 손대지 않는 판은 자동으로 접고 다음 그림으로 넘어갑니다.</p>
+<p>그림은 명화·한국 회화·빈티지 사진·우주 사진 가운데 회차마다 하나씩 돌아가며 나옵니다. 한 바퀴를 다 돌기 전에는 같은 그림이 다시 나오지 않습니다.</p>
+<h2>친구랑 둘이서만 맞추고 싶다면</h2>
+<p>퍼즐 상세 페이지에서 <b>친구랑 같이</b>를 누르면 우리끼리만 들어가는 방이 따로 만들어집니다. 그림도 조각 수도 직접 고르고, 링크를 받은 사람만 들어옵니다.</p>`,
+    },
     acct: { login: '로그인', close: '닫기', dlgTitle: '로그인', dlgLead: '완성 기록과 하던 퍼즐을 기기 사이에 이어 가려면 로그인하세요. 로그인 없이도 모든 퍼즐을 즐길 수 있어요', google: 'Google 로 시작하기', dlgPoints: ['이메일·이름·프로필 사진은 받지 않아요', '완성한 퍼즐과 하던 판이 어느 기기에서든 이어져요', '언제든 계정과 기록을 한 번에 지울 수 있어요'], nickTitle: '닉네임을 정해 주세요', nickLead: '퍼즐 방에서 이 이름으로 보여요', nickPh: '닉네임', nickHint: '최대 12자 · 취소하면 이 이름으로 시작해요 · 나중에 내 퍼즐에서 바꿀 수 있어요', nickStart: '시작하기', nickSave: '저장', later: '취소', shuffle: '다른 이름', logout: '로그아웃', title: '계정', signedIn: (n: string) => `${n} 으로 로그인됨`, notSignedIn: '로그인하지 않았어요', why: 'Google 로그인은 선택 사항이에요. 완성 기록과 하던 퍼즐(명화·오늘의 퍼즐)이 기기 사이에 이어져요. 서버에 저장되는 건 Google 계정에서 만든 가명 ID와 닉네임뿐이고, 이메일·이름·프로필 사진은 받지 않아요', loginBtn: 'Google 로 로그인', rename: '닉네임 바꾸기', del: '계정과 기록 삭제', delAsk: '서버에 저장된 완성 기록과 하던 퍼즐을 모두 지우고 계정을 삭제할까요? 이 브라우저의 기록은 남아요', deleted: '삭제했어요', fail: '로그인이 안 됐어요. 다시 시도해 주세요', synced: '동기화됨' },
     my: { title: '내 퍼즐', inProgress: '하던 퍼즐', done: '완성한 퍼즐', favs: '즐겨찾기', emptyProgress: '하던 퍼즐이 없어요', emptyDone: '아직 완성한 퍼즐이 없어요', emptyFavs: '퍼즐의 하트를 누르면 여기 모여요', resume: '이어하기', del: '지우기', pieces: (n: number) => `${n}조각`, photo: '내 사진', doneCount: (n: number) => `${n}판`, onDevice: '이 기기에만 저장돼요' },
     guide: '가이드',
@@ -48,7 +77,7 @@ export const UI = {
   },
   en: {
     name: 'jigsawlab', altName: '', tagline: 'Online jigsaw puzzles. Masterpieces and your photos, on your phone.', langName: 'English', seoTitle: 'jigsawlab — Free online jigsaw puzzles from masterpieces and your photos', seoDesc: (n: number) => `Free online jigsaw puzzles from ${n} public-domain pictures or your own photos. Send one link and solve together with friends, pieces snap into clusters, and your board is saved. 48 to 1000 pieces, no sign-up.`,
-    nav: { daily: "Today's puzzle", catalog: 'Puzzles', photo: 'Your photo', play: 'Play now', about: 'About', my: 'My puzzles' },
+    nav: { daily: "Today's puzzle", catalog: 'Puzzles', together: 'Together', photo: 'Your photo', play: 'Play now', about: 'About', my: 'My puzzles' },
     hero: { today: "Today's picture", pieces: (n: number) => `${n} pieces`, cta: "Solve today's puzzle", photo: 'Make one from my photo', sameForAll: '', h1: 'A real jigsaw,\non your phone.', sub: 'Pieces that fit snap together and move as a cluster, sort into piles by colour, and your board is saved when you leave. Send a link and solve it with friends.', feats: ['Matching pieces snap into clusters', 'Sort into piles by colour', 'Your board is saved as you go', 'From 48 to 1000 pieces', 'Play with friends from one link', 'Your own photos too'], pick: 'Pick a puzzle', statPuzzles: 'puzzles', statSolved: 'boards finished', todayLink: (t: string) => `Today's picture · ${t} · solve it together` },
     how: { title: 'How to play', steps: [['Pick a puzzle', 'A painting you like, or one of your own photos.'], ['Choose a piece count', '48 for a quick one, 1000 for the real thing.'], ['Drag up and snap', 'Pull a piece up from the tray and drop it. Matching pieces click together and move as one.']] },
     catalog: { title: 'Puzzles', sub: '', cats: 'Categories', every: 'All', catH1: (name: string) => `${name} jigsaw puzzles`, catTitle: (name: string, n: number) => `${name} jigsaw puzzles — ${n} free online puzzles`, catDesc: (name: string, n: number) => `${n} pictures from ${name}, ready to solve as online jigsaw puzzles. Anything from 48 to 1000 pieces. Free, no sign-up, no install.`, showAll: (n: number) => `Show all ${n}`, prev: 'Previous', next: 'Next', all: (n: number) => `${n} puzzles`, search: 'Search title or artist', results: (n: number) => `${n} puzzles`, none: 'No matches',  noneAll: 'Search all puzzles →', fav: 'Favourites', favAdd: 'Add to favourites', favRemove: 'Remove from favourites', more: (n: number) => `Show ${n} more`, less: 'Show less' },
@@ -81,6 +110,34 @@ export const UI = {
     },
     detail: { open: 'Solve this painting', start: 'Start', pieces: 'How many pieces?', best: (t: string) => `Your best ${t}`, noBest: 'No record yet', museum: 'Collection', year: 'Painted', medium: 'Medium', source: 'Object record', sources: { aic: 'Art Institute of Chicago', commons: 'Wikimedia Commons', nasa: 'NASA' }, more: 'More like this', back: 'Puzzles', startDaily: 'start', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: 'Continue', resumeTitle: 'Puzzle in progress', resumeHint: (pct: number, t: string) => `${pct}% done · ${t}`, startOver: 'Start over', restartAsk: 'Clear this board and start over?', saved: 'Saved', piles: 'Piles', pileAll: 'All', pileEdge: 'Edges', pileNew: '+ New pile', moveTo: 'Move this piece to', pileName: (n: number) => `Pile ${n}`, sortColor: 'By colour', shuffle: 'Shuffle', outline: 'Piece outlines', dropHere: 'Drop here', toPile: (n: string) => `Moved to ${n}`, streak: (n: number) => `${n}-day streak`, past: 'Past daily puzzles', done: 'Done', notYet: 'Not yet', invite: 'Invite', inviteLead: 'Just you so far. Send the link and a friend can join right away', players: 'In the room', photoSolo: 'If you invite friends, the photo goes straight from your browser to theirs. It never touches our server', inviteTitle: 'Solve this with me 🧩', inviteText: 'Jigsaw together on jigsawlab', me: 'me', nickAsk: 'Pick a nickname', roomGone: 'That room is gone', disconnected: 'Connection lost. Reconnecting…', reconnected: 'Reconnected', gate: { kicker: 'Puzzle room invite', login: 'Sign in with Google and join', loginSub: 'Optional. Keeps your finished puzzles and boards in progress across devices. No email or name is stored', or: 'or', guest: 'Join as guest', nickPh: 'Nickname', guestSub: 'Just a nickname. Records stay in this browser only', online: (n: number) => `${n} online` }, cloud: 'Synced', cloudSave: 'Save to server', cloudSaved: 'Saved to the server. Continue on any device', cloudFail: "Couldn't save. Try again in a moment", photoRecv: 'Receiving the photo from the host…', photoWait: 'Nobody with the photo is here yet. It arrives automatically when the host is back', photoFail: "Couldn't receive the photo. The host must be online, and some networks block the direct connection", joined: (n: string) => `${n} joined`, heldBy: (n: string) => (n ? `${n} is holding that` : 'Someone else is holding that'), photoHostNote: 'This room runs on a photo. When the person who shared it leaves, the room ends — they should keep this tab open', hostAway: 'The person with the photo just dropped out. If they do not come back, this room ends shortly', hostGone: 'The person with the photo has left. Nobody new can join, and reloading loses the photo', hostBack: 'The person with the photo is back', photoGone: "The person who shared the photo has left, so this room can't be opened. It opens again if they come back", quitHostAsk: 'If you leave, nobody can send the photo and this room ends. Leave anyway?', together: 'Play with friends', togetherSub: 'One link, up to 8 people, no sign-up', creating: 'Creating a room…', joining: 'Joining the room…', guest: 'Guest', rename: 'Change name', today: 'Today' },
+    live: {
+      seoTitle: 'The 1000-piece puzzle everyone is solving — open board · jigsawlab',
+      seoDesc: 'One public jigsaw board, always open. Drop in, place a few pieces, leave whenever. When the 1000 pieces are done, the next picture begins. Free, no sign-up.',
+      h1: 'The board\neveryone is solving',
+      lead: 'One board, always open. Place a few pieces and go — whoever comes next picks up where you left off.',
+      badge: 'Open board', cta: 'Join the board', ctaFirst: 'Join the board', now: 'Now solving',
+      round: (n: number) => `Board #${n}`, pct: (n: number) => `${n}% done`, left: (n: number) => `${n} pieces left`,
+      online: (n: number) => `${n} solving now`, alone: 'Nobody here right now', loading: 'Checking the board…',
+      offline: "Couldn't load the board. Join and it picks up anyway",
+      gateKicker: 'Everyone is solving this now',
+      doneNote: (n: number) => `Finished! You placed ${n} pieces on this one · the next picture starts shortly`,
+      opening: 'Laying out the next picture…', nextToast: (t: string) => `Next picture · ${t}`,
+      shareTitle: "Let's solve this together 🧩", shareText: 'A 1000-piece jigsaw everyone is solving on jigsawlab',
+      full: 'The board is full right now. Try again in a little while',
+      steps: [
+        ['Walk in', 'No sign-up, no install. Pick a nickname and you are on the board.'],
+        ['Place a few pieces', 'One piece is fine. Whatever you place stays where you put it.'],
+        ['Next picture', 'When all 1000 pieces are in, a new picture is laid out and it starts again.'],
+      ] as [string, string][],
+      body: `<h2>What is the open board</h2>
+<p>It is a single jigsaw board that the site keeps running. There is no room to create and nobody to wait for. Open the link and you are standing on the 1000-piece board that is going right now, with other people's pieces already in place.</p>
+<p>Placing a handful of pieces and leaving is perfectly fine. What you placed stays put, and whoever arrives next carries on. The board fills up over days, so the progress you see today is not the progress you saw yesterday.</p>
+<h2>When does the next picture start</h2>
+<p>There is no fixed schedule. Once all 1000 pieces are home, everyone looks at the finished picture for a moment and a new one is laid out. A board nobody has touched for a long time is retired automatically and the next picture begins.</p>
+<p>Pictures rotate through masterpieces, Korean paintings, vintage photographs and space imagery, one per round. No picture comes back until the whole rotation has been through.</p>
+<h2>If you would rather play just with friends</h2>
+<p>On any puzzle page, <b>Play with friends</b> creates a private room of your own — your picture, your piece count, and only the people you send the link to.</p>`,
+    },
     acct: { login: 'Sign in', close: 'Close', dlgTitle: 'Sign in', dlgLead: 'Sign in to keep your finished puzzles and boards in progress across devices. Everything works without it too', google: 'Continue with Google', dlgPoints: ['No email, name or profile photo is collected', 'Finished puzzles and boards follow you to any device', 'Delete your account and every record at any time'], nickTitle: 'Pick a nickname', nickLead: 'This is how you appear in puzzle rooms', nickPh: 'Nickname', nickHint: 'Up to 12 characters · cancel keeps the suggested name · change it later in My puzzles', nickStart: 'Start', nickSave: 'Save', later: 'Cancel', shuffle: 'Another name', logout: 'Sign out', title: 'Account', signedIn: (n: string) => `Signed in as ${n}`, notSignedIn: 'Not signed in', why: 'Google sign-in is optional. It keeps your finished puzzles and boards in progress (paintings and daily puzzles) across devices. The server stores only a pseudonymous ID derived from your Google account and your nickname. No email, name or photo is requested', loginBtn: 'Sign in with Google', rename: 'Change nickname', del: 'Delete account and records', delAsk: 'Delete all finished records and saved boards on the server and remove the account? Records in this browser stay', deleted: 'Deleted', fail: "Sign-in didn't work. Please try again", synced: 'Synced' },
     my: { title: 'My puzzles', inProgress: 'In progress', done: 'Finished', favs: 'Favourites', emptyProgress: 'Nothing in progress', emptyDone: 'No finished puzzles yet', emptyFavs: 'Tap the heart on a puzzle to collect it here', resume: 'Continue', del: 'Delete', pieces: (n: number) => `${n} pieces`, photo: 'My photo', doneCount: (n: number) => `${n} puzzles`, onDevice: 'Stored on this device only' },
     guide: 'Guide',
@@ -89,7 +146,7 @@ export const UI = {
   },
   ja: {
     name: 'jigsawlab', altName: '', tagline: 'オンラインジグソーパズル。名画と自分の写真で、スマホでも。', langName: '日本語', seoTitle: 'jigsawlab — 名画と自分の写真で遊ぶ無料オンラインジグソーパズル', seoDesc: (n: number) => `名画・写真${n}点や自分の写真で作る無料のオンラインジグソーパズル。リンク一つで友だちを呼んで一緒に組め、合うピースはくっつき、途中の盤面は保存。48〜1000ピース、登録不要。`,
-    nav: { daily: '今日のパズル', catalog: 'パズル', photo: '自分の写真で', play: '今すぐ遊ぶ', about: 'サイトについて', my: 'マイパズル' },
+    nav: { daily: '今日のパズル', catalog: 'パズル', together: 'みんなで', photo: '自分の写真で', play: '今すぐ遊ぶ', about: 'サイトについて', my: 'マイパズル' },
     hero: { today: '今日の絵', pieces: (n: number) => `${n}ピース`, cta: '今日のパズルを解く', photo: '自分の写真で作る', sameForAll: '', h1: '本物のジグソーを、\nスマホでも。', sub: '合うピースはくっついて塊で動き、色ごとに山に分け、途中の盤面は保存されます。リンク一つで友だちと一緒に組めます。', feats: ['合うピースはくっついて塊に', '色ごとに山を分ける', '途中の盤面はそのまま保存', '48ピースから1000ピースまで', 'リンク一つで友だちと一緒に', '自分の写真でも'], pick: 'パズルを選ぶ', statPuzzles: 'パズル', statSolved: '完成した盤面', todayLink: (t: string) => `今日の絵 · ${t} · 一緒に組む` },
     how: { title: '遊び方', steps: [['パズルを選ぶ', '好きな絵を選ぶか、自分の写真を。'], ['ピース数を決める', '48で軽く、1000で本格的に。'], ['引き上げてはめる', 'トレイからピースを上げて置くとカチッ。合うピース同士はくっついて一緒に動きます。']] },
     catalog: { title: 'パズル', sub: '', cats: 'カテゴリー', every: 'すべて', catH1: (name: string) => `${name}のパズル`, catTitle: (name: string, n: number) => `${name}のジグソーパズル${n}点 — 無料オンライン`, catDesc: (name: string, n: number) => `${name}の絵${n}点をオンラインのジグソーパズルで。48ピースから1000ピースまで好きな数に切り分けて遊べます。登録不要・無料。`, showAll: (n: number) => `全${n}点を見る`, prev: '前へ', next: '次へ', all: (n: number) => `全${n}点`, search: '題名・作家で検索', results: (n: number) => `${n}点`, none: '該当なし', noneAll: 'すべてから探す →', fav: 'お気に入り', favAdd: 'お気に入りに追加', favRemove: 'お気に入りから外す', more: (n: number) => `さらに${n}点`, less: '閉じる' },
@@ -122,6 +179,34 @@ export const UI = {
     },
     detail: { open: 'この絵で遊ぶ', start: 'スタート', pieces: '何ピースにしますか？', best: (t: string) => `自己ベスト ${t}`, noBest: 'まだ記録がありません', museum: '所蔵', year: '制作', medium: '素材', source: '作品情報', sources: { aic: 'シカゴ美術館', commons: 'ウィキメディア・コモンズ', nasa: 'NASA' }, more: 'こんなパズルも', back: 'パズル', startDaily: 'を始める', gridOf: (c: number, r: number) => `${c}×${r}` },
     play: { resume: '続きから', resumeTitle: '途中のパズル', resumeHint: (pct: number, t: string) => `${pct}% 完成 · ${t}`, startOver: '最初から', restartAsk: 'この盤面を消して最初からやり直しますか？', saved: '保存済み', piles: '山', pileAll: '全部', pileEdge: '縁', pileNew: '+ 新しい山', moveTo: 'このピースをどこへ？', pileName: (n: number) => `山 ${n}`, sortColor: '色順', shuffle: 'シャッフル', outline: 'ピースの輪郭', dropHere: 'ここに置く', toPile: (n: string) => `${n}へ移動`, streak: (n: number) => `${n}日連続完成`, past: '過去の今日のパズル', done: '完成', notYet: 'まだ', invite: '招待', inviteLead: 'まだ一人です。リンクを送ればすぐに友だちが入れます', players: '参加者', photoSolo: '友だちを招待しても、写真はサーバーを経由せず自分のブラウザから友だちのブラウザへ直接送られます', inviteTitle: '一緒に組もう 🧩', inviteText: 'jigsawlabで一緒にジグソー', me: '自分', nickAsk: 'ニックネームを決めてください', roomGone: '部屋がないか終了しました', disconnected: '接続が切れました。再接続中…', reconnected: '再接続しました', gate: { kicker: 'パズル部屋への招待', login: 'Google でログインして入る', loginSub: '任意です。完成記録と途中のパズルが端末間で引き継がれます。メール・名前は保存しません', or: 'または', guest: 'ゲストで入る', nickPh: 'ニックネーム', guestSub: 'ニックネームだけで入れます。記録はこのブラウザにだけ残ります', online: (n: number) => `${n}人接続中` }, cloud: '同期済み', cloudSave: 'サーバーに保存', cloudSaved: 'サーバーに保存しました。他の端末でも続けられます', cloudFail: '保存できませんでした。しばらくしてもう一度押してください', photoRecv: 'ホストから写真を受信中…', photoWait: '写真を持っている人がまだいません。ホストが戻れば自動で受信します', photoFail: '写真を受信できませんでした。ホストが接続中である必要があり、一部のネットワークでは直接接続できないことがあります', joined: (n: string) => `${n} が参加`, heldBy: (n: string) => (n ? `${n} が持っています` : '他の人が持っています'), photoHostNote: '自分の写真で作った部屋です。写真を出した人が抜けると部屋は終わります — その人はタブを開いたままにしてください', hostAway: '写真を持っている人の接続が切れました。戻らなければこの部屋はまもなく終わります', hostGone: '写真を出した人が退出しました。新しく参加できず、再読み込みすると写真を受け取れません', hostBack: '写真を出した人が戻りました', photoGone: '写真を出した人が退出したため、この部屋は開けません。戻ってくれば開きます', quitHostAsk: '退出すると写真を送る人がいなくなり、この部屋は終わります。退出しますか？', together: '友だちと一緒に', togetherSub: 'リンク一つで一緒に。登録不要、最大8人', creating: '部屋を作成中…', joining: '部屋に入っています…', guest: 'ゲスト', rename: '名前を変更', today: '今日' },
+    live: {
+      seoTitle: 'みんなで組む1000ピースパズル — 公開盤 · jigsawlab',
+      seoDesc: '誰でも入って数ピース置いて帰れる公開ジグソー盤。1000ピースをみんなで分けて組み、完成すると次の絵が始まります。登録もインストールも不要、無料。',
+      h1: 'みんなで組む\n1000ピース',
+      lead: '盤は一つだけ、いつでも開いています。数ピース置いて帰っても大丈夫 — 次の人が続きを組みます。',
+      badge: '公開盤', cta: '続きを組む', ctaFirst: '入って組む', now: 'いま組んでいる絵',
+      round: (n: number) => `${n}枚目`, pct: (n: number) => `${n}% 完成`, left: (n: number) => `残り${n}ピース`,
+      online: (n: number) => `${n}人が組んでいます`, alone: 'いまは誰もいません', loading: '盤を確認中…',
+      offline: '盤を読み込めませんでした。入ればそのまま続きます',
+      gateKicker: 'いまみんなで組んでいます',
+      doneNote: (n: number) => `完成しました！この盤で置いたピースは${n}個 · まもなく次の絵が始まります`,
+      opening: '次の絵を並べています…', nextToast: (t: string) => `次の絵 · ${t}`,
+      shareTitle: '一緒にパズルを組もう 🧩', shareText: 'jigsawlabの公開盤で1000ピースをみんなで',
+      full: 'いまは満席です。しばらくしてからもう一度どうぞ',
+      steps: [
+        ['入る', '登録もインストールも不要。ニックネームを決めればすぐ盤の上です。'],
+        ['数ピース置く', '一つだけでも大丈夫。置いたピースはそのまま残ります。'],
+        ['次の絵へ', '1000ピースが全部そろうと新しい絵が並び、また最初から始まります。'],
+      ] as [string, string][],
+      body: `<h2>公開盤とは</h2>
+<p>サイトが動かしているジグソー盤が一つあります。部屋を作る必要も、誰かを待つ必要もありません。リンクを開けば、いま進行中の1000ピースの盤にそのまま立ち、ほかの人が置いたピースがすでに並んでいます。</p>
+<p>数ピース置いて帰っても構いません。置いた場所はそのまま残り、次に来た人が続きを組みます。何日もかけて少しずつ埋まる盤なので、昨日と今日で進み具合が違います。</p>
+<h2>次の絵にはいつ変わりますか</h2>
+<p>決まった期間はありません。1000ピースがすべて収まると、完成した絵をしばらく一緒に眺めてから新しい絵が並びます。長く誰も触らない盤は自動的に切り上げて次の絵に移ります。</p>
+<p>絵は名画・韓国絵画・ヴィンテージ写真・宇宙写真の中から一枚ずつ順に出ます。ひと巡りするまで同じ絵は出てきません。</p>
+<h2>友だちとだけ組みたいときは</h2>
+<p>パズルの詳細ページで<b>友だちと一緒に</b>を押すと、自分たちだけの部屋ができます。絵もピース数も選べて、リンクを渡した人だけが入れます。</p>`,
+    },
     acct: { login: 'ログイン', close: '閉じる', dlgTitle: 'ログイン', dlgLead: '完成記録と途中のパズルを端末間で引き継ぐにはログインしてください。ログインなしでもすべてのパズルを楽しめます', google: 'Google で続ける', dlgPoints: ['メール・名前・プロフィール写真は受け取りません', '完成したパズルと途中の盤面がどの端末でも続けられます', 'いつでもアカウントと記録をまとめて削除できます'], nickTitle: 'ニックネームを決めてください', nickLead: 'パズル部屋でこの名前で表示されます', nickPh: 'ニックネーム', nickHint: '最大12文字 · キャンセルするとこの名前で始まります · あとでマイパズルから変更できます', nickStart: 'はじめる', nickSave: '保存', later: 'キャンセル', shuffle: '別の名前', logout: 'ログアウト', title: 'アカウント', signedIn: (n: string) => `${n} でログイン中`, notSignedIn: 'ログインしていません', why: 'Google ログインは任意です。完成記録と途中のパズル(名画・今日のパズル)が端末間で引き継がれます。サーバーに保存するのは Google アカウントから作った仮名 ID とニックネームだけで、メール・名前・写真は受け取りません', loginBtn: 'Google でログイン', rename: 'ニックネーム変更', del: 'アカウントと記録を削除', delAsk: 'サーバーの完成記録と途中のパズルをすべて消してアカウントを削除しますか？このブラウザの記録は残ります', deleted: '削除しました', fail: 'ログインできませんでした。もう一度お試しください', synced: '同期済み' },
     my: { title: 'マイパズル', inProgress: '途中のパズル', done: '完成したパズル', favs: 'お気に入り', emptyProgress: '途中のパズルはありません', emptyDone: 'まだ完成したパズルはありません', emptyFavs: 'パズルのハートを押すとここに集まります', resume: '続きから', del: '削除', pieces: (n: number) => `${n}ピース`, photo: '自分の写真', doneCount: (n: number) => `${n}枚`, onDevice: 'この端末にのみ保存されます' },
     guide: 'ガイド',

@@ -205,6 +205,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
   import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, type Award, type SaveMeta } from '../lib/account';
   import { BADGES, earnFor } from '../lib/level';
+  import { click, confetti, fanfare } from '../lib/celebrate';
+  import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
   import { setNickRemote } from '../lib/account';
@@ -469,35 +471,11 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw(); renderPiles();
     if (lockedN === total) finish(); else scheduleSave();
   }
-  // ── 완성 연출: 팡파르 + 색종이 + 빛 쓸기, 끝나면 결과로
-  function fanfare() {
-    try { ac ??= new (window.AudioContext || (window as any).webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); const t = ac.currentTime;
-      const master = ac.createGain(); master.gain.value = 0.16; master.connect(ac.destination);
-      const note = (f: number, at: number, dur: number, type: OscillatorType = 'triangle', vol = 1) => { const o = ac!.createOscillator(), g = ac!.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + dur); o.connect(g).connect(master); o.start(at); o.stop(at + dur + 0.05); };
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => note(f, t + i * 0.11, 0.5));
-      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f) => note(f, t + 0.5, 1.6, 'sine', 0.7));
-      for (let i = 0; i < 6; i++) note(1568 + Math.random() * 1200, t + 0.7 + i * 0.13, 0.25, 'sine', 0.35);
-    } catch {}
-  }
-  function celebrate(done: () => void) {
-    const fx = $('jg-fx') as HTMLCanvasElement; const r = wrap.getBoundingClientRect(); const d = dpr(); fx.width = r.width * d; fx.height = r.height * d; const c = fx.getContext('2d')!; c.scale(d, d);
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; fanfare();
-    const cols = ['#14172a', '#f0a71b', '#ff5f8a', '#3ac9a5', '#8da0ff', '#ffd166', '#ffffff'];
-    const N = reduce ? 0 : 160; const ps = Array.from({ length: N }, () => ({ x: Math.random() * r.width, y: -20 - Math.random() * r.height * 0.6, vx: (Math.random() - 0.5) * 60, vy: 120 + Math.random() * 220, w: 6 + Math.random() * 8, h: 8 + Math.random() * 10, rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 8, col: cols[Math.floor(Math.random() * cols.length)] }));
-    const T0 = performance.now(), DUR = reduce ? 900 : 3000; let last = T0;
-    const frame = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now; const el = now - T0;
-      c.clearRect(0, 0, r.width, r.height);
-      // 빛 쓸기
-      const k = Math.min(1, el / 1100); const sx = -r.width * 0.6 + (r.width * 2.2) * k; const g = c.createLinearGradient(sx, 0, sx + r.width * 0.5, r.height); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, `rgba(255,255,255,${0.35 * (1 - k)})`); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, r.width, r.height);
-      for (const p of ps) { p.vy += 380 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > r.height + 30) continue; c.save(); c.translate(p.x, p.y); c.rotate(p.rot); c.fillStyle = p.col; c.globalAlpha = el > DUR - 600 ? Math.max(0, (DUR - el) / 600) : 1; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); c.restore(); }
-      if (el < DUR) requestAnimationFrame(frame); else { c.clearRect(0, 0, r.width, r.height); done(); }
-    };
-    requestAnimationFrame(frame);
-  }
-  // 딸깍 소리 (WebAudio, 아주 짧게). 첫 사용자 제스처 뒤에만 재생됨
-  let ac: AudioContext | null = null;
-  function click(deep = false) { try { ac ??= new (window.AudioContext || (window as any).webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); const t = ac.currentTime, o = ac.createOscillator(), gn = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(deep ? 520 : 760, t); o.frequency.exponentialRampToValueAtTime(deep ? 180 : 300, t + 0.05); gn.gain.setValueAtTime(0.12, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.07); o.connect(gn).connect(ac.destination); o.start(t); o.stop(t + 0.08); } catch {} }
+  // ── 완성 연출: 팡파르 + 색종이 + 빛 쓸기, 끝나면 결과로 (레벨업 다이얼로그도 같은 것을 쓴다 — lib/celebrate.ts)
+  function celebrate(done: () => void) { const r = wrap.getBoundingClientRect(); fanfare(); confetti($('jg-fx') as HTMLCanvasElement, r.width, r.height, done); }
+  // 색종이가 다 내릴 때까지 기다렸다가 레벨업·업적 다이얼로그를 띄운다 (완성 순간을 밟지 않게)
+  let celebrated: Promise<void> = Promise.resolve();
+  const celebrateWait = (after: () => void = () => {}) => { celebrated = new Promise((res) => celebrate(() => { after(); res(); })); };
 
   // ── 보드 포인터: 뭉치 드래그 / 한 손가락 이동 / 두 손가락 핀치
   const ptrs = new Map<number, { x: number; y: number }>(); let dragOff = { x: 0, y: 0 }, pinch: { d0: number; s0: number; bx: number; by: number } | null = null;
@@ -751,9 +729,9 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
-    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); syncLive(src?.key ?? '', total, myLocked).then(liveAward); roomNote(L.doneNote(myLocked)); celebrate(() => {}); return; }
+    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); syncLive(src?.key ?? '', total, myLocked).then(liveAward); roomNote(L.doneNote(myLocked)); celebrateWait(); return; }
     prepareResult(sec);
-    celebrate(() => scenes.go('result'));
+    celebrateWait(() => scenes.go('result'));
   }
   function prepareResult(sec: number) {
     $('jg-res-time').textContent = fmt(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
@@ -768,7 +746,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
   // 완성 뒤 받은 XP·레벨업·새 업적. 로그인 안 했으면 로그인하면 쌓인다는 안내만
-  function showAward(a: Award | null) {
+  async function showAward(a: Award | null) {
     const box = $('jg-res-xp'); box.innerHTML = '';
     const add = (cls: string, text: string) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; box.appendChild(e); return e; };
     if (!a) {
@@ -784,9 +762,14 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     for (const code of a.badges) { const d = BADGES.find((x) => x.code === code); if (!d) continue; add('bg', `${d.icon} ${BADGE_TEXT[code].n[LI]}`); }
     if (a.badges.length || a.levelUp) { const link = document.createElement('a'); link.className = 'btn sm'; link.href = `${LANG === 'ko' ? '' : `/${LANG}`}/my/`; link.textContent = V.seeMy; box.appendChild(link); }
     box.hidden = false;
+    await celebrated; showAwardDialog(a);
   }
   // 모두의 퍼즐은 결과 화면이 없어 판 위 안내줄에 얹는다
-  function liveAward(a: Award | null) { if (!a) return; const bits = [a.gained > 0 ? V.gained(a.gained) : a.capped ? V.capped : '', a.levelUp ? V.levelUp(a.level) : '', ...a.badges.map((c) => `${BADGES.find((x) => x.code === c)?.icon ?? ''} ${BADGE_TEXT[c]?.n[LI] ?? ''}`.trim())].filter(Boolean); if (bits.length) toast(bits.join(' · ')); }
+  async function liveAward(a: Award | null) {
+    if (!a) return; await celebrated;
+    if (showAwardDialog(a)) return; // 레벨업·업적이면 다이얼로그, 아니면 판 위에 한 줄
+    if (a.gained > 0) toast(V.gained(a.gained)); else if (a.capped) toast(V.capped);
+  }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };

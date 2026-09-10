@@ -89,6 +89,24 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       <div class="nick-row"><button type="button" class="btn" id="nick-cancel">{T.acct.later}</button><button type="submit" class="btn primary" id="nick-ok">{T.acct.nickStart}</button></div>
     </form>
   </div>
+  <!-- 레벨업·업적 다이얼로그. 채우고 여는 건 lib/levelup.ts (무거운 데이터를 물고 있어 필요할 때만 동적으로 불러온다) -->
+  <div class="gdlg" id="aw-dlg" hidden>
+    <div class="gdlg-bg" id="aw-bg"></div>
+    <canvas class="aw-fx" id="aw-fx" aria-hidden="true"></canvas>
+    <div class="gdlg-box aw-box" role="dialog" aria-modal="true" aria-labelledby="aw-h">
+      <button type="button" class="gdlg-x" id="aw-x" aria-label={T.acct.close}><Fragment set:html={icon('x', 18)} /></button>
+      <div class="aw-lv" id="aw-lv" hidden>
+        <span class="aw-ring"><small>Lv</small><b id="aw-lv-n">1</b></span>
+        <b class="aw-tier" id="aw-tier"></b>
+        <small class="aw-jump" id="aw-jump"></small>
+      </div>
+      <h2 id="aw-h"></h2>
+      <p class="aw-xp" id="aw-xp"></p>
+      <p class="aw-nb" id="aw-nb" hidden>{T.lv.awNew}</p>
+      <ul class="aw-list" id="aw-list"></ul>
+      <div class="aw-cta"><button type="button" class="btn primary" id="aw-ok">{T.lv.awClose}</button><a class="btn" href={`${P}/my/`}>{T.lv.seeMy}</a></div>
+    </div>
+  </div>
   <div class="menu" id="menu" hidden>
     <div class="menu-bg" id="menu-bg"></div>
     <nav class="menu-sheet" aria-label="menu">
@@ -137,7 +155,13 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
       if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(document.documentElement.lang); if (n && (await setNickRemote(n))) nk.textContent = n; }
       // 로그인 직후 이 기기 기록을 합치면 그동안의 판이 한꺼번에 XP 가 된다 — 로그인의 값어치라 그 자리에서 알려 준다
-      if (u) mergeLocalDone().then(async (a) => { if (!a || a.gained <= 0) return; const { toast } = await import('../lib/share'); const { UI } = await import('../i18n/ui'); const l = document.documentElement.lang; toast(UI[l === 'en' || l === 'ja' ? l : 'ko'].lv.merged(a.xp.toLocaleString(), a.level)); });
+      if (u) mergeLocalDone().then(async (a) => {
+        if (!a || a.gained <= 0) return;
+        const { showAwardDialog } = await import('../lib/levelup');
+        if (showAwardDialog(a)) return; // 레벨업·업적이 있으면 다이얼로그로 (합치면서 여러 단계 오르기도 한다)
+        const { toast } = await import('../lib/share'); const { UI } = await import('../i18n/ui'); const l = document.documentElement.lang;
+        toast(UI[l === 'en' || l === 'ja' ? l : 'ko'].lv.merged(a.xp.toLocaleString(), a.level));
+      });
     });
     // 모바일 메뉴
     const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
@@ -237,6 +261,26 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .gdlg { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; } .gdlg-bg { position: absolute; inset: 0; background: rgba(15,18,34,.5); backdrop-filter: blur(2px); } html.dlg-open { overflow: hidden; }
   .gdlg-box { position: relative; width: min(92vw, 400px); max-height: 92%; overflow: auto; padding: 28px 26px 22px; background: var(--bg); border-radius: 22px; box-shadow: 0 30px 80px -20px rgba(15,18,34,.5); animation: gdlg-pop .18s ease-out; } @keyframes gdlg-pop { from { transform: translateY(8px) scale(.98); opacity: 0; } }
   .gdlg-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--bg-2); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; } .gdlg-x:hover { background: var(--bg-3); }
+  /* 레벨업·업적 다이얼로그 — 판을 다 맞췄을 때와 같은 색종이·팡파르를 얹는다 */
+  .aw-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .aw-box { width: min(92vw, 420px); text-align: center; }
+  .aw-lv { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 4px 0 14px; }
+  .aw-ring { position: relative; width: 112px; height: 112px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--gold-soft); border: 3px solid var(--gold); animation: aw-ring .5s var(--ease) both; }
+  .aw-ring::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--gold); animation: aw-ping 1.5s ease-out .35s 2 both; }
+  .aw-ring small { font-size: .68rem; font-weight: 800; letter-spacing: .08em; color: #8a5f00; line-height: 1; }
+  .aw-ring b { font-family: var(--head); font-size: 2.5rem; line-height: 1.1; color: #8a5f00; font-variant-numeric: tabular-nums; }
+  .aw-tier { font-size: 1.1rem; letter-spacing: -.02em; } .aw-jump { color: var(--muted); font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .aw-xp { margin: 6px 0 0; color: #8a5f00; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .aw-nb { margin: 18px 0 8px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+  .aw-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+  .aw-list li { display: flex; gap: 11px; align-items: center; padding: 11px 13px; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--gold); animation: aw-in .45s var(--ease) both; }
+  .aw-list .i { font-size: 1.5rem; line-height: 1; flex: none; }
+  .aw-list b { display: block; font-size: .95rem; } .aw-list small { display: block; color: var(--muted); font-size: .78rem; line-height: 1.45; margin-top: 1px; }
+  .aw-cta { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  @keyframes aw-ring { from { transform: scale(.55); opacity: 0; } 62% { transform: scale(1.09); } to { transform: scale(1); opacity: 1; } }
+  @keyframes aw-ping { from { transform: scale(1); opacity: .65; } to { transform: scale(1.5); opacity: 0; } }
+  @keyframes aw-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .aw-ring, .aw-ring::after, .aw-list li, .aw-box { animation: none !important; } }
   .gdlg-box h2 { margin: 0 0 6px; font-size: 1.45rem; letter-spacing: -.03em; } .auth-lead { margin: 0 0 18px; color: var(--muted); font-size: .92rem; line-height: 1.55; }
   .auth-mark { font-family: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, sans-serif; font-size: 1rem; color: var(--muted); margin-bottom: 14px; letter-spacing: -.02em; }
   .gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-2); background: #fff; color: #1f1f1f; font-weight: 700; font-size: 1rem; text-decoration: none; transition: background .15s, box-shadow .15s, transform .15s; } .gbtn:hover { background: #f7f8fa; text-decoration: none; box-shadow: 0 8px 20px -12px rgba(15,18,34,.5); transform: translateY(-1px); } .gbtn svg { flex: none; }

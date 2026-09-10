@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { UI, prefix, type Lang } from '../i18n/ui';
+import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang);
 const body = {
@@ -31,9 +31,27 @@ const body = {
 <h2>6. 免責</h2><p>サービスは「現状のまま」提供されます。サービスの中断、データの消失、端末の性能に起因する問題について、サイトは法律が許す範囲で責任を負いません。</p>
 <h2>7. 規約の変更</h2><p>規約は必要に応じて変更されることがあり、変更後の規約はこのページに掲載した時点から適用されます。</p>
 <h2>お問い合わせ</h2><p>dev2lgb@gmail.com</p>`,
+  de: `<p>Mit der Nutzung von jigsawlab (im Folgenden „Website") erklärst du dich mit diesen Bedingungen einverstanden. Gültig ab 6. September 2026.</p>
+<h2>1. Der Dienst</h2><p>Die Website ist ein kostenloser Webdienst, mit dem sich aus gemeinfreien Gemälden und eigenen Fotos Puzzles erstellen und lösen lassen. Ein Konto ist nicht nötig. Fortschritt, Bestleistungen und Favoriten liegen ausschließlich auf deinem Gerät (Browserspeicher); beim Löschen der Browserdaten oder einem Gerätewechsel gehen sie verloren, und die Website kann sie nicht wiederherstellen.</p>
+<h2>2. Deine Fotos</h2><p>Puzzles aus deinen Fotos werden im Browser verarbeitet und nie an einen Server gesendet. Verwende nur Fotos, an denen du die Rechte hast; für Verletzungen von Urheber- oder Persönlichkeitsrechten bist du selbst verantwortlich.</p>
+<h2>3. Gemälde und Inhalte</h2><p>Die Bilder auf der Website sind gemeinfreie oder CC0-Werke (zum Beispiel aus der Open-Access-Sammlung des Art Institute of Chicago, gemeinfreie Werke auf Wikimedia Commons, die Photochrom-Sammlung der Library of Congress und öffentliche Aufnahmen von NASA/ESA); die Seite jedes Werks nennt Quelle und Lizenz. Die eigenen Inhalte der Website — Bildbeschreibungen, Gestaltung und Code — gehören jigsawlab; eine Verwendung über den privaten, nicht-kommerziellen Gebrauch hinaus bedarf der Zustimmung.</p>
+<h2>4. Unzulässige Nutzung</h2><p>Den Dienst zu stören, den Server mit übermäßigen Anfragen zu belasten oder Inhalte der Website auszulesen und weiterzuverbreiten ist nicht gestattet.</p>
+<h2>5. Werbung und Affiliate-Links</h2><p>Die Website kann Werbung und Affiliate-Links anzeigen. Für Käufe über Affiliate-Links kann die Website eine Provision erhalten; Verkauf, Lieferung und Rückgabe liegen beim jeweiligen Anbieter.</p>
+<h2>6. Haftungsausschluss</h2><p>Der Dienst wird „wie besehen" bereitgestellt. Soweit gesetzlich zulässig, haftet die Website nicht für Unterbrechungen, Datenverlust oder geräteseitige Probleme.</p>
+<h2>7. Änderungen</h2><p>Diese Bedingungen können sich ändern; die aktualisierte Fassung gilt ab dem Zeitpunkt ihrer Veröffentlichung auf dieser Seite.</p>
+<h2>Kontakt</h2><p>dev2lgb@gmail.com</p>`,
+  es: `<p>Al usar jigsawlab (en adelante, «el sitio») aceptas estas condiciones. En vigor desde el 6 de septiembre de 2026.</p>
+<h2>1. El servicio</h2><p>El sitio es un servicio web gratuito para crear y armar rompecabezas a partir de cuadros de dominio público y de tus propias fotos. No hace falta cuenta. El avance, las marcas y los favoritos se guardan únicamente en tu dispositivo (almacenamiento del navegador); se pierden si borras los datos del navegador o cambias de dispositivo, y el sitio no puede recuperarlos.</p>
+<h2>2. Tus fotos</h2><p>Los rompecabezas hechos con tus fotos se procesan dentro del navegador y nunca se envían a ningún servidor. Usa solo fotos sobre las que tengas derechos; cualquier infracción de derechos de autor o de imagen es responsabilidad tuya.</p>
+<h2>3. Cuadros y contenidos</h2><p>Las imágenes del sitio son obras de dominio público o CC0 (por ejemplo, la colección de acceso abierto del Art Institute of Chicago, obras de dominio público de Wikimedia Commons, la colección de fotocromos de la Library of Congress e imágenes públicas de la NASA/ESA), y la página de cada obra indica su fuente y su licencia. Los contenidos propios del sitio, incluidas las descripciones de las obras, el diseño y el código, pertenecen a jigsawlab; su reproducción más allá del uso personal y no comercial requiere autorización.</p>
+<h2>4. Usos prohibidos</h2><p>No se permite interferir en el servicio, enviar peticiones excesivas al servidor ni extraer y redistribuir los contenidos del sitio.</p>
+<h2>5. Publicidad y enlaces de afiliación</h2><p>El sitio puede mostrar publicidad y enlaces de afiliación. El sitio puede recibir una comisión por las compras realizadas a través de dichos enlaces; la venta, la entrega y las devoluciones son responsabilidad del vendedor.</p>
+<h2>6. Exención de responsabilidad</h2><p>El servicio se presta «tal cual». En la medida en que lo permita la ley, el sitio no se hace responsable de interrupciones, pérdidas de datos ni problemas derivados del dispositivo.</p>
+<h2>7. Cambios</h2><p>Estas condiciones pueden cambiar; la versión actualizada se aplica desde el momento en que se publica en esta página.</p>
+<h2>Contacto</h2><p>dev2lgb@gmail.com</p>`,
 }[lang];
 ---
-<Base title={`${T.foot.termsTitle} · jigsawlab`} desc={T.foot.termsTitle} lang={lang} alts={{ ko: '/terms/', en: '/en/terms/', ja: '/ja/terms/' }} path={`${P}/terms/`}>
+<Base title={`${T.foot.termsTitle} · jigsawlab`} desc={T.foot.termsTitle} lang={lang} alts={altsFor('/terms/')} path={`${P}/terms/`}>
   <section class="wrap doc seo"><h1>{T.foot.termsTitle}</h1><div set:html={body} /></section>
   <style>.doc { padding-top: clamp(24px, 4vw, 48px); } .doc h1 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 12px; letter-spacing: -.04em; }</style>
 </Base>

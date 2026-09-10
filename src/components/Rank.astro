@@ -2,13 +2,13 @@
 // 랭킹(/rank/) — 이번 주 XP · 전체 누적 XP 두 탭. 읽기는 누구나, 등재는 구글 로그인 회원만.
 // 표는 클라이언트가 /api/rank 로 받아 그리고, XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인되게 둔다
 import Base from '../layouts/Base.astro';
-import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { BADGES, TIERS, xpAtLevel } from '../lib/level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
 ---
-<Base title={V.seoTitle} desc={V.seoDesc} lang={lang} alts={{ ko: '/rank/', en: '/en/rank/', ja: '/ja/rank/' }} path={`${P}/rank/`}>
+<Base title={V.seoTitle} desc={V.seoDesc} lang={lang} alts={altsFor('/rank/')} path={`${P}/rank/`}>
   <div class="wrap rk">
     <header class="rk-head">
       <h1>{V.h1}</h1>

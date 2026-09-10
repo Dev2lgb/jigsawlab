@@ -2,7 +2,7 @@
 // 그림 상세 = 상자를 연 화면. 큰 상자 + 그림 이야기 + 조각 수 선택(→ /board/) + 같은 진열대의 다른 상자
 import Base from '../layouts/Base.astro';
 import Box from './Box.astro';
-import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORK_BY_KEY, WORKS } from '../data/works';
 import { ABOUT_TEXT } from '../data/about';
@@ -19,8 +19,8 @@ const title = p.title[li], artist = p.artist[li];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
 const srcName = /artic\.edu/.test(p.source ?? '') ? T.detail.sources.aic : /wikimedia\.org/.test(p.source ?? '') ? T.detail.sources.commons : /nasa\.gov/.test(p.source ?? '') ? T.detail.sources.nasa : a.museum[li];
 const sib = WORKS.filter((w) => w.cat === p.cat && w.key !== key); const i0 = Math.max(0, WORKS.filter((w) => w.cat === p.cat).findIndex((w) => w.key === key) - 3); const others = sib.slice(i0, i0 + 8).map((w) => paintingFor(w.key, lang)!);
-const alts = { ko: `/puzzle/${key}/`, en: `/en/puzzle/${key}/`, ja: `/ja/puzzle/${key}/` };
-const pageTitle = { ko: `${title} 직소 퍼즐 — ${artist} · jigsawlab`, en: `${title} jigsaw puzzle — ${artist} · jigsawlab`, ja: `${title} ジグソーパズル — ${artist} · jigsawlab` }[lang];
+const alts = altsFor(`/puzzle/${key}/`);
+const pageTitle = { ko: `${title} 직소 퍼즐 — ${artist} · jigsawlab`, en: `${title} jigsaw puzzle — ${artist} · jigsawlab`, ja: `${title} ジグソーパズル — ${artist} · jigsawlab`, de: `${title} als Puzzle — ${artist} · jigsawlab`, es: `Rompecabezas de ${title} — ${artist} · jigsawlab` }[lang];
 const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: title, creator: { '@type': 'Person', name: artist }, dateCreated: p.year, image: new URL(`/jigsaw/${key}.webp`, Astro.site).toString(), description: about, ...(p.medium ? { artMedium: p.medium } : {}) };
 ---
 <Base title={pageTitle} desc={about} lang={lang} ogImage={`/jigsaw/o-${key}.jpg`} alts={alts} path={alts[lang]}>

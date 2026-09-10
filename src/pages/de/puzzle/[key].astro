@@ -1,0 +1,7 @@
+---
+import PuzzleDetail from '../../../components/PuzzleDetail.astro';
+import { WORKS } from '../../../data/works';
+export function getStaticPaths() { return WORKS.map((p) => ({ params: { key: p.key } })); }
+const { key } = Astro.params;
+---
+<PuzzleDetail lang="de" key={key!} />

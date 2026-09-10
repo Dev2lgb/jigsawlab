@@ -1,20 +1,21 @@
 ---
+import { BODY } from '../i18n/body';
 // /photo/ — 내 사진으로 퍼즐 만들기. /play/ 와 달리 검색으로 들어온 사람을 받는 랜딩이라
 // 히어로에서 바로 업로드하고(선택 화면을 거치지 않음), 아래에 본문을 둔다.
 // 고른 사진은 IndexedDB 에 임시로 넣고 /board/?photo=<id>&n=<조각> 으로 넘긴다 — 파일은 URL 로 못 넘기니까.
 import Base from '../layouts/Base.astro';
-import { UI, prefix, type Lang } from '../i18n/ui';
+import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORKS } from '../data/works';
 import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), F = T.photo, J = JIGSAW[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000], DEFAULT_N = 100;
-const toc = [...F.body.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `p${i + 1}`, text: m[1] }));
-let i = 0; const body = F.body.replace(/<h2>/g, () => `<h2 id="p${++i}">`);
+const toc = [...BODY[lang].photo.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `p${i + 1}`, text: m[1] }));
+let i = 0; const body = BODY[lang].photo.replace(/<h2>/g, () => `<h2 id="p${++i}">`);
 const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitle, description: F.seoDesc, step: F.steps.map(([h, b], n) => ({ '@type': 'HowToStep', position: n + 1, name: h, text: b })) };
 ---
-<Base title={`${F.seoTitle} · jigsawlab`} desc={F.seoDesc} lang={lang} alts={{ ko: '/photo/', en: '/en/photo/', ja: '/ja/photo/' }} path={`${P}/photo/`}>
+<Base title={`${F.seoTitle} · jigsawlab`} desc={F.seoDesc} lang={lang} alts={altsFor('/photo/')} path={`${P}/photo/`}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} slot="head" />
 
   <section class="hero">

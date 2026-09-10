@@ -6,9 +6,9 @@
 import Base from '../layouts/Base.astro';
 import { env } from 'cloudflare:workers';
 import { WORK_BY_KEY } from '../data/works';
-import { prefix, type Lang } from '../i18n/ui';
+import { LI, prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang);
+const li = LI[lang], P = prefix(lang);
 
 interface Info { key: string; photo: boolean; n: number; total: number; locked: number; players: number; done: boolean }
 const id = (Astro.url.searchParams.get('room') ?? '').toLowerCase();
@@ -27,6 +27,12 @@ const S = {
   ja: { h: '一緒に組もう、という招待です', join: '一緒に組む', other: '別のパズルを選ぶ', photo: '誰かの写真から作ったパズル', pieces: (n: number) => `${n}ピース`,
     prog: (a: number, b: number) => `${a} / ${b}ピース完成`, here: (n: number) => (n > 0 ? `いま${n}人が組んでいます` : 'まだ誰もいません'),
     done: 'この盤面はすでに完成しています', gone: 'この部屋はもうありません', goneSub: '部屋は最後の人が出てから二日で閉じます。新しいパズルを選んでみてください。', goneCta: 'パズルを選ぶ' },
+  de: { h: 'Du bist eingeladen, das gemeinsam zu lösen', join: 'Gemeinsam lösen', other: 'Anderes Puzzle aussuchen', photo: 'Ein Puzzle aus dem Foto von jemandem', pieces: (n: number) => `${n} Teile`,
+    prog: (a: number, b: number) => `${a} von ${b} Teilen liegen`, here: (n: number) => (n > 0 ? `${n} puzzeln gerade` : 'Noch ist niemand da'),
+    done: 'Dieses Brett ist schon fertig', gone: 'Diesen Raum gibt es nicht mehr', goneSub: 'Ein Raum schließt zwei Tage, nachdem die letzte Person gegangen ist. Such dir stattdessen ein neues Puzzle.', goneCta: 'Puzzle aussuchen' },
+  es: { h: 'Te han invitado a armarlo entre varios', join: 'Armarlo juntos', other: 'Elegir otro rompecabezas', photo: 'Un rompecabezas hecho con la foto de alguien', pieces: (n: number) => `${n} piezas`,
+    prog: (a: number, b: number) => `${a} de ${b} piezas colocadas`, here: (n: number) => (n > 0 ? `${n} armando ahora` : 'Todavía no hay nadie'),
+    done: 'Este tablero ya está terminado', gone: 'Esta sala ya no existe', goneSub: 'Una sala se cierra dos días después de que se vaya la última persona. Elige otro rompecabezas.', goneCta: 'Elegir rompecabezas' },
 }[lang];
 
 const work = info && !info.photo ? WORK_BY_KEY[info.key] : null;

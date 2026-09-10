@@ -2,12 +2,11 @@
 // 데이터(작품 목록)를 물고 있는 level.ts 를 쓰므로 부르는 쪽에서 동적 import 하는 게 좋다
 import { BADGE_BY_CODE, tierOf } from './level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
-import { UI, type Lang } from '../i18n/ui';
+import { UI, LI, LANGS, type Lang } from '../i18n/ui';
 import { badge as badgeSound, confetti, levelUp as levelUpSound } from './celebrate';
 import type { Award } from './account';
 
-const IX = { ko: 0, en: 1, ja: 2 } as const;
-const langOf = (): Lang => { const l = document.documentElement.lang; return l === 'en' || l === 'ja' ? l : 'ko'; };
+const langOf = (): Lang => { const l = document.documentElement.lang as Lang; return LANGS.includes(l) ? l : 'ko'; };
 const $ = (id: string) => document.getElementById(id);
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let bound = false;
@@ -29,7 +28,7 @@ function countTo(el: HTMLElement, from: number, to: number) {
 export function showAwardDialog(a: Award): boolean {
   if (!a.levelUp && !a.badges.length) return false;
   const d = $('aw-dlg'), box = $('aw-box') ?? d?.querySelector<HTMLElement>('.aw-box'); if (!d || !box) return false;
-  const lang = langOf(), li = IX[lang], V = UI[lang].lv;
+  const lang = langOf(), li = LI[lang], V = UI[lang].lv;
 
   const lv = $('aw-lv')!, list = $('aw-list')!, nb = $('aw-nb')!;
   lv.hidden = !a.levelUp;

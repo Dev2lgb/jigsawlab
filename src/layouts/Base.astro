@@ -1,7 +1,7 @@
 ---
 // 공통 틀 — 화면 전체 폭, Pretendard, 큰 라운드·부드러운 그림자, 스크롤 리빌, 3D 퍼즐 상자 공통 스타일
 import { icon } from '../lib/icons';
-import { UI, LANGS, prefix, type Lang } from '../i18n/ui';
+import { OG_LOCALE, UI, LANGS, prefix, type Lang } from '../i18n/ui';
 interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
 const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
 const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigsawlab.app');
@@ -42,7 +42,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   {alts?.ko && <link rel="alternate" hreflang="x-default" href={new URL(alts.ko, site).toString()} />}
   <meta property="og:type" content="website" /><meta property="og:site_name" content="jigsawlab" />
   <meta property="og:title" content={title} /><meta property="og:description" content={desc} /><meta property="og:url" content={canonical} />
-  <meta property="og:image" content={new URL(ogImage, site).toString()} /><meta property="og:locale" content={{ ko: 'ko_KR', en: 'en_US', ja: 'ja_JP' }[lang]} /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={desc} /><meta name="twitter:image" content={new URL(ogImage, site).toString()} />
+  <meta property="og:image" content={new URL(ogImage, site).toString()} /><meta property="og:locale" content={OG_LOCALE[lang]} /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={desc} /><meta name="twitter:image" content={new URL(ogImage, site).toString()} />
   {isHome && <script type="application/ld+json" set:html={JSON.stringify(homeSchema)} />}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#ffffff" />
@@ -61,7 +61,10 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     <a class="mark" href={`${P}/`} aria-label="jigsawlab">jigsawlab</a>
     <nav class="nav" aria-label="main">{nav.filter((n) => !n.sheetOnly).map((n) => <a href={n.href}>{n.label}</a>)}</nav>
     <div class="right">
-      <div class="langs" role="group" aria-label="language">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}>{l.toUpperCase()}</a>)}</div>
+      <details class="langsel" id="langsel">
+        <summary aria-label="language" title={UI[lang].langName}><Fragment set:html={icon('globe', 15)} /><span>{lang.toUpperCase()}</span></summary>
+        <div class="langsel-pop">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}><b>{l.toUpperCase()}</b>{UI[l].langName}</a>)}</div>
+      </details>
       <a class="acct" id="acct" href={`${P}/my/`} data-login={T.acct.login} data-fail={T.acct.fail} data-nick-ask={T.play.nickAsk} data-noauth="1"><Fragment set:html={icon('user', 16)} /><span id="acct-nick">{T.acct.login}</span></a>
       <a class="btn primary sm play-btn" href={`${P}/play/`}>{T.nav.play}</a>
       <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="menu"><span></span><span></span><span></span></button>
@@ -136,6 +139,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   </footer>
   <script>
     import { initShelves } from '../lib/shelf';
+    import { LANGS } from '../i18n/langs'; // 언어 목록만 — i18n/ui 를 물면 언어팩 5개가 모든 페이지에 실린다
     initShelves(); // 가로 진열대: PC 화살표·드래그
     // 스크롤 리빌: [data-reveal] 요소가 화면에 들어오면 .in — 모션 최소화 설정이면 즉시 표시
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
@@ -167,9 +171,12 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
     const setMenu = (o: boolean) => { menu.hidden = !o; mb.setAttribute('aria-expanded', String(o)); document.documentElement.style.overflow = o ? 'hidden' : ''; };
     mb.addEventListener('click', () => setMenu(!!menu.hidden)); document.getElementById('menu-bg')!.addEventListener('click', () => setMenu(false)); addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    // 언어 드롭다운 — 바깥을 누르거나 Esc 로 닫는다
+    const lsel = document.getElementById('langsel') as HTMLDetailsElement | null;
+    if (lsel) { addEventListener('click', (e) => { if (lsel.open && !lsel.contains(e.target as Node)) lsel.open = false; }); addEventListener('keydown', (e) => { if (e.key === 'Escape') lsel.open = false; }); }
     // 언어: 직접 고르면 기억, 첫 방문이면 브라우저 언어로
     document.querySelectorAll<HTMLAnchorElement>('a[data-lang]').forEach((a) => a.addEventListener('click', () => { try { localStorage.setItem('lang', a.dataset.lang!); } catch {} }));
-    try { const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang'); const want = saved || (navigator.language || '').slice(0, 2); if (['ko', 'en', 'ja'].includes(want) && want !== pageLang && !saved) { localStorage.setItem('lang', want); const path = location.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/'; location.replace((want === 'ko' ? '' : '/' + want) + path + location.search); } } catch {}
+    try { const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang'); const want = saved || (navigator.language || '').slice(0, 2); if ((LANGS as string[]).includes(want) && want !== pageLang && !saved) { localStorage.setItem('lang', want); const path = location.pathname.replace(new RegExp('^/(' + LANGS.filter((l) => l !== 'ko').join('|') + ')(?=/|$)'), '') || '/'; location.replace((want === 'ko' ? '' : '/' + want) + path + location.search); } } catch {}
   </script>
 </body>
 </html>
@@ -212,15 +219,25 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .right { display: flex; align-items: center; gap: 10px; }
   .acct { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); font-weight: 700; font-size: .85rem; max-width: 160px; } .acct span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct:hover { background: var(--bg-3); text-decoration: none; } .acct[data-noauth="1"] { display: none; }
   @media (max-width: 860px) { .acct { width: 36px; height: 36px; padding: 0; justify-content: center; } .acct span { display: none; } }
-  .langs { display: flex; padding: 3px; border-radius: 999px; background: var(--bg-3); } .langs a { color: var(--muted); font-size: .74rem; font-weight: 700; padding: 5px 9px; border-radius: 999px; letter-spacing: .02em; } .langs a[aria-current] { color: var(--ink); background: var(--bg); box-shadow: 0 1px 3px rgba(15,18,34,.15); } .langs a:hover { text-decoration: none; color: var(--ink); }
+  /* 언어 선택 — 다섯 개를 알약으로 늘어놓으면 헤더가 두 줄로 접힌다. 현재 언어만 보이고 나머지는 펼쳐서 고른다 */
+  .langsel { position: relative; }
+  .langsel > summary { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; background: var(--bg-3); color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .02em; cursor: pointer; user-select: none; list-style: none; }
+  .langsel > summary::-webkit-details-marker { display: none; } .langsel > summary::marker { content: ''; }
+  .langsel > summary:hover { color: var(--ink); }
+  .langsel[open] > summary { color: var(--ink); background: var(--bg); box-shadow: 0 1px 3px rgba(15,18,34,.15); }
+  .langsel-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 172px; padding: 6px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 12px 32px rgba(15,18,34,.16); display: grid; gap: 2px; }
+  .langsel-pop a { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 9px; color: var(--ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+  .langsel-pop a b { min-width: 20px; font-size: .68rem; letter-spacing: .04em; color: var(--muted); }
+  .langsel-pop a:hover { background: var(--bg-3); color: var(--ink); text-decoration: none; }
+  .langsel-pop a[aria-current] { background: var(--ink); color: #fff; } .langsel-pop a[aria-current] b { color: rgba(255,255,255,.72); }
   .menu-btn { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; } .menu-btn span { display: block; width: 18px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease), opacity .2s; }
   .menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); } .menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; } .menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
   .menu { position: fixed; inset: 0; z-index: 19; } .menu-bg { position: absolute; inset: 0; background: rgba(15,18,34,.35); }
   .menu-sheet { position: absolute; left: var(--gutter); right: var(--gutter); top: calc(var(--hd) + var(--hd-gap) + 8px); border-radius: 22px; background: var(--bg); padding: 12px 20px 24px; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(15,18,34,.5); animation: sheet .25s var(--ease); }
   @keyframes sheet { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
   .menu-sheet > a:not(.btn) { padding: 14px 6px; font-size: 1.15rem; font-weight: 700; border-bottom: 1px solid var(--line-soft); } .menu-sheet .btn { margin-top: 14px; }
-  .menu-langs { display: flex; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }
-  @media (max-width: 860px) { :root { --hd: 56px; --hd-gap: 10px; } .top { grid-template-columns: auto 1fr; gap: 12px; } .top.scrolled::before { border-radius: 18px; left: calc(var(--gutter) - 10px); right: calc(var(--gutter) - 10px); } .nav { display: none; } .right { justify-self: end; } .langs { display: none; } .menu-btn { display: flex; width: 40px; height: 40px; } }
+  .menu-langs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }
+  @media (max-width: 860px) { :root { --hd: 56px; --hd-gap: 10px; } .top { grid-template-columns: auto 1fr; gap: 12px; } .top.scrolled::before { border-radius: 18px; left: calc(var(--gutter) - 10px); right: calc(var(--gutter) - 10px); } .nav { display: none; } .right { justify-self: end; } .langsel { display: none; } .menu-btn { display: flex; width: 40px; height: 40px; } }
   /* 영어·일본어는 낱말이 길어 1024px 아래에서는 좁혀도 한 줄에 안 선다 — 그 구간은 한국어만 나비, 나머지는 햄버거 */
   @media (max-width: 1023px) { html:not([lang="ko"]) .nav { display: none; } html:not([lang="ko"]) .menu-btn { display: flex; width: 40px; height: 40px; } }
   /* 나비가 보이는 폭에서는 열려 있던 메뉴를 강제로 닫는다 */
@@ -230,7 +247,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
      항목 글자가 두 줄로 접히지 않도록 이 구간만 조금씩 줄인다 */
   @media (min-width: 861px) and (max-width: 1280px) {
     .top { gap: 10px; } .nav a { padding: 9px 7px; font-size: .88rem; }
-    .acct { max-width: 96px; padding: 7px 9px; } .langs a { padding: 5px 6px; }
+    .acct { max-width: 96px; padding: 7px 9px; } .langsel > summary { padding: 6px 8px; }
   }
   html[data-play="on"] .top { display: none; } html[data-play="on"] { --top-h: 0px; }
   @media (max-width: 640px) { .top .play-btn { display: none; } }

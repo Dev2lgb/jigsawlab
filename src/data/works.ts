@@ -4,19 +4,20 @@ import { PAINTINGS } from '../lib/jigsaw';
 import { MUSEUM } from './paintings';
 import { TITLES } from './titles';
 import { TOTAL_WORKS } from './counts';
+import { multi, type Penta } from '../i18n/langs';
 import { ARTISTS } from './artists';
 import { CATEGORIES } from './catalog';
 import { POPULAR } from './popular';
 import aic from './aic.json';
 import extra from './extra.json';
 import base from './base.json';
-export interface Work { key: string; title: [string, string, string]; artist: [string, string, string]; year: string; cat: string; museum: [string, string, string]; w: number; h: number; medium?: string; credit?: string; source?: string; license?: string }
+export interface Work { key: string; title: Penta; artist: Penta; year: string; cat: string; museum: Penta; w: number; h: number; medium?: string; credit?: string; source?: string; license?: string }
 const BASE_CAT: Record<string, string> = { dano: 'korean', ssireum: 'korean', mudong: 'korean', redfuji: 'ukiyoe', shower: 'ukiyoe', wave: 'masters' };
 const baseDims = Object.fromEntries((base as { key: string; w: number; h: number }[]).map((b) => [b.key, b]));
-const BASE: Work[] = PAINTINGS.map((p) => ({ key: p.key, title: p.title, artist: p.artist, year: p.year, cat: BASE_CAT[p.key] ?? 'masters', museum: MUSEUM[p.key], w: baseDims[p.key]?.w ?? 1200, h: baseDims[p.key]?.h ?? 950 }));
-const AIC_MUSEUM: [string, string, string] = ['시카고 미술관', 'Art Institute of Chicago', 'シカゴ美術館'];
-const AIC: Work[] = (aic as any[]).map((a) => { const t = TITLES[a.key], ar = ARTISTS[a.artist] ?? [a.artist, a.artist]; return { key: a.key, title: [t?.[0] ?? a.title, a.title, t?.[1] ?? a.title], artist: [ar[0], a.artist, ar[1]], year: String(a.date ?? a.year ?? ''), cat: a.cat, museum: AIC_MUSEUM, w: a.w, h: a.h, medium: a.medium, credit: a.credit, source: `https://www.artic.edu/artworks/${a.id}` }; });
-const EXTRA: Work[] = (extra as any[]).map((a) => { const t = TITLES[a.key], ar = ARTISTS[a.artist] ?? [a.artist, a.artist]; return { key: a.key, title: [t?.[0] ?? a.title, a.title, t?.[1] ?? a.title], artist: [ar[0], a.artist, ar[1]], year: String(a.date ?? a.year ?? ''), cat: a.cat, museum: a.museum, w: a.w, h: a.h, medium: a.medium, credit: a.credit || undefined, source: a.source, license: a.license }; });
+const BASE: Work[] = PAINTINGS.map((p) => ({ key: p.key, title: p.title, artist: p.artist, year: p.year, cat: BASE_CAT[p.key] ?? 'masters', museum: multi(MUSEUM[p.key]), w: baseDims[p.key]?.w ?? 1200, h: baseDims[p.key]?.h ?? 950 }));
+const AIC_MUSEUM: Penta = multi(['시카고 미술관', 'Art Institute of Chicago', 'シカゴ美術館']);
+const AIC: Work[] = (aic as any[]).map((a) => { const t = TITLES[a.key], ar = ARTISTS[a.artist] ?? [a.artist, a.artist]; return { key: a.key, title: multi([t?.[0] ?? a.title, a.title, t?.[1] ?? a.title]), artist: multi([ar[0], a.artist, ar[1]]), year: String(a.date ?? a.year ?? ''), cat: a.cat, museum: AIC_MUSEUM, w: a.w, h: a.h, medium: a.medium, credit: a.credit, source: `https://www.artic.edu/artworks/${a.id}` }; });
+const EXTRA: Work[] = (extra as any[]).map((a) => { const t = TITLES[a.key], ar = ARTISTS[a.artist] ?? [a.artist, a.artist]; return { key: a.key, title: multi([t?.[0] ?? a.title, a.title, t?.[1] ?? a.title]), artist: multi([ar[0], a.artist, ar[1]]), year: String(a.date ?? a.year ?? ''), cat: a.cat, museum: multi(a.museum), w: a.w, h: a.h, medium: a.medium, credit: a.credit || undefined, source: a.source, license: a.license }; });
 export const WORKS: Work[] = [...BASE, ...AIC, ...EXTRA];
 export const WORK_BY_KEY: Record<string, Work> = Object.fromEntries(WORKS.map((w) => [w.key, w]));
 if (WORKS.length !== TOTAL_WORKS) throw new Error(`works: 작품이 ${WORKS.length}점인데 counts.ts 에는 ${TOTAL_WORKS} 입니다 — counts.ts 를 맞추세요`);

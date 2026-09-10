@@ -107,7 +107,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
     const $ = (id: string) => document.getElementById(id)!;
     const fill = (s: string, n: number) => s.replace('{n}', String(n));
     const LI = LIDX[docLang()];
-    fetch('/api/live', { headers: { accept: 'application/json' } })
+    fetch('/api/live', { cache: 'no-store', headers: { accept: 'application/json' } })
       .then((r) => (r.ok ? r.json<any>() : null))
       .then((d) => {
         if (!d || !d.total) throw 0;

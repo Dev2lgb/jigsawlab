@@ -222,7 +222,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   })();
   fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
   // 상설 공개 판 — 지금 어떤 그림을 몇 %까지 맞췄는지. 못 받으면 띠를 숨긴 채로 둔다
-  fetch('/api/live', { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json<any>() : null)).then((d) => {
+  fetch('/api/live', { cache: 'no-store', headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json<any>() : null)).then((d) => {
     if (!d || !d.total || !d.work) return;
     const g = (id: string) => document.getElementById(id)!;
     const pct = Math.min(100, Math.floor((d.locked / d.total) * 100));

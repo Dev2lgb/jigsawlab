@@ -211,8 +211,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { openLogin, askNick } from '../lib/authui';
   import { setNickRemote } from '../lib/account';
   import { randomNick } from '../lib/nickgen';
-  import { UI } from '../i18n/ui';
-  const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
+  import { docLang, LI as LIDX, UI } from '../i18n/ui';
+  const LANG = docLang(), LI = LIDX[LANG];
   const T = JIGSAW[LANG], U = UI[LANG].play, L = UI[LANG].live, V = UI[LANG].lv; const scenes = initScenes();
   const PFX = LANG === 'ko' ? '' : `/${LANG}`;
   // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다

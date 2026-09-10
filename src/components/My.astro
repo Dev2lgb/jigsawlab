@@ -87,8 +87,8 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     import { BADGES, levelProgress, tierOf } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
-    import { LANGS, LI as LIDX, UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (LANGS.includes(hl as Lang) ? hl : 'ko') as Lang, LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
+    import { docLang, LI as LIDX, UI, type Lang } from '../i18n/ui';
+    const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, string[]>;
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;

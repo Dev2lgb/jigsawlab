@@ -10,6 +10,12 @@ export const prefix = (l: Lang) => (l === 'ko' ? '' : `/${l}`);
 export const langOf = (pathname: string): Lang => LANGS.find((l) => l !== 'ko' && (pathname === prefix(l) || pathname.startsWith(prefix(l) + '/'))) ?? 'ko';
 /** hreflang 용 언어별 주소. rel 은 ko 기준 경로('/play/') */
 export const altsFor = (rel: string): Record<Lang, string> => Object.fromEntries(LANGS.map((l) => [l, prefix(l) + rel])) as Record<Lang, string>;
+/** 주소에서 언어 접두어를 뗀 ko 기준 경로. 언어 전환 링크가 /ja/de/ 처럼 겹치는 것을 막는다 */
+export const stripLang = (pathname: string): string => pathname.slice(prefix(langOf(pathname)).length) || '/';
+/** 브라우저에서 <html lang> 으로 현재 언어를 읽는다. 목록에 없으면 ko.
+ *  클라이언트 스크립트는 반드시 이걸 써야 한다 — 손으로 'en' | 'ja' 를 나열하면 언어가 늘 때 조용히 ko 로 떨어진다 */
+export const docLang = (): Lang => { const l = document.documentElement.lang as Lang; return LANGS.includes(l) ? l : 'ko'; };
+
 /** OG 용 로케일 */
 export const OG_LOCALE: Record<Lang, string> = { ko: 'ko_KR', en: 'en_US', ja: 'ja_JP', de: 'de_DE', es: 'es_ES' };
 

@@ -83,8 +83,8 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
   <script>
     import { fetchRank, authAvailable, type RankInfo } from '../lib/account';
     import { openLogin } from '../lib/authui';
-    import { UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, V = UI[LANG].lv;
+    import { docLang, UI, type Lang } from '../i18n/ui';
+    const LANG = docLang(), V = UI[LANG].lv;
     const $ = (id: string) => document.getElementById(id)!;
     const list = $('rk-list'), meBox = $('rk-me');
     let tab: 'week' | 'all' = 'week';

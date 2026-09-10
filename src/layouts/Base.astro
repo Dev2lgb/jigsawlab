@@ -13,7 +13,8 @@ const nav = [
   { href: `${P}/together/`, label: T.nav.together },
   { href: `${P}/photo/`, label: T.nav.photo },
   { href: `${P}/my/`, label: T.nav.my },
-  { href: `${P}/about/`, label: T.nav.about },
+  // 소개는 메뉴·바닥글에만. 나비는 다섯 항목이 한계라(언어마다 낱말 길이가 달라 여섯이면 글자가 두 줄로 접힌다)
+  { href: `${P}/about/`, label: T.nav.about, sheetOnly: true },
 ];
 // Cloudflare Web Analytics — 쿠키 없이 방문 수만 센다. 대시보드 Web Analytics 에서 사이트 추가 후 나온 토큰을 여기에
 const CF_BEACON = '34fd6584be234e4b8b1e580413d95d1f';
@@ -57,7 +58,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
 <body>
   <header class="top" id="top">
     <a class="mark" href={`${P}/`} aria-label="jigsawlab">jigsawlab</a>
-    <nav class="nav" aria-label="main">{nav.map((n) => <a href={n.href}>{n.label}</a>)}</nav>
+    <nav class="nav" aria-label="main">{nav.filter((n) => !n.sheetOnly).map((n) => <a href={n.href}>{n.label}</a>)}</nav>
     <div class="right">
       <div class="langs" role="group" aria-label="language">{LANGS.map((l) => <a href={`${prefix(l)}${langPath}`} aria-current={l === lang ? 'page' : undefined} lang={l} data-lang={l}>{l.toUpperCase()}</a>)}</div>
       <a class="acct" id="acct" href={`${P}/my/`} data-login={T.acct.login} data-fail={T.acct.fail} data-nick-ask={T.play.nickAsk} data-noauth="1"><Fragment set:html={icon('user', 16)} /><span id="acct-nick">{T.acct.login}</span></a>
@@ -178,7 +179,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .top.scrolled::before { left: calc(max(var(--gutter), (100% - var(--max)) / 2) - 18px); right: calc(max(var(--gutter), (100% - var(--max)) / 2) - 18px); top: var(--hd-gap); border-radius: 22px; background: rgba(255,255,255,.82); border-color: rgba(255,255,255,.9); box-shadow: 0 18px 40px -20px rgba(15,18,34,.4), 0 1px 2px rgba(15,18,34,.08); }
   #main > :first-child { margin-top: calc((var(--hd) + var(--hd-gap)) * -1); padding-top: calc(var(--hd) + var(--hd-gap) + clamp(20px, 3vw, 40px)); }
   .mark { display: inline-flex; align-items: center; color: var(--ink); font-family: var(--brand); font-weight: 800; font-size: 1.45rem; letter-spacing: -0.02em; line-height: 1; } .mark:hover { text-decoration: none; }
-  .nav { display: flex; gap: 2px; justify-self: center; } .nav a { color: var(--ink-2); font-weight: 600; font-size: .95rem; padding: 9px 14px; border-radius: 999px; transition: background .15s, color .15s; } .nav a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
+  .nav { display: flex; gap: 2px; justify-self: center; } .nav a { color: var(--ink-2); font-weight: 600; font-size: .95rem; white-space: nowrap; padding: 9px 14px; border-radius: 999px; transition: background .15s, color .15s; } .nav a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
   .right { display: flex; align-items: center; gap: 10px; }
   .acct { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); font-weight: 700; font-size: .85rem; max-width: 160px; } .acct span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct:hover { background: var(--bg-3); text-decoration: none; } .acct[data-noauth="1"] { display: none; }
   @media (max-width: 860px) { .acct { width: 36px; height: 36px; padding: 0; justify-content: center; } .acct span { display: none; } }
@@ -191,7 +192,17 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .menu-sheet > a:not(.btn) { padding: 14px 6px; font-size: 1.15rem; font-weight: 700; border-bottom: 1px solid var(--line-soft); } .menu-sheet .btn { margin-top: 14px; }
   .menu-langs { display: flex; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }
   @media (max-width: 860px) { :root { --hd: 56px; --hd-gap: 10px; } .top { grid-template-columns: auto 1fr; gap: 12px; } .top.scrolled::before { border-radius: 18px; left: calc(var(--gutter) - 10px); right: calc(var(--gutter) - 10px); } .nav { display: none; } .right { justify-self: end; } .langs { display: none; } .menu-btn { display: flex; width: 40px; height: 40px; } }
-  @media (min-width: 861px) { .menu { display: none !important; } }
+  /* 영어·일본어는 낱말이 길어 1024px 아래에서는 좁혀도 한 줄에 안 선다 — 그 구간은 한국어만 나비, 나머지는 햄버거 */
+  @media (max-width: 1023px) { html:not([lang="ko"]) .nav { display: none; } html:not([lang="ko"]) .menu-btn { display: flex; width: 40px; height: 40px; } }
+  /* 나비가 보이는 폭에서는 열려 있던 메뉴를 강제로 닫는다 */
+  @media (min-width: 861px) { html[lang="ko"] .menu { display: none !important; } }
+  @media (min-width: 1024px) { .menu { display: none !important; } }
+  /* 861~1280px: 나비·언어칸·로그인 버튼이 한 줄에 다 서기 빠듯한 구간(닉네임이 길면 더 빠듯하다).
+     항목 글자가 두 줄로 접히지 않도록 이 구간만 조금씩 줄인다 */
+  @media (min-width: 861px) and (max-width: 1280px) {
+    .top { gap: 10px; } .nav a { padding: 9px 7px; font-size: .88rem; }
+    .acct { max-width: 96px; padding: 7px 9px; } .langs a { padding: 5px 6px; }
+  }
   html[data-play="on"] .top { display: none; } html[data-play="on"] { --top-h: 0px; }
   @media (max-width: 640px) { .top .play-btn { display: none; } }
   #main { flex: 1; display: flex; flex-direction: column; }

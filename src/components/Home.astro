@@ -157,7 +157,8 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .shelf-all { margin-top: 18px; }
   @media (max-width: 640px) { .shelf-grid { --w: clamp(112px, 35vw, 172px); --h: calc(var(--w) * .9); --d: 28px; } }
 
-  /* 레벨·업적·이번 주 랭킹 */
+  /* 레벨·업적·이번 주 랭킹 — .sec 은 위 여백만 있어서 바로 아래 마퀴와 붙는다 */
+  .lvl-sec { padding-bottom: clamp(56px, 7vw, 96px); }
   .lvl-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: clamp(28px, 5vw, 64px); align-items: center; }
   .lvl-txt .sec-sub { max-width: 34em; }
   .lvl-pts { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 12px; }

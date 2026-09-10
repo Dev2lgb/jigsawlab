@@ -2,12 +2,16 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getUser, json } from '../../lib/auth';
+import { award } from '../../lib/award';
 import { EMPTY_STATS, kstDay, levelOf, weekOf, type Stats } from '../../lib/level';
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
   const u = await getUser(request); if (!u) return json({ user: null });
   const DB = env.DB, week = weekOf(kstDay(Date.now()));
+  // 레벨 기능 전부터 쓰던 회원 — user_stats 가 없으면 award 가 user_done 의 옛 기록을 접어 넣는다 (한 번만)
+  const has = await DB.prepare('SELECT 1 AS x FROM user_stats WHERE user_id = ?').bind(u.id).first<{ x: number }>();
+  if (!has) await award(DB, u.id, []).catch(() => null);
   const [s, b, w] = await Promise.all([
     DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(u.id).first<Stats & Record<string, unknown>>(),
     DB.prepare('SELECT code, at FROM user_badges WHERE user_id = ? ORDER BY at DESC').bind(u.id).all<{ code: string; at: number }>(),

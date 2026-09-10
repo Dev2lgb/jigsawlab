@@ -272,7 +272,9 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   /* 장면 (플레이 앱) */
   .scene { display: none; } .scene.active { display: block; }
   .scene.page { width: 100%; max-width: var(--max); margin: 0 auto; padding: 28px var(--gutter) 40px; }
-  .scene.play { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top-h); background: var(--board); z-index: 10; }
+  /* touch-action: manipulation — 아이폰에서 HUD·트레이 바를 더블탭하면 화면이 확대되던 것을 막는다(핀치 확대·스크롤은 그대로).
+     캔버스(none)·트레이(pan-x)는 더 좁은 값이라 그대로 유지된다 */
+  .scene.play { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top-h); background: var(--board); z-index: 10; touch-action: manipulation; }
 
   /* 부품 */
   .gdlg { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; } .gdlg-bg { position: absolute; inset: 0; background: rgba(15,18,34,.5); backdrop-filter: blur(2px); } html.dlg-open { overflow: hidden; }

@@ -16,7 +16,8 @@ export const DAY_CAP = 5000;      // 하루에 받을 수 있는 XP 상한
 export const MIN_SEC_PER_PIECE = 0.25; // 조각 하나에 이보다 빠르면 사람 손이 아니라고 보고 XP 도 지표도 안 준다 (기록 자체는 남는다)
 
 export type Kind = 'gallery' | 'daily' | 'photo' | 'live';
-export interface Solve { kind: Kind; key: string; n: number; sec: number; mine?: number; at: number; day?: string | null; room?: boolean }
+// paid = 조각을 놓는 동안 이미 준 XP 의 조각 수. 완성 정산에서 그만큼 빼야 두 번 주지 않는다
+export interface Solve { kind: Kind; key: string; n: number; sec: number; mine?: number; paid?: number; at: number; day?: string | null; room?: boolean }
 
 /** 사람이 손으로 놓은 것으로 볼 수 있는 기록인지 */
 export const plausible = (s: Solve, mine: number) => s.kind === 'live' || !(s.sec > 0) || s.sec >= mine * MIN_SEC_PER_PIECE;
@@ -27,7 +28,8 @@ export function xpFor(s: Solve, prevN: number | null): number {
   const mine = s.mine === undefined ? n : Math.max(0, Math.min(n, Math.round(s.mine)));
   // 기준은 판 전체가 아니라 내가 놓은 조각 — 방에 늦게 들어와 몇 조각만 놓고 끝난 판도 정상이다
   if (!plausible(s, mine)) return 0;
-  let xp = mine * XP_PER_PIECE;
+  const paid = Math.max(0, Math.min(mine, Math.round(s.paid ?? 0)));
+  let xp = (mine - paid) * XP_PER_PIECE;
   if (s.kind === 'daily') xp *= DAILY_BONUS;
   if (prevN !== null && n <= prevN) xp *= REPEAT_RATE;
   return Math.round(xp);

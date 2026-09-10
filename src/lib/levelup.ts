@@ -3,7 +3,7 @@
 import { BADGE_BY_CODE, tierOf } from './level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
 import { UI, type Lang } from '../i18n/ui';
-import { confetti, fanfare } from './celebrate';
+import { badge as badgeSound, confetti, levelUp as levelUpSound } from './celebrate';
 import type { Award } from './account';
 
 const IX = { ko: 0, en: 1, ja: 2 } as const;
@@ -46,7 +46,7 @@ export function showAwardDialog(a: Award): boolean {
   nb.hidden = !a.badges.length || !a.levelUp; // 업적만 있을 때는 제목이 이미 '업적 달성!' 이라 소제목이 없어도 된다
   a.badges.forEach((code, i) => {
     const def = BADGE_BY_CODE[code], t = BADGE_TEXT[code]; if (!def || !t) return;
-    const el = document.createElement('li'); el.style.animationDelay = `${0.12 + i * 0.09}s`;
+    const el = document.createElement('li'); el.style.animationDelay = `${(a.levelUp ? 0.62 : 0.12) + Math.min(i, 6) * 0.23}s`;
     const ic = document.createElement('span'); ic.className = 'i'; ic.textContent = def.icon;
     const tx = document.createElement('div');
     const nm = document.createElement('b'); nm.textContent = t.n[li];
@@ -65,8 +65,9 @@ export function showAwardDialog(a: Award): boolean {
   d.hidden = false;
   document.documentElement.classList.add('dlg-open');
   ($('aw-ok') as HTMLButtonElement | null)?.focus({ preventScroll: true });
-  // 판을 다 맞췄을 때와 같은 색종이·팡파르 (완성 직후면 팡파르는 겹치지 않게 저절로 넘어간다)
-  fanfare();
+  // 색종이는 판을 다 맞췄을 때와 같은 것. 소리는 셋을 갈라 뒀다 — 완성 팡파르 / 레벨업 / 업적
+  if (a.levelUp) levelUpSound();
+  a.badges.slice(0, 5).forEach((_, i) => setTimeout(badgeSound, (a.levelUp ? 620 : 120) + Math.min(i, 6) * 230));
   const fx = $('aw-fx') as HTMLCanvasElement | null;
   if (fx) { const r = d.getBoundingClientRect(); confetti(fx, r.width, r.height, () => {}, 110); }
   return true;

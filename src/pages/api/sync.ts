@@ -1,11 +1,16 @@
-// 로그인 회원의 업적(완성 기록)·하던 퍼즐 동기화
-// GET → { done: [...], saves: [meta...] } / GET ?save=<id> → { data } / POST {action:'done'|'save'|'delsave'|'merge'}
+// 로그인 회원의 업적(완성 기록)·하던 퍼즐 동기화 + 레벨/XP 반영
+// GET → { done: [...], saves: [meta...] } / GET ?save=<id> → { data } / POST {action:'done'|'save'|'delsave'|'merge'|'live'}
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getUser, json } from '../../lib/auth';
+import { award } from '../../lib/award';
+import type { Solve } from '../../lib/level';
 export const prerender = false;
 const MAX_DONE = 500, MAX_SAVES = 30, MAX_SAVE_BYTES = 600_000;
-const doneRow = (e: any) => { const kind = ['gallery', 'daily', 'photo'].includes(e?.kind) ? e.kind : null; const at = Number(e?.at), n = Number(e?.n), sec = Number(e?.sec), moves = Number(e?.moves); if (!kind || !Number.isFinite(at) || !Number.isInteger(n) || !Number.isFinite(sec)) return null; return { at: Math.round(at), key: String(e.key ?? '').slice(0, 80), kind, name: String(e.name ?? '').slice(0, 200), n, sec: Math.round(sec), moves: Number.isFinite(moves) ? Math.round(moves) : 0, day: e.day ? String(e.day).slice(0, 10) : null }; };
+// room·mine 은 XP 계산에만 쓰고 저장하지 않는다 (방에서 맞춘 판은 내가 놓은 조각만큼만 XP)
+const doneRow = (e: any) => { const kind = ['gallery', 'daily', 'photo'].includes(e?.kind) ? e.kind : null; const at = Number(e?.at), n = Number(e?.n), sec = Number(e?.sec), moves = Number(e?.moves), mine = Number(e?.mine); if (!kind || !Number.isFinite(at) || !Number.isInteger(n) || !Number.isFinite(sec)) return null; return { at: Math.round(at), key: String(e.key ?? '').slice(0, 80), kind, name: String(e.name ?? '').slice(0, 200), n, sec: Math.round(sec), moves: Number.isFinite(moves) ? Math.round(moves) : 0, day: e.day ? String(e.day).slice(0, 10) : null, room: !!e.room, mine: Number.isFinite(mine) ? Math.round(mine) : undefined }; };
+type Done = NonNullable<ReturnType<typeof doneRow>>;
+const toSolve = (r: Done): Solve => ({ kind: r.kind as Solve['kind'], key: r.key, n: r.n, sec: r.sec, at: r.at, day: r.day, room: r.room, mine: r.mine });
 const saveMeta = (d: any) => ({ id: String(d.id), kind: d.kind, key: String(d.key), name: String(d.name ?? '').slice(0, 200), day: d.day ?? undefined, total: Number(d.total), done: Number(d.done), elapsed: Number(d.elapsed), savedAt: Number(d.savedAt), thumb: String(d.thumb ?? '').slice(0, 40_000) });
 
 export const GET: APIRoute = async ({ request }) => {
@@ -24,10 +29,22 @@ export const POST: APIRoute = async ({ request }) => {
   const a = String(b.action);
   if (a === 'done' || a === 'merge') {
     // merge: 로그인 직후 이 기기의 localStorage 기록을 한 번에 올림 (같은 at 이면 무시)
-    const rows = ((a === 'done' ? [b.entry] : (Array.isArray(b.entries) ? b.entries : [])) as any[]).map(doneRow).filter((x): x is NonNullable<ReturnType<typeof doneRow>> => !!x).slice(0, MAX_DONE);
-    if (rows.length) await DB.batch(rows.map((r: NonNullable<ReturnType<typeof doneRow>>) => DB.prepare('INSERT OR IGNORE INTO user_done (user_id, at, key, kind, name, n, sec, moves, day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(u.id, r.at, r.key, r.kind, r.name, r.n, r.sec, r.moves, r.day)));
-    await DB.prepare('DELETE FROM user_done WHERE user_id = ? AND at NOT IN (SELECT at FROM user_done WHERE user_id = ? ORDER BY at DESC LIMIT ?)').bind(u.id, u.id, MAX_DONE).run();
-    return json({ ok: true, n: rows.length });
+    const rows = ((a === 'done' ? [b.entry] : (Array.isArray(b.entries) ? b.entries : [])) as any[]).map(doneRow).filter((x): x is Done => !!x).slice(0, MAX_DONE);
+    let earned = null;
+    if (rows.length) {
+      const res = await DB.batch(rows.map((r) => DB.prepare('INSERT OR IGNORE INTO user_done (user_id, at, key, kind, name, n, sec, moves, day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(u.id, r.at, r.key, r.kind, r.name, r.n, r.sec, r.moves, r.day)));
+      // 실제로 새로 들어간 행만 XP 로 친다 — 같은 기록을 기기 여러 대에서 올려도 한 번만
+      earned = await award(DB, u.id, rows.filter((_, i) => res[i]?.meta?.changes !== 0).map(toSolve));
+      await DB.prepare('DELETE FROM user_done WHERE user_id = ? AND at NOT IN (SELECT at FROM user_done WHERE user_id = ? ORDER BY at DESC LIMIT ?)').bind(u.id, u.id, MAX_DONE).run();
+    }
+    return json({ ok: true, n: rows.length, award: earned });
+  }
+  if (a === 'live') {
+    // 모두의 퍼즐 한 회차가 끝났을 때 내가 놓은 조각만큼. 완성 기록 목록에는 안 들어간다
+    const n = Number(b.n), mine = Number(b.mine);
+    if (!Number.isFinite(n) || !Number.isFinite(mine) || mine <= 0) return json({ error: 'data' }, 400);
+    const earned = await award(DB, u.id, [{ kind: 'live', key: String(b.key ?? '').slice(0, 80), n: Math.round(n), mine: Math.round(mine), sec: 0, at: Date.now() }]);
+    return json({ ok: true, award: earned });
   }
   if (a === 'save') {
     const d = b.data; if (!d || typeof d.id !== 'string' || d.kind === 'photo') return json({ error: 'data' }, 400);

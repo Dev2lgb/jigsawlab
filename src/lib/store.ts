@@ -21,6 +21,6 @@ export const getStreak = () => { try { return (JSON.parse(ls.get('daily:streak')
 
 
 /** 완성한 퍼즐 목록 (최근 200개) */
-export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number }
+export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number; room?: boolean; mine?: number }
 export const getDone = (): DoneEntry[] => { try { return JSON.parse(ls.get('done:list') ?? '[]'); } catch { return []; } };
 export const addDone = (e: DoneEntry) => { const l = getDone(); l.unshift(e); ls.set('done:list', JSON.stringify(l.slice(0, 200))); };

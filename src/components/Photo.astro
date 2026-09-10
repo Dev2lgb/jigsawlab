@@ -38,6 +38,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
           <div class="prev"><img id="ph-thumb" alt="" /><div><b>{J.myPhoto}</b><span class="grid-lbl" id="ph-grid">…</span></div></div>
           <p class="lbl">{J.pieces}</p>
           <div class="pieces" id="ph-pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === DEFAULT_N }]}>{n}</button>)}<input class="input custom" id="ph-custom" type="number" min="6" max="2000" placeholder={J.custom} /></div>
+          <p class="xp-row"><a class="xp-tip" id="ph-xp" href={`${P}/rank/`} data-tpl={T.lv.earn('{n}')}></a></p>
           <div class="go"><button type="button" class="btn primary lg" id="ph-start" data-n={DEFAULT_N}>{J.start}</button><button type="button" class="btn lg" id="ph-together"><Fragment set:html={icon('users', 18)} /> {T.play.together}</button></div>
           <p class="muted together-sub">{T.play.togetherSub}</p>
           <button type="button" class="btn ghost sm" id="ph-reset">{F.another}</button>
@@ -83,6 +84,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     .pieces button { padding: 11px 0; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; transition: border-color .15s var(--ease), background .15s var(--ease); }
     .pieces button:hover { border-color: var(--ink); } .pieces button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
     .pieces .custom { grid-column: span 2; text-align: center; }
+    .xp-row { margin: 12px 0 0; }
+    :global(html:not(.member)) .xp-row { display: none; }
     .go { display: flex; gap: 8px; margin-top: 18px; } .go .btn { flex: 1; } .go .btn :global(svg) { flex: none; }
     .together-sub { margin: 10px 2px 0; font-size: .85rem; }
     #ph-reset { margin-top: 12px; width: 100%; }
@@ -112,7 +115,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     const bail = () => { toast(failMsg); startBtn.disabled = false; drop.hidden = false; picked.hidden = true; };
 
     let chosen: File | null = null, aspect = 1, wantN = Number(startBtn.dataset.n);
-    const showGrid = () => { const g = gridFor(wantN, aspect); grid.textContent = tpl.replace('{c}', String(g.cols)).replace('{r}', String(g.rows)).replace('{n}', String(g.cols * g.rows)); };
+    // 내 사진은 배수가 없어 조각 수가 곧 XP
+    const xpTip = $('ph-xp'), xpTpl = xpTip.dataset.tpl!;
+    const showGrid = () => { const g = gridFor(wantN, aspect), n = g.cols * g.rows; grid.textContent = tpl.replace('{c}', String(g.cols)).replace('{r}', String(g.rows)).replace('{n}', String(n)); xpTip.textContent = xpTpl.replace('{n}', n.toLocaleString()); };
 
     async function pick(f: File) {
       if (!f.type.startsWith('image/') || !hasIDB()) return bail();

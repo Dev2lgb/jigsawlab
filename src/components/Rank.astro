@@ -1,0 +1,147 @@
+---
+// 랭킹(/rank/) — 이번 주 XP · 전체 누적 XP 두 탭. 읽기는 누구나, 등재는 구글 로그인 회원만.
+// 표는 클라이언트가 /api/rank 로 받아 그리고, XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인되게 둔다
+import Base from '../layouts/Base.astro';
+import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { BADGES, TIERS, xpAtLevel } from '../lib/level';
+import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
+---
+<Base title={V.seoTitle} desc={V.seoDesc} lang={lang} alts={{ ko: '/rank/', en: '/en/rank/', ja: '/ja/rank/' }} path={`${P}/rank/`}>
+  <div class="wrap rk">
+    <header class="rk-head">
+      <h1>{V.h1}</h1>
+      <p class="lead">{V.lead}</p>
+    </header>
+
+    <div class="rk-tabs" role="tablist">
+      <button type="button" class="rk-tab on" id="tab-week" role="tab" aria-selected="true">{V.tabWeek}</button>
+      <button type="button" class="rk-tab" id="tab-all" role="tab" aria-selected="false">{V.tabAll}</button>
+      <small class="rk-week" id="rk-week"></small>
+    </div>
+
+    <section class="rk-me" id="rk-me" hidden></section>
+
+    <ol class="lb rk-list" id="rk-list"><li class="empty">{V.loading}</li></ol>
+
+    <section class="rk-blk">
+      <h2>{V.rulesTitle}</h2>
+      <ul class="rk-rules">{V.rules.map((r) => <li>{r}</li>)}</ul>
+    </section>
+
+    <section class="rk-blk">
+      <h2>{V.tiersTitle}</h2>
+      <p class="muted rk-sub">{V.tiersLead}</p>
+      <div class="tiers">{TIERS.map((l, i) => <div class="tier"><b>{TIER_NAMES[i][li]}</b><small>{V.fromLv(l)}</small><span>{V.xp(xpAtLevel(l))}</span></div>)}</div>
+    </section>
+
+    <section class="rk-blk">
+      <h2>{V.badgesTitle}</h2>
+      <p class="muted rk-sub">{V.badgesLead(BADGES.length)}</p>
+      <div class="bdg-grid">{BADGES.map((b) => <div class="bdg"><span class="bdg-i">{b.icon}</span><div><b>{BADGE_TEXT[b.code].n[li]}</b><small>{BADGE_TEXT[b.code].d[li]}</small></div></div>)}</div>
+      <p class="rk-more"><a class="btn" href={`${P}/my/`}>{T.nav.my} →</a></p>
+    </section>
+  </div>
+
+  <style>
+    .rk { padding-top: clamp(24px, 4vw, 48px); padding-bottom: clamp(40px, 6vw, 80px); max-width: 880px; }
+    .rk-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; margin: 0; }
+    .rk-head .lead { margin: 10px 0 0; color: var(--ink-2); font-size: 1.05rem; max-width: 40em; }
+    .rk-tabs { display: flex; align-items: center; gap: 8px; margin: 26px 0 14px; flex-wrap: wrap; }
+    .rk-tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink-2); font-weight: 700; font-size: .92rem; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+    .rk-tab:hover { border-color: var(--ink-2); } .rk-tab.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .rk-week { margin-left: auto; color: var(--muted); font-size: .82rem; font-weight: 600; }
+    /* 내 기록 · 표 — 안쪽은 스크립트가 만드므로 :global (스코프 속성이 안 붙는다) */
+    .rk-me { margin: 0 0 16px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+    .rk-me :global(.me-row) { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .rk-me :global(.me-r) { font-family: var(--head); font-size: 1.6rem; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; flex: none; }
+    .rk-me :global(.me-n) { font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rk-me :global(.me-x) { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .rk-me :global(p) { margin: 0; color: var(--ink-2); font-size: .92rem; line-height: 1.6; }
+    .rk-me :global(.btn) { flex: none; }
+    .rk-list { margin: 0; }
+    .rk :global(.lv-chip) { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft, var(--bg-3)); color: var(--accent); font-size: .74rem; font-weight: 800; letter-spacing: .01em; flex: none; }
+    .rk-list :global(.b-n) { color: var(--muted); font-size: .78rem; font-weight: 600; margin-left: 8px; }
+    .rk-list :global(li.you) { background: var(--accent-soft, var(--bg-3)); border-radius: 10px; padding-inline: 10px; }
+    /* 설명 블록 */
+    .rk-blk { padding-top: clamp(30px, 5vw, 52px); } .rk-blk h2 { font-size: 1.3rem; margin: 0 0 10px; } .rk-sub { margin: 0 0 16px; font-size: .92rem; }
+    .rk-rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .rk-rules li { position: relative; padding-left: 20px; color: var(--ink-2); line-height: 1.6; }
+    .rk-rules li::before { content: ''; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; background: var(--accent); border-radius: 2px; }
+    .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .tier { padding: 14px; border-radius: var(--r-sm); background: var(--bg-2); display: flex; flex-direction: column; gap: 3px; }
+    .tier b { font-size: 1rem; letter-spacing: -.02em; } .tier small { color: var(--accent); font-weight: 700; font-size: .8rem; } .tier span { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+    .bdg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+    .bdg { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: var(--bg-2); }
+    .bdg-i { font-size: 1.5rem; line-height: 1.2; flex: none; }
+    .bdg b { display: block; font-size: .94rem; } .bdg small { display: block; color: var(--muted); font-size: .8rem; line-height: 1.5; margin-top: 2px; }
+    .rk-more { margin: 20px 0 0; }
+    @media (max-width: 560px) { .rk-me .btn { width: 100%; } }
+  </style>
+
+  <script>
+    import { fetchRank, authAvailable, type RankInfo } from '../lib/account';
+    import { openLogin } from '../lib/authui';
+    import { UI, type Lang } from '../i18n/ui';
+    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, V = UI[LANG].lv;
+    const $ = (id: string) => document.getElementById(id)!;
+    const list = $('rk-list'), meBox = $('rk-me');
+    let tab: 'week' | 'all' = 'week';
+    const cache: Partial<Record<'week' | 'all', RankInfo>> = {};
+
+    const el = (tag: string, cls?: string, text?: string) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+    function row(r: { r: number; nick: string; xp: number; level: number; badges: number }, you: boolean) {
+      const li = el('li', you ? 'you' : '');
+      li.appendChild(el('span', 'rank', String(r.r)));
+      const nick = el('span', 'nick', r.nick);
+      if (r.badges > 0) { const b = el('span', 'b-n', `🏅 ${r.badges}`); nick.appendChild(b); }
+      li.appendChild(nick);
+      li.appendChild(el('span', 'lv-chip', V.lvl(r.level)));
+      li.appendChild(el('span', 'score', V.xp(r.xp)));
+      return li;
+    }
+    function renderMe(d: RankInfo) {
+      meBox.innerHTML = '';
+      if (!d.me) {
+        if (!authAvailable()) { meBox.hidden = true; return; }
+        const p = el('p', undefined, V.loginLead); const row = el('div', 'me-row');
+        const b = el('button', 'btn primary', V.loginBtn) as HTMLButtonElement; b.type = 'button'; b.addEventListener('click', () => openLogin());
+        meBox.appendChild(p); row.appendChild(b); meBox.appendChild(row); meBox.hidden = false; return;
+      }
+      const r = el('div', 'me-row');
+      r.appendChild(el('span', 'me-r', d.me.rank ? V.nth(d.me.rank) : V.none));
+      r.appendChild(el('span', 'me-n', d.me.nick));
+      r.appendChild(el('span', 'lv-chip', V.lvl(d.me.level)));
+      r.appendChild(el('span', 'me-x', V.xp(d.me.xp)));
+      meBox.appendChild(r);
+      if (!d.me.rank) meBox.appendChild(el('p', undefined, V.meNone));
+      else if (!d.me.listed) meBox.appendChild(el('p', undefined, V.outOfTop));
+      meBox.hidden = false;
+    }
+    function render(d: RankInfo | null) {
+      list.innerHTML = '';
+      if (!d) { list.appendChild(el('li', 'empty', V.fail)); meBox.hidden = true; return; }
+      $('rk-week').textContent = d.tab === 'week' ? V.weekOf(d.week) : '';
+      renderMe(d);
+      if (!d.top.length) { list.appendChild(el('li', 'empty', d.tab === 'week' ? V.empty : V.emptyAll)); return; }
+      const mine = d.me?.nick;
+      for (const r of d.top) list.appendChild(row(r, !!mine && r.nick === mine && !!d.me?.listed && r.r === d.me.rank));
+    }
+    async function load() {
+      const want = tab;
+      if (cache[want]) return render(cache[want]!);
+      list.innerHTML = ''; list.appendChild(el('li', 'empty', V.loading));
+      const d = await fetchRank(want);
+      if (tab !== want) return; if (d) cache[want] = d; render(d);
+    }
+    for (const [id, t] of [['tab-week', 'week'], ['tab-all', 'all']] as const) {
+      $(id).addEventListener('click', () => {
+        if (tab === t) return; tab = t;
+        for (const x of ['tab-week', 'tab-all']) { const on = x === id; $(x).classList.toggle('on', on); $(x).setAttribute('aria-selected', String(on)); }
+        load();
+      });
+    }
+    load();
+  </script>
+</Base>

@@ -13,7 +13,8 @@ const nav = [
   { href: `${P}/together/`, label: T.nav.together },
   { href: `${P}/photo/`, label: T.nav.photo },
   { href: `${P}/my/`, label: T.nav.my },
-  // 소개는 메뉴·바닥글에만. 나비는 다섯 항목이 한계라(언어마다 낱말 길이가 달라 여섯이면 글자가 두 줄로 접힌다)
+  // 랭킹·소개는 메뉴·바닥글에만. 나비는 다섯 항목이 한계라(언어마다 낱말 길이가 달라 여섯이면 글자가 두 줄로 접힌다)
+  { href: `${P}/rank/`, label: T.nav.rank, sheetOnly: true },
   { href: `${P}/about/`, label: T.nav.about, sheetOnly: true },
 ];
 // Cloudflare Web Analytics — 쿠키 없이 방문 수만 센다. 대시보드 Web Analytics 에서 사이트 추가 후 나온 토큰을 여기에
@@ -106,6 +107,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
         <a href={`${P}/together/`}>{T.nav.together}</a>
         <a href={`${P}/photo/`}>{T.nav.photo}</a>
         <a href={`${P}/my/`}>{T.nav.my}</a>
+        <a href={`${P}/rank/`}>{T.nav.rank}</a>
         <a href={`${P}/about/`}>{T.nav.about}</a>
         <a href={`${P}/contact/`}>{T.foot.contact}</a>
         <a href={`${P}/terms/`}>{T.foot.terms}</a>
@@ -128,11 +130,14 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       const a = document.getElementById('acct') as HTMLAnchorElement, nk = document.getElementById('acct-nick')!;
       const h = location.hash.match(/^#login=(\w+)/); if (h) history.replaceState(null, '', location.pathname + location.search);
       const u = await me(!!h); a.dataset.noauth = authAvailable() ? '0' : '1';
+      // XP·레벨·업적은 회원만 쌓이므로 XP 안내(.xp-tip)도 회원에게만 보인다 — 화면마다 검사하지 않고 여기서 한 번에
+      document.documentElement.classList.toggle('member', !!u);
       if (u) { nk.textContent = u.nick || a.dataset.login!; }
       else { nk.textContent = a.dataset.login!; a.href = '#'; a.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }); }
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
       if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(document.documentElement.lang); if (n && (await setNickRemote(n))) nk.textContent = n; }
-      if (u) mergeLocalDone();
+      // 로그인 직후 이 기기 기록을 합치면 그동안의 판이 한꺼번에 XP 가 된다 — 로그인의 값어치라 그 자리에서 알려 준다
+      if (u) mergeLocalDone().then(async (a) => { if (!a || a.gained <= 0) return; const { toast } = await import('../lib/share'); const { UI } = await import('../i18n/ui'); const l = document.documentElement.lang; toast(UI[l === 'en' || l === 'ja' ? l : 'ko'].lv.merged(a.xp.toLocaleString(), a.level)); });
     });
     // 모바일 메뉴
     const mb = document.getElementById('menu-btn')!, menu = document.getElementById('menu')!;
@@ -249,6 +254,12 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .field label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
   .muted { color: var(--muted); }
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: .92rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); z-index: 50; box-shadow: 0 16px 40px -12px rgba(15,18,34,.5); } .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  /* XP 안내 알약 — 조각 수를 고르는 자리마다 받을 XP 를 보여 준다 (여러 컴포넌트가 쓰므로 전역) */
+  .xp-tip { display: none; }
+  html.member .xp-tip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--gold-soft); color: #8a5f00; font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; text-decoration: none; }
+  html.member .xp-tip::before { content: '⚡'; font-size: .95em; }
+  html.member .xp-tip:empty { display: none; }
+  html.member a.xp-tip:hover { text-decoration: none; box-shadow: inset 0 0 0 1px var(--gold); }
   .lb { list-style: none; margin: 0; padding: 0; } .lb li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); } .lb li:first-child { border-top: 0; } .lb li.empty { color: var(--muted); padding: 6px 0; }
   .lb .rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-3); color: var(--ink-2); font-weight: 800; font-size: .85rem; font-variant-numeric: tabular-nums; flex: none; } .lb li:nth-child(1) .rank { background: var(--gold); color: #fff; } .lb li:nth-child(2) .rank { background: #c9ced9; color: #fff; } .lb li:nth-child(3) .rank { background: #d8a880; color: #fff; }
   .lb .nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .lb .score { font-weight: 800; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 500; }

@@ -135,10 +135,10 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     import { todayKST, dailyPick, DAILY_PIECES } from '../lib/jigsaw';
     import { DAILY_POOL } from '../data/works';
     import { JIGSAW } from '../i18n/jigsaw';
-    import { UI } from '../i18n/ui';
+    import { docLang, LI, UI } from '../i18n/ui';
 
     const $ = (id: string) => document.getElementById(id);
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', li = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
+    const LANG = docLang(), li = LI[LANG];
     const P = LANG === 'ko' ? '' : `/${LANG}`;
     const U = UI[LANG], T = JIGSAW[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;

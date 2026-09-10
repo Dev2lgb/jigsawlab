@@ -102,10 +102,11 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
 
   <script>
     // 판 상태는 /api/live 에서 받는다 (서버가 방 정보에 그림 제목까지 얹어 준다). 못 받아도 카드와 CTA 는 그대로 두고 들여보낸다
+    import { docLang, LI as LIDX } from '../i18n/ui';
     const card = document.getElementById('lv-card')!;
     const $ = (id: string) => document.getElementById(id)!;
     const fill = (s: string, n: number) => s.replace('{n}', String(n));
-    const LI = ({ ko: 0, en: 1, ja: 2 } as Record<string, number>)[document.documentElement.lang] ?? 0;
+    const LI = LIDX[docLang()];
     fetch('/api/live', { headers: { accept: 'application/json' } })
       .then((r) => (r.ok ? r.json<any>() : null))
       .then((d) => {

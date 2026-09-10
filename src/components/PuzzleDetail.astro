@@ -82,8 +82,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     import { initFavUI } from '../lib/fav';
     initFavUI();
     import { getBest } from '../lib/store';
-    import { UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, T = UI[LANG];
+    import { docLang, UI, type Lang } from '../i18n/ui';
+    const LANG = docLang(), T = UI[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
     const fl = document.getElementById('fullload')!, flTxt = document.getElementById('fullload-txt')!;

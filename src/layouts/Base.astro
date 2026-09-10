@@ -1,7 +1,7 @@
 ---
 // 공통 틀 — 화면 전체 폭, Pretendard, 큰 라운드·부드러운 그림자, 스크롤 리빌, 3D 퍼즐 상자 공통 스타일
 import { icon } from '../lib/icons';
-import { OG_LOCALE, UI, LANGS, prefix, type Lang } from '../i18n/ui';
+import { OG_LOCALE, UI, LANGS, prefix, stripLang, type Lang } from '../i18n/ui';
 interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
 const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
 const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigsawlab.app');
@@ -19,7 +19,7 @@ const nav = [
 ];
 // Cloudflare Web Analytics — 쿠키 없이 방문 수만 센다. 대시보드 Web Analytics 에서 사이트 추가 후 나온 토큰을 여기에
 const CF_BEACON = '34fd6584be234e4b8b1e580413d95d1f';
-const langPath = Astro.url.pathname.replace(/^\/(en|ja)(?=\/|$)/, '') || '/';
+const langPath = stripLang(Astro.url.pathname);
 // 홈에만 구조화 데이터 — 한글 브랜드명(직소랩)을 alternateName 으로 알려 주고, 게임 앱이라는 것도 함께
 const isHome = path === '/' || path === '/en/' || path === '/ja/';
 const brand = { name: 'jigsawlab', ...(T.altName ? { alternateName: T.altName } : {}) };
@@ -139,7 +139,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   </footer>
   <script>
     import { initShelves } from '../lib/shelf';
-    import { LANGS } from '../i18n/langs'; // 언어 목록만 — i18n/ui 를 물면 언어팩 5개가 모든 페이지에 실린다
+    import { LANGS, docLang } from '../i18n/langs'; // 언어 목록·판별만 — i18n/ui 를 물면 언어팩 5개가 모든 페이지에 실린다
     initShelves(); // 가로 진열대: PC 화살표·드래그
     // 스크롤 리빌: [data-reveal] 요소가 화면에 들어오면 .in — 모션 최소화 설정이면 즉시 표시
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
@@ -157,14 +157,14 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       if (u) { nk.textContent = u.nick || a.dataset.login!; }
       else { nk.textContent = a.dataset.login!; a.href = '#'; a.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }); }
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
-      if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(document.documentElement.lang); if (n && (await setNickRemote(n))) nk.textContent = n; }
+      if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(docLang()); if (n && (await setNickRemote(n))) nk.textContent = n; }
       // 로그인 직후 이 기기 기록을 합치면 그동안의 판이 한꺼번에 XP 가 된다 — 로그인의 값어치라 그 자리에서 알려 준다
       if (u) mergeLocalDone().then(async (a) => {
         if (!a || a.gained <= 0) return;
         const { showAwardDialog } = await import('../lib/levelup');
         if (showAwardDialog(a)) return; // 레벨업·업적이 있으면 다이얼로그로 (합치면서 여러 단계 오르기도 한다)
-        const { toast } = await import('../lib/share'); const { UI } = await import('../i18n/ui'); const l = document.documentElement.lang;
-        toast(UI[l === 'en' || l === 'ja' ? l : 'ko'].lv.merged(a.xp.toLocaleString(), a.level));
+        const { toast } = await import('../lib/share'); const { UI, docLang } = await import('../i18n/ui');
+        toast(UI[docLang()].lv.merged(a.xp.toLocaleString(), a.level));
       });
     });
     // 모바일 메뉴

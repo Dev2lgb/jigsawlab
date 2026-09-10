@@ -1,0 +1,7 @@
+---
+import ShareCard from '../../../components/ShareCard.astro';
+import { parseShare } from '../../../lib/shareParams';
+export const prerender = false;
+if (!parseShare(Astro.url)) return Astro.redirect('/de/', 302);
+---
+<ShareCard lang="de" />

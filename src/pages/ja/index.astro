@@ -1,11 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Home from '../../components/Home.astro';
-import { UI } from '../../i18n/ui';
+import { altsFor, UI } from '../../i18n/ui';
 import { JIGSAW } from '../../i18n/jigsaw';
 import { WORKS } from '../../data/works';
 const T = UI.ja, t = JIGSAW.ja;
 ---
-<Base title={T.seoTitle} desc={T.seoDesc(WORKS.length)} lang="ja" alts={{ ko: '/', en: '/en/', ja: '/ja/' }} path="/ja/">
+<Base title={T.seoTitle} desc={T.seoDesc(WORKS.length)} lang="ja" alts={altsFor('/')} path="/ja/">
   <Home lang="ja" />
 </Base>

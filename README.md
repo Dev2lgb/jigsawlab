@@ -1,6 +1,6 @@
 # 🧩 jigsawlab — 사진 한 장이 직소 퍼즐이 되는 곳
 
-직소 퍼즐 전문 사이트. 내 사진(기기 안에서만 처리)·퍼블릭 도메인 명화·한국 회화·빈티지 사진·우주 사진 423점(15개 진열대)을 원하는 조각 수로 톱니 직소화. 작품마다 3개 국어 그림 이야기. 오늘의 퍼즐(지난 7일). 다 같이 맞추는 상설 공개 판(1000조각, 다 맞추면 다음 그림). 회원가입 없음. ko/en/ja.
+직소 퍼즐 전문 사이트. 내 사진(기기 안에서만 처리)·퍼블릭 도메인 명화·한국 회화·빈티지 사진·우주 사진 423점(15개 진열대)을 원하는 조각 수로 톱니 직소화. 작품마다 3개 국어 그림 이야기. 오늘의 퍼즐(지난 7일). 다 같이 맞추는 상설 공개 판(1000조각, 다 맞추면 다음 그림). 회원가입 없음. ko/en/ja/de/es.
 캔통(cantong.app)의 직소 앱을 떼어 별도 사이트로 키우는 프로젝트. 라이트 테마.
 
 ## 스택
@@ -42,7 +42,12 @@
 ## 구조
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`
 - `src/components/Home.astro` 랜딩(히어로·지난 오늘의 퍼즐·모두의 퍼즐 띠·레벨/업적/이번 주 랭킹·상자 진열대). 레벨 블록은 진열대(17개)보다 **앞**에 둔다 — 뒤에 두면 아무도 안 보고 지나간다, `Picker.astro` 고르는 화면(/play/), `Jigsaw.astro` 판(/board/: 플레이·완성·결과), `Photo.astro` 내 사진 랜딩(/photo/), `Together.astro` 공개 판 랜딩(/together/), `Rank.astro` 랭킹(/rank/: 주간·누적 두 탭 + XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인), `My.astro` 내 퍼즐(/my/: 레벨 카드·업적 그리드도 여기. 24가지를 다 펴면 하던 퍼즐이 밀려서 처음엔 첫 줄만 보이고 `.bdg-blk.open` 으로 펼친다), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
-- `src/i18n/jigsaw.ts` 3개 국어 문구 + SEO 본문, `src/i18n/ui.ts` 사이트 공통(`UI[lang].lv` 가 레벨·랭킹), `src/i18n/badges.ts` 업적·레벨 구간 이름
+- **언어는 5개(ko·en·ja·de·es).** 언어팩은 언어마다 파일 하나로 갈라 뒀다 — `src/i18n/ui/<lang>.ts` 사이트 공통(`UI[lang].lv` 가 레벨·랭킹), `src/i18n/jigsaw/<lang>.ts` 판·고르는 화면, `src/i18n/body/<lang>.ts` SEO 본문(HTML), `src/i18n/badges.ts` 업적·레벨 구간. 각 묶음의 `ko.ts` 가 기준 모양이고 나머지는 그 타입(`UIStrings`·`JigsawStrings`·`BodyText`)을 달고 있어 **키가 하나라도 빠지면 `astro check` 가 잡는다**
+- `src/i18n/langs.ts` — 언어 목록(`LANGS`·`LI`)과 작은 도우미(`prefix`·`langOf`·`altsFor`·`OG_LOCALE`·`multi`)만. **문구는 여기 없다**: `works.ts` 같은 데이터 파일이 언어팩을 물면 5개 국어 문구가 통째로 클라이언트 번들에 딸려 들어간다
+- **SEO 본문(`i18n/body/`)은 서버 프런트매터에서만 읽는다.** `/photo/`·`/together/`·`/about/` 이 쓰고, 언어팩에 두면 판 화면의 클라이언트 번들까지 따라간다(실제로 그랬다: i18n/jigsaw 청크가 3개 국어 23KB → 떼고 나니 5개 국어인데도 8.8KB)
+- **언어를 하나 더 늘릴 때 손댈 곳** — ① `i18n/langs.ts` 의 `Lang`·`LANGS`·`LI`·`OG_LOCALE` ② `i18n/{ui,jigsaw,body}/<lang>.ts` 세 파일과 각 `index.ts` 한 줄씩 ③ `badges.ts`·`catalog.ts`·`lib/jigsaw.ts` PAINTINGS 의 튜플(빠지면 빌드가 선다) ④ `src/pages/<lang>/` 을 `en/` 에서 복사해 `lang=` 치환 ⑤ `astro.config.mjs` 의 locales 두 곳 ⑥ **`public/robots.txt` 의 사이트맵 목록**(여기만 자동이 아니다) ⑦ 컴포넌트 자체 문구표: `Invite`·`ShareCard`·`Contact`·`Terms`·`Privacy`·`PuzzleDetail`. 사이트맵·hreflang·언어 전환은 `LANGS` 에서 생성되므로 손댈 필요가 없다
+- 작품 제목·소장처처럼 번역이 없는 자리는 `multi()` 가 영어로 채운다. 그림 이야기도 `about/index.ts` 에서 de·es 는 아직 영어로 내려간다
+- 헤더 언어 선택은 `.langsel`(`<details>` 드롭다운) — 5개를 알약으로 늘어놓으면 헤더가 두 줄로 접혀서 현재 언어만 보이고 펼쳐서 고른다
 - `src/pages/{,en/,ja/}` — `index.astro` 홈, `play.astro` 고르는 화면, `board.astro` 판(noindex·사이트맵 제외), `photo.astro` 내 사진 랜딩, `together.astro` 공개 판 랜딩, `rank.astro` 랭킹, `puzzle/[key].astro` 상세(22점 정적), `s/index.astro` 공유 카드(서버), `privacy.astro`; `api/daily.ts`(서버)
 - 작품 데이터 518점: `src/data/works.ts` 가 전체 목록(WORKS·DAILY_POOL). 기존 22점 = `lib/jigsaw.ts` PAINTINGS + `paintings.ts`(소장처); AIC 204점 = `aic.json`; 추가 소스 292점(위키미디어 공용 명화·한국 회화·포토크롬, NASA 우주) = `extra.json`(메타·소장처·출처·라이선스). 제목(ko/ja)은 `titles.ts`, 작가명 `artists.ts`, 카테고리(진열대) `catalog.ts` — 작품 cat 이 catalog 에 없으면 빌드가 실패함. 진열대 앞줄 순서는 `popular.ts`. 총 작품 수는 `counts.ts` 에 상수로 박아 두고 works.ts 가 대조해 어긋나면 빌드를 세운다
 - **그림 이야기는 `src/data/about/{ko,en,ja}.ts` 에 언어별로 따로 둔다.** 상세 페이지에서만 쓰는 글이라 `works.ts` 는 이걸 물지 않는다 — 물면 홈·`/play/`·`/board/` 의 클라이언트 번들까지 500KB 넘게 따라 들어간다(실제로 그랬다: works 청크 742KB → 234KB, gzip 278KB → 64KB). 같은 이유로 `level.ts` 는 `WORKS.length` 를 쓰지 않고 `counts.ts` 의 상수를 쓴다. 언어를 하나 늘리려면 `about/<lang>.ts` 를 두고 `about/index.ts` 에 한 줄 더하면 되고, 클라이언트 번들은 안 커진다

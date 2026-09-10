@@ -2,9 +2,9 @@
 import Base from '../layouts/Base.astro';
 import { WORK_BY_KEY } from '../data/works';
 import { JIGSAW } from '../i18n/jigsaw';
-import { prefix, type Lang } from '../i18n/ui';
+import { LI, prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const li = ({ ko: 0, en: 1, ja: 2 } as const)[lang], P = prefix(lang), T = JIGSAW[lang];
+const li = LI[lang], P = prefix(lang), T = JIGSAW[lang];
 import { parseShare } from '../lib/shareParams';
 const { k, n, t, m, daily } = parseShare(Astro.url)!; // 페이지에서 검사·리다이렉트 완료
 const pnt = WORK_BY_KEY[k]!;
@@ -13,6 +13,8 @@ const S = {
   ko: { h: daily ? '오늘의 퍼즐 기록' : '친구의 직소 퍼즐 기록', cmt: `${n}조각${m > 0 ? ` · ${m}번 놓아서 완성` : ''}`, cta: '나도 해보기', hand: daily ? '오늘의 퍼즐, 이 시간보다 빨리 맞출 수 있겠어?' : '같은 그림, 같은 조각 수로 도전해 볼래?', sub: t / n < 3 ? '⚡ 조각당 3초도 안 걸렸어요' : t / n < 8 ? '🔥 손이 빠르네요' : '🧩 차분하게 끝까지' },
   en: { h: daily ? "Today's puzzle record" : "A friend's jigsaw record", cmt: `${n} pieces${m > 0 ? ` · ${m} placements` : ''}`, cta: 'Try it myself', hand: daily ? "Today's puzzle — can you beat this time?" : 'Same painting, same piece count. Your turn?', sub: t / n < 3 ? '⚡ Under 3 seconds per piece' : t / n < 8 ? '🔥 Quick hands' : '🧩 Steady to the end' },
   ja: { h: daily ? '今日のパズル記録' : '友だちのジグソー記録', cmt: `${n}ピース${m > 0 ? ` · ${m}回置いて完成` : ''}`, cta: '自分もやってみる', hand: daily ? '今日のパズル、このタイムより速く解ける？' : '同じ絵・同じピース数で挑戦してみる？', sub: t / n < 3 ? '⚡ 1ピース3秒未満' : t / n < 8 ? '🔥 手が速い' : '🧩 落ち着いて最後まで' },
+  de: { h: daily ? 'Ergebnis beim Tagespuzzle' : 'Puzzle-Ergebnis von Freunden', cmt: `${n} Teile${m > 0 ? ` · in ${m} Zügen gelöst` : ''}`, cta: 'Selbst probieren', hand: daily ? 'Das Tagespuzzle — schaffst du das schneller?' : 'Gleiches Bild, gleiche Teilezahl. Traust du dich?', sub: t / n < 3 ? '⚡ Unter 3 Sekunden pro Teil' : t / n < 8 ? '🔥 Schnelle Hände' : '🧩 Ruhig bis zum Schluss' },
+  es: { h: daily ? 'Marca del reto de hoy' : 'La marca de un amigo', cmt: `${n} piezas${m > 0 ? ` · ${m} colocaciones` : ''}`, cta: 'Probar yo también', hand: daily ? 'El reto de hoy: ¿mejoras este tiempo?' : 'Mismo cuadro, mismas piezas. ¿Te animas?', sub: t / n < 3 ? '⚡ Menos de 3 segundos por pieza' : t / n < 8 ? '🔥 Manos rápidas' : '🧩 Con calma hasta el final' },
 }[lang];
 const title = daily ? T.shareDaily(n, fmt, pnt.title[li]) : T.shareTitle(n, fmt);
 const desc = `${pnt.title[li]} — ${pnt.artist[li]} · ${S.cmt}`;

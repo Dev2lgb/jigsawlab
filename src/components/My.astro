@@ -2,13 +2,13 @@
 // 내 퍼즐 — 하던 퍼즐(IndexedDB) · 완성한 퍼즐(localStorage) · 즐겨찾기는 이 기기 안.
 // 레벨·XP·업적은 서버가 매기므로 구글 로그인 회원에게만 보인다 (/api/level)
 import Base from '../layouts/Base.astro';
-import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
 const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
 ---
-<Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={{ ko: '/my/', en: '/en/my/', ja: '/ja/my/' }} path={`${P}/my/`} noindex>
+<Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={altsFor('/my/')} path={`${P}/my/`} noindex>
   <div class="wrap my">
     <div class="my-head"><h1>{M.title}</h1><p class="muted" id="my-sub">{M.onDevice}</p></div>
     <section class="acct-box" id="acct-box" hidden>
@@ -87,10 +87,10 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     import { BADGES, levelProgress, tierOf } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
-    import { UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, LI = { ko: 0, en: 1, ja: 2 }[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
+    import { LANGS, LI as LIDX, UI, type Lang } from '../i18n/ui';
+    const hl = document.documentElement.lang, LANG = (LANGS.includes(hl as Lang) ? hl : 'ko') as Lang, LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
-    const meta = (window as any).__meta as Record<string, [string, string, string]>;
+    const meta = (window as any).__meta as Record<string, string[]>;
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const $ = (id: string) => document.getElementById(id)!;
     const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {

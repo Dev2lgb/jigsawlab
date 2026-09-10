@@ -32,6 +32,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
     <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
+    <p class="xp-row"><a class="xp-tip" id="jg-xp" href={`${P}/rank/`}></a></p>
     <p class="muted note-solo"><Fragment set:html={icon('users', 14)} /> {U.play.photoSolo}</p>
     <div class="row"><button class="btn primary" id="jg-start">{t.start}</button></div>
   </div>
@@ -83,6 +84,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       <h2 class="res-title" id="jg-res-name"></h2>
       <div class="res-stats"><div><b id="jg-res-time">0:00</b><small>{t.resTime}</small></div><div><b id="jg-res-n">0</b><small>{t.resPieces}</small></div><div><b id="jg-res-m">0</b><small>{t.resMoves}</small></div></div>
       <p class="best-line" id="jg-res-best"></p>
+      <div class="res-xp" id="jg-res-xp" hidden></div>
       <div class="row">
         <button class="btn primary" id="jg-retry">{t.retry}</button>
         <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
@@ -113,6 +115,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .chosen { display: flex; align-items: center; gap: 12px; margin: 0 32px 4px 0; } .chosen img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--board); flex: none; } .chosen div { display: flex; flex-direction: column; } .grid-lbl { color: var(--accent); font-weight: 600; }
   .lbl { color: var(--muted); font-size: .85rem; font-weight: 600; margin: 14px 0 6px; }
   .pieces { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .xp-row { margin: 10px 0 0; } :global(html:not(.member)) .xp-row { display: none; }
   .pieces button { border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); font-weight: 600; padding: 6px 13px; cursor: pointer; } .pieces button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .custom { width: 96px; min-height: 36px; padding: 4px 10px; }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
@@ -178,6 +181,15 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .res-title { font-size: clamp(1.7rem, 3.6vw, 2.8rem); letter-spacing: -.04em; margin: 0 0 18px; }
   .res-stats { display: flex; gap: clamp(18px, 3vw, 40px); padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); } .res-stats div { display: flex; flex-direction: column; } .res-stats b { font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; } .res-stats small { color: var(--muted); font-size: .85rem; font-weight: 600; }
   .best-line { margin: 14px 0 0; color: var(--gold); font-weight: 800; min-height: 1.4em; }
+  /* 완성 뒤 받은 XP·레벨·새 업적 (로그인 회원). 서버 응답이 오면 채워진다 */
+  /* 안쪽은 스크립트가 만드므로 :global (스코프 속성이 안 붙는다) */
+  .res-xp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; animation: rise .5s var(--ease) both; }
+  .res-xp :global(.xp) { padding: 5px 12px; border-radius: 999px; background: var(--gold-soft); color: #8a5f00; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .res-xp :global(.lvup) { padding: 5px 12px; border-radius: 999px; background: var(--gold); color: #fff; font-weight: 800; }
+  .res-xp :global(.bg) { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 10px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); font-weight: 700; font-size: .88rem; }
+  .res-xp :global(.note) { color: var(--muted); font-size: .86rem; font-weight: 600; }
+  .res-xp :global(.btn) { font-size: .85rem; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   .result .row { justify-content: flex-start; margin-top: 18px; }
   .submit { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin: 22px 0 0; padding: 18px; border-radius: var(--r); background: var(--bg-2); } .submit .field { flex: 1; min-width: 150px; }
 </style>
@@ -191,13 +203,15 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
-  import { me, syncDone, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, type SaveMeta } from '../lib/account';
+  import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, type Award, type SaveMeta } from '../lib/account';
+  import { BADGES, earnFor } from '../lib/level';
+  import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
   import { setNickRemote } from '../lib/account';
   import { randomNick } from '../lib/nickgen';
   import { UI } from '../i18n/ui';
   const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as 'ko' | 'en' | 'ja', LI = ({ ko: 0, en: 1, ja: 2 } as const)[LANG];
-  const T = JIGSAW[LANG], U = UI[LANG].play, L = UI[LANG].live; const scenes = initScenes();
+  const T = JIGSAW[LANG], U = UI[LANG].play, L = UI[LANG].live, V = UI[LANG].lv; const scenes = initScenes();
   const PFX = LANG === 'ko' ? '' : `/${LANG}`;
   // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다
   const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
@@ -231,7 +245,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       if (auto) { if (pendingSave) start(pendingSave); else start(); }
     } catch { toast(T.imgFail); setup.hidden = true; src = null; }
   }
-  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH); $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, g.cols * g.rows); }
+  function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH), n = g.cols * g.rows; $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, n); $('jg-xp').textContent = V.earn(earnFor(n, src?.kind === 'daily' ? 'daily' : 'gallery').toLocaleString()); }
   const saveId = () => { if (src!.kind === 'daily') return `daily:${src!.day}`; if (src!.kind === 'photo') return `photo:${src!.photoId}`; const g = gridFor(wantN, imgW / imgH); return `${src!.key}:${g.cols * g.rows}`; };
   // 로그인했으면 서버에 있는 하던 퍼즐 목록(메타)을 한 번 받아 두고, 로컬에 없을 때 대신 씀
   let remoteSaves: SaveMeta[] = []; let remoteReady: Promise<void> = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
@@ -737,7 +751,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
-    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); roomNote(L.doneNote(myLocked)); celebrate(() => {}); return; }
+    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); syncLive(src?.key ?? '', total, myLocked).then(liveAward); roomNote(L.doneNote(myLocked)); celebrate(() => {}); return; }
     prepareResult(sec);
     celebrate(() => scenes.go('result'));
   }
@@ -746,12 +760,33 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
     if (src!.kind === 'daily') bumpStreak(src!.day!);
     fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
-    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now() }; addDone(entry); syncDone(entry); }
+    // 방에서 맞춘 판은 내가 놓은 조각만큼만 XP 로 친다 (mine). 기록 자체는 늘 한 판으로 남는다
+    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); syncDone(entry).then(showAward); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/photo/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
+  // 완성 뒤 받은 XP·레벨업·새 업적. 로그인 안 했으면 로그인하면 쌓인다는 안내만
+  function showAward(a: Award | null) {
+    const box = $('jg-res-xp'); box.innerHTML = '';
+    const add = (cls: string, text: string) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; box.appendChild(e); return e; };
+    if (!a) {
+      box.hidden = true;
+      if (!authAvailable()) return;
+      me().then((u) => { if (u || !box.isConnected) return; add('note', V.signInGain); const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = V.loginBtn; b.addEventListener('click', () => (window as any).__authui?.openLogin()); box.appendChild(b); box.hidden = false; });
+      return;
+    }
+    // XP 가 0 인데 상한 때문도 아니면(사람 손으로 보기 어려운 기록) 아무 말 없이 접는다
+    if (a.gained <= 0 && !a.capped && !a.levelUp && !a.badges.length) { box.hidden = true; return; }
+    if (a.gained > 0) add('xp', V.gained(a.gained)); else if (a.capped) add('note', V.capped);
+    if (a.levelUp) add('lvup', V.levelUp(a.level));
+    for (const code of a.badges) { const d = BADGES.find((x) => x.code === code); if (!d) continue; add('bg', `${d.icon} ${BADGE_TEXT[code].n[LI]}`); }
+    if (a.badges.length || a.levelUp) { const link = document.createElement('a'); link.className = 'btn sm'; link.href = `${LANG === 'ko' ? '' : `/${LANG}`}/my/`; link.textContent = V.seeMy; box.appendChild(link); }
+    box.hidden = false;
+  }
+  // 모두의 퍼즐은 결과 화면이 없어 판 위 안내줄에 얹는다
+  function liveAward(a: Award | null) { if (!a) return; const bits = [a.gained > 0 ? V.gained(a.gained) : a.capped ? V.capped : '', a.levelUp ? V.levelUp(a.level) : '', ...a.badges.map((c) => `${BADGES.find((x) => x.code === c)?.icon ?? ''} ${BADGE_TEXT[c]?.n[LI] ?? ''}`.trim())].filter(Boolean); if (bits.length) toast(bits.join(' · ')); }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음
   (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };

@@ -8,6 +8,8 @@ import { WORK_BY_KEY, WORKS } from '../data/works';
 import { CATEGORIES } from '../data/catalog';
 import { icon } from '../lib/icons';
 import { paintingFor } from '../lib/catalogView';
+import { DAILY_PIECES } from '../lib/jigsaw';
+import { earnFor } from '../lib/level';
 const { lang = 'ko', key } = Astro.props as { lang?: Lang; key: string };
 const T = UI[lang], li = LI[lang], P = prefix(lang), J = JIGSAW[lang];
 const p = WORK_BY_KEY[key]!, a = p, cat = CATEGORIES.find((c) => c.id === p.cat)!;
@@ -30,10 +32,11 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <p class="by">{artist}</p>
         <dl class="meta"><div><dt>{T.detail.year}</dt><dd>{p.year}</dd></div><div><dt>{T.detail.museum}</dt><dd>{a.museum[li]}</dd></div>{p.medium && <div><dt>{T.detail.medium}</dt><dd>{p.medium}</dd></div>}</dl>
         <p class="about">{a.about[li]}</p>{p.source && <p class="src muted"><a href={p.source} rel="noopener">{T.detail.source} ({srcName})</a> · {p.license ?? 'CC0'}{p.credit && p.license?.startsWith('CC BY') && <> · {p.credit}</>}</p>}
-        <a class="btn primary lg daily-cta" id="daily-cta" href={`${P}/board/?daily=1&k=${key}`} hidden>{T.hero.today} · {T.hero.pieces(48)} {T.detail.startDaily}</a>
+        <a class="btn primary lg daily-cta" id="daily-cta" href={`${P}/board/?daily=1&k=${key}`} hidden>{T.hero.today} · {T.hero.pieces(DAILY_PIECES)} {T.detail.startDaily}<span class="xp-tip">+{earnFor(DAILY_PIECES, 'daily').toLocaleString()} XP</span></a>
         <h2 class="pick-h">{T.detail.pieces}</h2>
         <div class="presets" id="presets" role="radiogroup">{PRESETS.map((n) => <button type="button" class="preset" aria-pressed={n === 48 ? 'true' : 'false'} data-n={n}><b>{n}</b><small></small></button>)}</div>
         <p class="best muted" id="best" data-key={key}></p>
+        <p class="xp-row"><a class="xp-tip" id="xp-tip" href={`${P}/rank/`}></a></p>
         <div class="go"><a class="btn primary lg" id="go-solo" href={`${P}/board/?k=${key}&n=48`}>{T.detail.start}</a><button type="button" class="btn lg" id="together" data-key={key}><Fragment set:html={icon('users', 18)} /> {T.play.together}</button></div>
         <p class="muted together-sub">{T.play.togetherSub}</p>
         <div class="fullload" id="fullload" role="status"><span class="spin"></span><p id="fullload-txt" data-creating={T.play.creating} data-opening={J.opening}>{J.opening}</p></div>
@@ -62,6 +65,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     .preset b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; } .preset small { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; min-height: 1em; font-weight: 600; }
     .preset[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; } .preset[aria-pressed="true"] small { color: rgba(255,255,255,.7); }
     .best { margin: 14px 0 0; font-size: .92rem; min-height: 1.4em; font-weight: 600; }
+    .xp-row { margin: 8px 0 0; }
+    :global(html:not(.member)) .xp-row { display: none; }
+    .daily-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
     .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); } .fullload.on { display: flex; }
     .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
     .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; } #together { display: inline-flex; align-items: center; gap: 6px; } .together-sub { margin: 10px 0 0; font-size: .88rem; }
@@ -69,6 +75,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
   </style>
   <script>
     import { gridFor, todayKST, dailyPick } from '../lib/jigsaw';
+    import { earnFor } from '../lib/level';
     import { DAILY_POOL } from '../data/works';
     import { initFavUI } from '../lib/fav';
     initFavUI();
@@ -83,13 +90,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     document.getElementById('together')!.addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; const n = picked; b.disabled = true; flTxt.textContent = flTxt.dataset.creating!; fl.classList.add('on'); try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, n, lang: LANG }) }); const d = await r.json<any>(); if (d.id) { try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); } catch {} } if (d.id) location.href = `${LANG === 'ko' ? '' : '/' + LANG}/board/?room=${d.id}`; else throw 0; } catch { b.disabled = false; fl.classList.remove('on'); } });
     if (dailyPick(todayKST(), DAILY_POOL).painting.key === key) { const a = document.getElementById('daily-cta')!; a.hidden = false; if (new URLSearchParams(location.search).get('daily') === '1') { a.scrollIntoView({ block: 'center' }); history.replaceState(null, '', location.pathname); } }
     const P = LANG === 'ko' ? '' : `/${LANG}`; let picked = Number(localStorage.getItem('pieces') || 48) || 48; if (![48, 100, 200, 300, 500, 1000].includes(picked)) picked = 48;
-    const solo = document.getElementById('go-solo') as HTMLAnchorElement; const bestEl = document.getElementById('best')!;
+    const solo = document.getElementById('go-solo') as HTMLAnchorElement; const bestEl = document.getElementById('best')!; const xpTip = document.getElementById('xp-tip')!;
     // 시작 버튼에 손이 가면 /board/ 문서와 원본 이미지를 미리 받아 두고, 누르면 새 페이지가 뜨기 전에도 로딩 화면을 바로 보여 준다(/board/ 는 첫 페인트부터 같은 로딩 화면으로 이어짐)
     let warmed = false; const warm = () => { if (warmed) return; warmed = true; for (const [href, as] of [[`/jigsaw/${key}.webp`, 'image'], [`${P}/board/`, 'document']] as const) { const l = document.createElement('link'); l.rel = 'prefetch'; l.as = as; l.href = href; document.head.appendChild(l); } };
     for (const ev of ['pointerenter', 'touchstart', 'focus'] as const) solo.addEventListener(ev, warm, { passive: true });
     solo.addEventListener('click', (e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; flTxt.textContent = flTxt.dataset.opening!; fl.classList.add('on'); });
     const asp = () => (img.naturalWidth || 1200) / (img.naturalHeight || 950);
-    const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/board/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmt(b)) : T.detail.noBest; };
+    const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/board/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmt(b)) : T.detail.noBest; xpTip.textContent = T.lv.earn(earnFor(g.cols * g.rows).toLocaleString()); };
     document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.addEventListener('click', () => select(Number(b.dataset.n))));
     const fill = () => { document.querySelectorAll<HTMLButtonElement>('.preset').forEach((a) => { const g = gridFor(Number(a.dataset.n), asp()); a.querySelector('small')!.textContent = T.detail.gridOf(g.cols, g.rows); }); select(picked); };
     img.complete ? fill() : img.addEventListener('load', fill);

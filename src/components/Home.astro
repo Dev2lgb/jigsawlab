@@ -5,6 +5,7 @@ import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, LIVE_ID, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
+import { earnFor } from '../lib/level';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang);
 const day = todayKST(), daily = dailyPick(day, DAILY_POOL), shelves = shelvesFor(lang), total = WORKS.length;
@@ -25,6 +26,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
     <div class="hero-side">
       <a class="hero-art" id="hero-art" href={`${P}/board/?daily=1`} aria-label={T.hero.cta}><canvas id="hero-cv" width="720" height="560"></canvas></a>
       <a class="today-link" id="hero-today" href={`${P}/board/?daily=1`}>{T.hero.todayLink(daily.painting.title[li])}</a>
+      <a class="xp-tip" href={`${P}/rank/`}>{T.lv.earnDaily(earnFor(DAILY_PIECES, 'daily').toLocaleString())}</a>
     </div>
   </div>
 </section>

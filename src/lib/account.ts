@@ -1,6 +1,7 @@
 // 클라이언트 계정 유틸 — 로그인 상태 조회(페이지당 1회, sessionStorage 5분 캐시), 닉네임, 업적·하던 퍼즐 동기화
 import { getDone, setNick } from './store';
 import type { SaveData } from './db';
+import type { Stats } from './level';
 export interface Me { id: string; nick: string }
 const ss = { get: (k: string) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { sessionStorage.setItem(k, v); } catch {} }, del: (k: string) => { try { sessionStorage.removeItem(k); } catch {} } };
 let mep: Promise<Me | null> | null = null;
@@ -21,10 +22,23 @@ export async function setNickRemote(nick: string): Promise<boolean> {
 }
 // keepalive 는 본문 64KB 제한이 있어 작은 요청에만 (큰 판 저장은 일반 요청)
 const post = (body: unknown) => { const s = JSON.stringify(body); return fetch('/api/sync', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: s, keepalive: s.length < 60_000 }).catch(() => null); };
-/** 로그인 상태면 완성 기록 1건 올림 */
-export async function syncDone(entry: unknown) { if (!(await me())) return; await post({ action: 'done', entry }); }
+/** 서버가 매긴 XP·레벨·새 업적 (회원만) */
+export interface Award { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean }
+const awardOf = async (r: Response | null): Promise<Award | null> => { if (!r?.ok) return null; try { const d: any = await r.json(); return d?.award ?? null; } catch { return null; } };
+/** 로그인 상태면 완성 기록 1건 올림 → 받은 XP·레벨·새 업적 */
+export async function syncDone(entry: unknown): Promise<Award | null> { if (!(await me())) return null; return awardOf(await post({ action: 'done', entry })); }
+/** 모두의 퍼즐 한 회차에 내가 보탠 조각 (완성 기록 목록에는 안 남고 XP·업적에만 반영) */
+export async function syncLive(key: string, n: number, mine: number): Promise<Award | null> { if (mine <= 0 || !(await me())) return null; return awardOf(await post({ action: 'live', key, n, mine })); }
 /** 로그인 직후 한 번: 이 기기의 완성 기록을 서버에 합침 */
-export async function mergeLocalDone() { if (ss.get('auth:merged')) return; const l = getDone(); if (l.length) await post({ action: 'merge', entries: l }); ss.set('auth:merged', '1'); }
+export async function mergeLocalDone(): Promise<Award | null> { if (ss.get('auth:merged')) return null; const l = getDone(); ss.set('auth:merged', '1'); return l.length ? awardOf(await post({ action: 'merge', entries: l })) : null; }
+
+export interface LevelInfo { user: { id: string; nick: string } | null; xp: number; level: number; stats: Stats; badges: { code: string; at: number }[]; week: { key: string; xp: number; rank: number | null }; rank: number | null }
+export interface RankRow { r: number; nick: string; xp: number; level: number; badges: number }
+export interface RankInfo { tab: 'week' | 'all'; week: string; top: RankRow[]; me: { nick: string; xp: number; level: number; rank: number | null; listed: boolean } | null }
+/** 내 레벨·업적. 로그인 안 했으면 null */
+export async function fetchLevel(): Promise<LevelInfo | null> { const r = await fetch('/api/level', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; const d: any = await r.json().catch(() => null); return d?.user ? (d as LevelInfo) : null; }
+/** 랭킹. 로그인 없이도 볼 수 있다 */
+export async function fetchRank(tab: 'week' | 'all'): Promise<RankInfo | null> { const r = await fetch(`/api/rank?tab=${tab}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json().catch(() => null) as Promise<RankInfo | null>; }
 export type SaveMeta = Pick<SaveData, 'id' | 'kind' | 'key' | 'name' | 'day' | 'total' | 'done' | 'elapsed' | 'savedAt' | 'thumb'>;
 export async function fetchSync(): Promise<{ done: any[]; saves: SaveMeta[] } | null> { if (!(await me())) return null; const r = await fetch('/api/sync', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
 export async function fetchSave(id: string): Promise<SaveData | null> { const r = await fetch(`/api/sync?save=${encodeURIComponent(id)}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }

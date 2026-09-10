@@ -41,7 +41,8 @@ export const POST: APIRoute = async ({ request, params }) => {
   if (params.action === 'logout') return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
   if (params.action === 'delete') {
     const uid = await sessionUid(request); if (!uid) return json({ error: 'auth' }, 401);
-    await E().DB.batch([E().DB.prepare('DELETE FROM user_saves WHERE user_id = ?').bind(uid), E().DB.prepare('DELETE FROM user_done WHERE user_id = ?').bind(uid), E().DB.prepare('DELETE FROM users WHERE id = ?').bind(uid)]);
+    const tables = ['user_saves', 'user_done', 'user_stats', 'user_cleared', 'user_week', 'user_badges'];
+    await E().DB.batch([...tables.map((t) => E().DB.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(uid)), E().DB.prepare('DELETE FROM users WHERE id = ?').bind(uid)]);
     return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
   }
   return json({ error: 'action' }, 404);

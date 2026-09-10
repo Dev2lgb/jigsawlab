@@ -1,10 +1,11 @@
 ---
-// 내 퍼즐 — 하던 퍼즐(IndexedDB) · 완성한 퍼즐(localStorage) · 즐겨찾기. 전부 이 기기 안
+// 내 퍼즐 — 하던 퍼즐(IndexedDB) · 완성한 퍼즐(localStorage) · 즐겨찾기는 이 기기 안.
+// 레벨·XP·업적은 서버가 매기므로 구글 로그인 회원에게만 보인다 (/api/level)
 import Base from '../layouts/Base.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct;
+const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
 const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
 ---
 <Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={{ ko: '/my/', en: '/en/my/', ja: '/ja/my/' }} path={`${P}/my/`} noindex>
@@ -14,6 +15,19 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       <div class="acct-row"><b id="acct-state"></b><div class="acct-btns" id="acct-btns"></div></div>
       <p class="muted acct-why">{A.why}</p>
     </section>
+    <section class="lvl" id="lvl" hidden>
+      <div class="lvl-top">
+        <span class="lvl-num"><small>Lv</small><b id="lvl-n">1</b></span>
+        <div class="lvl-mid">
+          <b class="lvl-tier" id="lvl-tier"></b>
+          <div class="lvl-bar"><i id="lvl-fill"></i></div>
+          <small id="lvl-next"></small>
+        </div>
+        <a class="btn sm" href={`${P}/rank/`}>{V.seeRank} →</a>
+      </div>
+      <div class="lvl-stats" id="lvl-stats"></div>
+    </section>
+    <section class="blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div></section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
@@ -22,6 +36,27 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
   <style>
     .my { padding-top: clamp(24px, 4vw, 48px); } .my-head { margin-bottom: 8px; } .my-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; } .my-head p { margin: 6px 0 0; }
     .acct-box { margin-top: 18px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); } .acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .acct-btns { display: flex; gap: 8px; flex-wrap: wrap; } .acct-btns :global(.btn) { font-size: .85rem; } .acct-why { margin: 10px 0 0; font-size: .82rem; line-height: 1.55; }
+    /* 레벨 카드 */
+    .lvl { margin-top: 14px; padding: 18px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); }
+    .lvl-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .lvl-num { display: flex; align-items: baseline; gap: 4px; flex: none; color: var(--accent); }
+    .lvl-num small { font-size: .82rem; font-weight: 800; letter-spacing: .04em; } .lvl-num b { font-family: var(--head); font-size: clamp(2.2rem, 6vw, 3rem); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .lvl-mid { flex: 1; min-width: 190px; display: flex; flex-direction: column; gap: 6px; }
+    .lvl-tier { font-size: 1.05rem; letter-spacing: -.02em; }
+    .lvl-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; } .lvl-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); transition: width .8s var(--ease); }
+    .lvl-mid small { color: var(--muted); font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    /* 아래 칸·업적 카드는 스크립트가 만드므로 :global (스코프 속성이 안 붙는다) */
+    .lvl-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .lvl-stats:empty { display: none; }
+    .lvl-stats :global(div) { display: flex; flex-direction: column; gap: 2px; } .lvl-stats :global(b) { font-size: 1.15rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .lvl-stats :global(small) { color: var(--muted); font-size: .76rem; font-weight: 600; }
+    /* 업적 */
+    .bdgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+    .bdgs :global(.bd) { display: flex; gap: 11px; align-items: flex-start; padding: 12px 13px; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid transparent; }
+    .bdgs :global(.bd.on) { border-color: var(--accent); background: var(--bg); }
+    .bdgs :global(.bd.off) { opacity: .55; } .bdgs :global(.bd.off .bd-i) { filter: grayscale(1); }
+    .bdgs :global(.bd-i) { font-size: 1.45rem; line-height: 1.2; flex: none; }
+    .bdgs :global(.bd b) { display: block; font-size: .92rem; } .bdgs :global(.bd small) { display: block; color: var(--muted); font-size: .78rem; line-height: 1.5; margin-top: 2px; }
+    .bdgs :global(.bd-p) { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -38,10 +73,12 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     import { saves, images, hasIDB, type SaveData } from '../lib/db';
     import { getDone, type DoneEntry } from '../lib/store';
     import { openLogin, askNick } from '../lib/authui';
-    import { me, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, type SaveMeta } from '../lib/account';
+    import { me, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, fetchLevel, type SaveMeta } from '../lib/account';
+    import { BADGES, levelProgress, tierOf } from '../lib/level';
+    import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
     import { UI, type Lang } from '../i18n/ui';
-    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, M = UI[LANG].my, A = UI[LANG].acct, P = LANG === 'ko' ? '' : `/${LANG}`;
+    const hl = document.documentElement.lang, LANG = (hl === 'en' || hl === 'ja' ? hl : 'ko') as Lang, LI = { ko: 0, en: 1, ja: 2 }[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, [string, string, string]>;
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -82,6 +119,38 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       btn(A.del, 'danger', async () => { if (!confirm(A.delAsk)) return; if (await deleteAccount()) { alert(A.deleted); location.reload(); } });
       const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); }
     }
-    renderProg(); renderDone(); renderFav(); renderAcct();
+    async function renderLevel() {
+      const d = await fetchLevel(); if (!d) return;
+      const pr = levelProgress(d.xp);
+      $('lvl-n').textContent = String(pr.level);
+      $('lvl-tier').textContent = TIER_NAMES[tierOf(pr.level)][LI];
+      $('lvl-next').textContent = pr.need > 0 ? V.nextIn(pr.need) : V.maxed;
+      const tiles: [string, string][] = [
+        [V.totalXp, d.xp.toLocaleString()], [V.weekXp, d.week.xp.toLocaleString()],
+        [V.rankAll, d.rank ? V.nth(d.rank) : V.none], [V.rankWeek, d.week.rank ? V.nth(d.week.rank) : V.none],
+        [V.statSolved, String(d.stats.solved)], [V.statPieces, d.stats.pieces.toLocaleString()],
+        [V.statWorks, String(d.stats.works)], [V.statStreak, String(d.stats.streak_best)],
+      ];
+      const box = $('lvl-stats'); box.innerHTML = '';
+      for (const [k, v] of tiles) { const w = document.createElement('div'); const b = document.createElement('b'); b.textContent = v; const s = document.createElement('small'); s.textContent = k; w.appendChild(b); w.appendChild(s); box.appendChild(w); }
+      $('lvl').hidden = false;
+      requestAnimationFrame(() => { ($('lvl-fill') as HTMLElement).style.width = `${pr.pct}%`; });
+      // 업적 — 딴 것 먼저, 그 뒤로 가까운 순
+      const got = new Set(d.badges.map((b) => b.code));
+      const list = [...BADGES].sort((a, b) => { const ga = got.has(a.code) ? 1 : 0, gb = got.has(b.code) ? 1 : 0; if (ga !== gb) return gb - ga; return b.goal(d.stats) / b.need - a.goal(d.stats) / a.need; });
+      const grid = $('l-bdg'); grid.innerHTML = '';
+      for (const b of list) {
+        const on = got.has(b.code), t = BADGE_TEXT[b.code], have = Math.min(b.goal(d.stats), b.need);
+        const w = document.createElement('div'); w.className = `bd ${on ? 'on' : 'off'}`;
+        const i = document.createElement('span'); i.className = 'bd-i'; i.textContent = b.icon;
+        const tx = document.createElement('div'); const nm = document.createElement('b'); nm.textContent = t.n[LI];
+        const ds = document.createElement('small');
+        if (on) ds.textContent = t.d[LI]; else { ds.textContent = `${t.d[LI]} · `; const p = document.createElement('span'); p.className = 'bd-p'; p.textContent = `${have.toLocaleString()} / ${b.need.toLocaleString()}`; ds.appendChild(p); }
+        tx.appendChild(nm); tx.appendChild(ds); w.appendChild(i); w.appendChild(tx); grid.appendChild(w);
+      }
+      $('c-bdg').textContent = V.badgeCount(got.size, BADGES.length);
+      $('blk-bdg').hidden = false;
+    }
+    renderProg(); renderDone(); renderFav(); renderAcct(); renderLevel();
   </script>
 </Base>

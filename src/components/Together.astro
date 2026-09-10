@@ -38,6 +38,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
           <p class="lv-meta"><b id="lv-pct"></b><span id="lv-left"></span></p>
           <p class="lv-online" id="lv-online">&nbsp;</p>
           <a class="btn primary lg lv-cta" href={board} id="lv-cta"><Fragment set:html={icon('users', 18)} /> <span>{L.ctaFirst}</span></a>
+          <p class="xp-row"><a class="xp-tip" href={`${P}/rank/`}>{T.lv.earnLive}</a></p>
         </div>
       </div>
     </div>
@@ -86,6 +87,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
     .lv-online { margin: 6px 0 14px; color: var(--muted); font-size: .85rem; font-weight: 600; min-height: 1.3em; }
     .lv-card[data-live] .lv-online { color: var(--accent); }
     .lv-cta { width: 100%; justify-content: center; }
+    .xp-row { margin: 10px 0 0; text-align: center; } :global(html:not(.member)) .xp-row { display: none; }
 
     .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
     .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; }

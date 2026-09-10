@@ -5,6 +5,7 @@ import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORK_BY_KEY, WORKS } from '../data/works';
+import { ABOUT_TEXT } from '../data/about';
 import { CATEGORIES } from '../data/catalog';
 import { icon } from '../lib/icons';
 import { paintingFor } from '../lib/catalogView';
@@ -13,15 +14,16 @@ import { earnFor } from '../lib/level';
 const { lang = 'ko', key } = Astro.props as { lang?: Lang; key: string };
 const T = UI[lang], li = LI[lang], P = prefix(lang), J = JIGSAW[lang];
 const p = WORK_BY_KEY[key]!, a = p, cat = CATEGORIES.find((c) => c.id === p.cat)!;
+const about = ABOUT_TEXT[lang][key] ?? p.title[li];
 const title = p.title[li], artist = p.artist[li];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
 const srcName = /artic\.edu/.test(p.source ?? '') ? T.detail.sources.aic : /wikimedia\.org/.test(p.source ?? '') ? T.detail.sources.commons : /nasa\.gov/.test(p.source ?? '') ? T.detail.sources.nasa : a.museum[li];
 const sib = WORKS.filter((w) => w.cat === p.cat && w.key !== key); const i0 = Math.max(0, WORKS.filter((w) => w.cat === p.cat).findIndex((w) => w.key === key) - 3); const others = sib.slice(i0, i0 + 8).map((w) => paintingFor(w.key, lang)!);
 const alts = { ko: `/puzzle/${key}/`, en: `/en/puzzle/${key}/`, ja: `/ja/puzzle/${key}/` };
 const pageTitle = { ko: `${title} 직소 퍼즐 — ${artist} · jigsawlab`, en: `${title} jigsaw puzzle — ${artist} · jigsawlab`, ja: `${title} ジグソーパズル — ${artist} · jigsawlab` }[lang];
-const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: title, creator: { '@type': 'Person', name: artist }, dateCreated: p.year, image: new URL(`/jigsaw/${key}.webp`, Astro.site).toString(), description: a.about[li], ...(p.medium ? { artMedium: p.medium } : {}) };
+const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: title, creator: { '@type': 'Person', name: artist }, dateCreated: p.year, image: new URL(`/jigsaw/${key}.webp`, Astro.site).toString(), description: about, ...(p.medium ? { artMedium: p.medium } : {}) };
 ---
-<Base title={pageTitle} desc={a.about[li]} lang={lang} ogImage={`/jigsaw/o-${key}.jpg`} alts={alts} path={alts[lang]}>
+<Base title={pageTitle} desc={about} lang={lang} ogImage={`/jigsaw/o-${key}.jpg`} alts={alts} path={alts[lang]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} slot="head" />
   <div class="wrap detail">
     <p class="crumb"><a href={`${P}/#catalog`}>{T.detail.back}</a> <span>/</span> <span>{cat.name[li]}</span></p>
@@ -31,7 +33,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <div class="t-row"><h1>{title}</h1><button type="button" class="fav fav-lg" data-fav={key} aria-pressed="false" aria-label={T.catalog.favAdd}>♡</button></div>
         <p class="by">{artist}</p>
         <dl class="meta"><div><dt>{T.detail.year}</dt><dd>{p.year}</dd></div><div><dt>{T.detail.museum}</dt><dd>{a.museum[li]}</dd></div>{p.medium && <div><dt>{T.detail.medium}</dt><dd>{p.medium}</dd></div>}</dl>
-        <p class="about">{a.about[li]}</p>{p.source && <p class="src muted"><a href={p.source} rel="noopener">{T.detail.source} ({srcName})</a> · {p.license ?? 'CC0'}{p.credit && p.license?.startsWith('CC BY') && <> · {p.credit}</>}</p>}
+        <p class="about">{about}</p>{p.source && <p class="src muted"><a href={p.source} rel="noopener">{T.detail.source} ({srcName})</a> · {p.license ?? 'CC0'}{p.credit && p.license?.startsWith('CC BY') && <> · {p.credit}</>}</p>}
         <a class="btn primary lg daily-cta" id="daily-cta" href={`${P}/board/?daily=1&k=${key}`} hidden>{T.hero.today} · {T.hero.pieces(DAILY_PIECES)} {T.detail.startDaily}<span class="xp-tip">+{earnFor(DAILY_PIECES, 'daily').toLocaleString()} XP</span></a>
         <h2 class="pick-h">{T.detail.pieces}</h2>
         <div class="presets" id="presets" role="radiogroup">{PRESETS.map((n) => <button type="button" class="preset" aria-pressed={n === 48 ? 'true' : 'false'} data-n={n}><b>{n}</b><small></small></button>)}</div>

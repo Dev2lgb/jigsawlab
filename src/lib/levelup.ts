@@ -10,7 +10,7 @@ const $ = (id: string) => document.getElementById(id);
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let bound = false;
 
-export function closeAward() {
+function closeAward() {
   const d = $('aw-dlg'); if (!d) return; d.hidden = true;
   document.documentElement.classList.toggle('dlg-open', !!document.querySelector('.gdlg:not([hidden])'));
 }

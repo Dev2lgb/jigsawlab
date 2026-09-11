@@ -1,10 +1,8 @@
 // 레벨·XP·업적 규칙 (순수 계산). 서버(award.ts·api)와 브라우저(/my/·/rank/·완성 화면)가 같이 쓴다.
 // 서버가 계산한 값만 진짜다 — 브라우저 쪽은 잠긴 업적을 회색으로 그리거나 다음 레벨까지 남은 양을 보여 주는 용도
-import { CATEGORIES } from '../data/catalog';
 
 export { TOTAL_WORKS } from '../data/counts';
 import { TOTAL_WORKS } from '../data/counts';
-export const TOTAL_SHELVES = CATEGORIES.length;
 
 // ── XP
 // 조각 하나를 제자리에 놓으면 1 XP 가 기본. 시간·수순은 안 본다(클라이언트가 보내는 값이라 조작이 쉽고,

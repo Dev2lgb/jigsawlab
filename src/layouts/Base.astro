@@ -185,7 +185,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   /* 한나체는 한글·영문·숫자만. 기호(·, ×, ♡ 등)는 글리프가 비어 있어 프리텐다드로 */
   @font-face { font-family: 'BM HANNA Pro'; src: url('/fonts/BMHANNAPro.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+0020-007E, U+1100-11FF, U+3131-318E, U+AC00-D7A3; }
   :root {
-    --bg: #ffffff; --bg-2: #f5f6f8; --bg-3: #eceef2; --board: #e6e8ee; --ink: #0f1222; --ink-2: #3a3f55; --muted: #6b7188; --line: #e3e6ec; --line-2: #d2d6df;
+    --bg: #ffffff; --bg-2: #f5f6f8; --bg-3: #eceef2; --board: #e6e8ee; --ink: #0f1222; --ink-2: #3a3f55; --muted: #6b7188; --line: #e3e6ec; --line-2: #d2d6df; --line-soft: #eaedf2;
     --accent: #14172a; --accent-deep: #000000; --accent-soft: #eceef2; --accent-glow: rgba(15,18,34,.35); --gold: #f0a71b; --gold-soft: #fff4dc;
     --box: #f7f2e7; --box-2: #eee6d3; --box-3: #d9cfb5; --box-frame: #b08d55;
     --hd: 64px; --hd-gap: 12px; --top-h: calc(var(--hd) + var(--hd-gap)); --r: 24px; --r-sm: 14px; --max: 1440px; --gutter: clamp(20px, 4vw, 64px);
@@ -203,7 +203,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   button, input { font: inherit; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
   h1, h2, h3 { margin: 0; line-height: 1.15; letter-spacing: -0.01em; font-weight: 800; font-family: var(--head); }
-  .seo h3, .field label { font-family: var(--font); }
+  .seo h3 { font-family: var(--font); }
   img { max-width: 100%; }
   html[data-play="on"] { overflow: hidden; } html[data-play="on"] .foot { display: none; }
   .wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
@@ -311,10 +311,8 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: 0 10px 24px -12px rgba(15,18,34,.6); } .btn.primary:hover { background: #000; box-shadow: 0 14px 30px -12px rgba(15,18,34,.6); }
   .btn.ghost { background: transparent; border-color: transparent; } .btn.ghost:hover { background: var(--bg-3); }
   .btn.lg { min-height: 58px; padding: 12px 30px; font-size: 1.08rem; } .btn.sm { min-height: 38px; padding: 4px 16px; font-size: .9rem; } .btn.danger { color: #c0203f; border-color: #e9b8c2; } .btn.danger:hover { background: #fdf0f3; }
-  .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .85rem; font-weight: 600; white-space: nowrap; }
   .input { width: 100%; min-height: 46px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 16px; } .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
-  .field label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
   .muted { color: var(--muted); }
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: .92rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); z-index: 50; box-shadow: 0 16px 40px -12px rgba(15,18,34,.5); } .toast.show { opacity: 1; transform: translate(-50%, 0); }
   /* XP 안내 알약 — 조각 수를 고르는 자리마다 받을 XP 를 보여 준다 (여러 컴포넌트가 쓰므로 전역) */

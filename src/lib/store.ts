@@ -3,6 +3,8 @@ export type Order = 'asc' | 'desc';
 const ls = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} } };
 
 export const getBest = (key: string): number | null => { const v = ls.get(`best:${key}`); return v === null ? null : Number(v); };
+/** 초 → m:ss (기록·하던 퍼즐 표시 공용) */
+export const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 /** 개인 최고기록 갱신되면 true */
 export function saveBest(key: string, score: number, order: Order): boolean {
   const prev = getBest(key); const better = prev === null || (order === 'asc' ? score < prev : score > prev);

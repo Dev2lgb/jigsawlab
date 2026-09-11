@@ -2,14 +2,11 @@
 // 판(/board/) — 쿼리가 가리키는 퍼즐을 열어 플레이(캔버스 보드 + 트레이) → 완성 감상 → 결과.
 // 고르는 화면은 Picker.astro(/play/), 사진 만들기는 Photo.astro(/photo/) 가 맡는다
 import { JIGSAW } from '../i18n/jigsaw';
-import { UI, LI, prefix, type Lang } from '../i18n/ui';
-import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
-import { DAILY_POOL } from '../data/works';
+import { UI, prefix, type Lang } from '../i18n/ui';
 import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
+const t = JIGSAW[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
-const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
 ---
 <!-- 로딩 화면 — 첫 페인트 전에 head 의 PlayBoot 가 html[data-boot] 로 먼저 띄우고(썸네일은 --boot-art), 엔진의 boot() 가 이어받는다 -->
 <div class="fullload" id="jg-fullload" role="status"><span class="fl-art" aria-hidden="true"></span><b class="fl-name" id="jg-fullload-name"></b><span class="spin"></span><p id="jg-fullload-txt"><span class="fl-t-open">{t.opening}</span><span class="fl-t-room">{U.play.joining}</span></p></div>
@@ -129,7 +126,6 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .pieces button { border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); font-weight: 600; padding: 6px 13px; cursor: pointer; } .pieces button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .custom { width: 96px; min-height: 36px; padding: 4px 10px; }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0 0; }
-  .best { text-align: center; margin: 10px 0 0; min-height: 1.3em; font-size: .9rem; }
 
   /* 플레이 */
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
@@ -161,8 +157,6 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
   .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .boardwrap canvas.drag { cursor: grabbing; }
   .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
-  .done { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--bg); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(233,168,32,.25); white-space: nowrap; z-index: 3; font-weight: 600; }
-  .done b { font-variant-numeric: tabular-nums; color: var(--accent); }
   .tray-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; background: var(--bg-2); border-top: 1px solid var(--line); }
   .piles { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; } .piles::-webkit-scrollbar { display: none; }
   .piles :global(.pile-tab) { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .78rem; font-weight: 700; color: var(--ink-2); cursor: pointer; white-space: nowrap; font-family: inherit; transition: transform .15s var(--ease); } .piles :global(.pile-tab[aria-pressed="true"]) { background: var(--ink); color: #fff; border-color: var(--ink); } .piles :global(.pile-tab.over) { background: var(--accent); color: #fff; border-color: var(--accent); transform: scale(1.08); } .piles :global(.pile-tab small) { opacity: .7; font-weight: 500; margin-left: 4px; }
@@ -199,7 +193,6 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   @keyframes art-in { from { opacity: 0; transform: scale(.94) translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes stamp-in { from { opacity: 0; transform: rotate(6deg) scale(1.6); } to { opacity: 1; transform: rotate(6deg) scale(1); } }
   .res-info > * { animation: rise .7s var(--ease) both; } .res-info > :nth-child(2) { animation-delay: .08s; } .res-info > :nth-child(3) { animation-delay: .16s; } .res-info > :nth-child(4) { animation-delay: .22s; } .res-info > :nth-child(5) { animation-delay: .3s; } .res-info > :nth-child(6) { animation-delay: .36s; }
-  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   .res-kicker { margin: 0 0 6px; color: var(--accent); font-weight: 800; font-size: 1.05rem; }
   .res-title { font-size: clamp(1.7rem, 3.6vw, 2.8rem); letter-spacing: -.04em; margin: 0 0 18px; }
   .res-stats { display: flex; gap: clamp(18px, 3vw, 40px); padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); } .res-stats div { display: flex; flex-direction: column; } .res-stats b { font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; } .res-stats small { color: var(--muted); font-size: .85rem; font-weight: 600; }
@@ -214,7 +207,6 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   .res-xp :global(.btn) { font-size: .85rem; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   .result .row { justify-content: flex-start; margin-top: 18px; }
-  .submit { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin: 22px 0 0; padding: 18px; border-radius: var(--r); background: var(--bg-2); } .submit .field { flex: 1; min-width: 150px; }
 </style>
 
 <script>
@@ -222,26 +214,24 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, LIVE_ID, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
   import { DAILY_POOL, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
-  import { getBest, saveBest, getNick, setNick, bumpStreak, addDone, bestDoneN } from '../lib/store';
+  import { getBest, saveBest, getNick, setNick, bumpStreak, addDone, bestDoneN, fmtSec } from '../lib/store';
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
-  import { me, syncDone, syncLive, syncPieces, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, type Award, type SaveMeta } from '../lib/account';
+  import { me, syncDone, syncLive, syncPieces, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, type Award, type SaveMeta } from '../lib/account';
   import { BADGES, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
-  import { setNickRemote } from '../lib/account';
   import { randomNick } from '../lib/nickgen';
-  import { docLang, LI as LIDX, UI } from '../i18n/ui';
+  import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
   const LANG = docLang(), LI = LIDX[LANG];
   const T = JIGSAW[LANG], U = UI[LANG].play, L = UI[LANG].live, V = UI[LANG].lv; const scenes = initScenes();
-  const PFX = LANG === 'ko' ? '' : `/${LANG}`;
+  const PFX = prefix(LANG);
   // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다
   const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
@@ -343,7 +333,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
-    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false; $('jg-full').hidden = false; closeFull();
+    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; closeFull();
     scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xpWait = 0; xpPaid = rs?.paid ?? 0; xpPrev = xpPaid; xpCarry = 0; xpFirm = 0; xpBoard = 0; xpCapped = false; xpRateSrv = null; xpRateLocal = localRate(); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); xpT = performance.now(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -376,7 +366,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const i = order.indexOf(p); if (i >= 0) order.splice(i, 1);
     order.push(p); tray.appendChild(trayEl(p));
   }
-  function tick() { if (!running) return; $('jg-time').textContent = fmt((performance.now() - t0) / 1000); if (xpWait > 0 && performance.now() - xpT > XP_MS) flushXp(); }
+  function tick() { if (!running) return; $('jg-time').textContent = fmtSec((performance.now() - t0) / 1000); if (xpWait > 0 && performance.now() - xpT > XP_MS) flushXp(); }
   function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
 
   // ── 색 평균 (트레이 색상 정렬용)
@@ -899,8 +889,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     celebrateWait(() => scenes.go('result'));
   }
   function prepareResult(sec: number) {
-    $('jg-res-time').textContent = fmt(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
-    const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmt(b)) : '';
+    $('jg-res-time').textContent = fmtSec(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
+    const key = bestKey(total); const isBest = saveBest(key, sec, 'asc'); const b = getBest(key); $('jg-res-best').textContent = isBest ? T.newBest : b ? T.best(fmtSec(b)) : '';
     if (src!.kind === 'daily') bumpStreak(todayKST()); // 연속은 푼 날짜로 — 지난 판을 몰아 풀어도 하루다 (서버 award.ts 와 같은 셈)
     // 사이트 전체 완성 판 수. 방은 DO 가 완성 순간에 한 번 센다 — 접속자마다 올리면 인원수만큼 부풀었다
     if (!room) fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
@@ -908,8 +898,8 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     // member: 로그인한 채 맞춘 판만 서버에 올라간다(Base.astro 가 로그인 확인 뒤 html.member 를 붙인다). 비회원으로 맞춘 판은 나중에 로그인해도 XP 를 주지 않는다
     { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xpPaid, member: document.documentElement.classList.contains('member'), ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); settleXp().then(() => syncDone({ ...entry, paid: xpPaid })).then(showAward); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
-    sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
-    const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/photo/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
+    sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmtSec(sec), pTitle) : T.shareTitle(total, fmtSec(sec)); sb.dataset.text = T.shareText;
+    sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${PFX}/photo/` : `${location.origin}${PFX}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
     const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); rc.getContext('2d')!.drawImage(img!, 0, 0, rc.width, rc.height);
   }
   // 완성 뒤 받은 XP·레벨업·새 업적. 로그인 안 했으면 로그인하면 쌓인다는 안내만
@@ -919,7 +909,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     if (!a) {
       box.hidden = true;
       if (!authAvailable()) return;
-      me().then((u) => { if (u || !box.isConnected) return; add('note', V.signInGain); const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = V.loginBtn; b.addEventListener('click', () => (window as any).__authui?.openLogin()); box.appendChild(b); box.hidden = false; });
+      me().then((u) => { if (u || !box.isConnected) return; add('note', V.signInGain); const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = V.loginBtn; b.addEventListener('click', () => openLogin()); box.appendChild(b); box.hidden = false; });
       return;
     }
     // XP 가 0 인데 상한 때문도 아니면(사람 손으로 보기 어려운 기록) 아무 말 없이 접는다
@@ -927,7 +917,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     if (a.gained > 0) add('xp', V.gained(a.gained)); else if (a.capped) add('note', V.capped);
     if (a.levelUp) add('lvup', V.levelUp(a.level));
     for (const code of a.badges) { const d = BADGES.find((x) => x.code === code); if (!d) continue; add('bg', `${d.icon} ${BADGE_TEXT[code].n[LI]}`); }
-    if (a.badges.length || a.levelUp) { const link = document.createElement('a'); link.className = 'btn sm'; link.href = `${LANG === 'ko' ? '' : `/${LANG}`}/my/`; link.textContent = V.seeMy; box.appendChild(link); }
+    if (a.badges.length || a.levelUp) { const link = document.createElement('a'); link.className = 'btn sm'; link.href = `${PFX}/my/`; link.textContent = V.seeMy; box.appendChild(link); }
     box.hidden = false;
     await celebrated; showAwardDialog(a);
   }

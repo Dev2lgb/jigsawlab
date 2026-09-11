@@ -106,7 +106,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     import { images, hasIDB } from '../lib/db';
     import { gridFor } from '../lib/jigsaw';
     import { toast } from '../lib/share';
-    const P = location.pathname.startsWith('/en/') ? '/en' : location.pathname.startsWith('/ja/') ? '/ja' : '';
+    import { docLang, prefix } from '../i18n/langs';
+    const P = prefix(docLang());
     const $ = (id: string) => document.getElementById(id)!;
     const drop = $('ph-drop'), picked = $('ph-picked'), file = $('ph-file') as HTMLInputElement;
     const thumb = $('ph-thumb') as HTMLImageElement, grid = $('ph-grid'), startBtn = $('ph-start') as HTMLButtonElement;

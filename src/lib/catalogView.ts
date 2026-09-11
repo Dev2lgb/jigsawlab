@@ -17,4 +17,3 @@ export function shelvesFor(lang: Lang) {
 /** 진열대가 실제로 있는 카테고리 id — /play/<cat>/ 라우트를 뽑는 데 쓴다 */
 export const shelfIds = () => shelvesFor('ko').map((s) => s.id);
 export const paintingFor = (key: string, lang: Lang) => { const w = WORK_BY_KEY[key]; return w ? viewOf(w, lang) : null; };
-export const categoryOf = (key: string) => CATEGORIES.find((c) => c.id === WORK_BY_KEY[key]?.cat);

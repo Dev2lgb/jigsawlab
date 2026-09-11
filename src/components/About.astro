@@ -3,7 +3,6 @@ import { BODY } from '../i18n/body';
 // 소개 페이지 — 히어로 / 4가지 포인트 / 가이드(왼쪽 고정 목차 + 오른쪽 본문). 섹션 간격은 홈의 .sec 리듬과 동일
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
-import { JIGSAW } from '../i18n/jigsaw';
 import { WORKS } from '../data/works';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), A = T.about;

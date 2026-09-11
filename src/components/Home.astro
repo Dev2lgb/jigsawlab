@@ -121,10 +121,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .hero-side { display: flex; flex-direction: column; gap: 14px; align-items: center; }
   .today-link { color: var(--ink-2); font-size: .9rem; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(15,18,34,.3); } .today-link:hover { color: var(--ink); text-decoration-color: var(--ink); } .today-link .stat { color: var(--ink); }
   .today { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px; padding: 6px 14px 6px 10px; border-radius: 999px; background: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.9); backdrop-filter: blur(8px); color: var(--ink-2); font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .by { margin: 14px 0 0; color: var(--ink-2); font-size: clamp(1rem, 1.5vw, 1.2rem); font-weight: 500; }
-  .stat { margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--accent); font-weight: 700; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 0; }
-  .note { margin: 18px 0 0; color: var(--muted); font-size: .95rem; max-width: 34em; }
   .hero-art { display: block; border-radius: var(--r); background: var(--bg); padding: 12px; box-shadow: 0 40px 80px -30px rgba(15,18,34,.45), 0 0 0 1px rgba(15,18,34,.06); transform: perspective(1400px) rotateY(-6deg) rotateX(2deg); transition: transform .6s var(--ease), box-shadow .6s var(--ease); }
   .hero-art:hover { transform: perspective(1400px) rotateY(0deg) rotateX(0deg) translateY(-4px); box-shadow: 0 50px 90px -30px rgba(15,18,34,.5), 0 0 0 1px rgba(15,18,34,.06); }
   .hero-art canvas { display: block; width: 100%; height: auto; border-radius: calc(var(--r) - 8px); background: var(--board); }
@@ -148,7 +145,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   @keyframes marq { to { transform: translateX(-50%); } }
   @media (prefers-reduced-motion: reduce) { .marq-track { animation: none; } }
 
-  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .none { padding-top: 10px; }
+  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   /* 진열대 */
   .shelf { position: relative; margin-top: clamp(30px, 4vw, 52px); }
   .shelf h3 { display: flex; align-items: baseline; gap: 10px; font-size: 1.2rem; margin: 0; } .shelf h3 small { color: var(--muted); font-weight: 600; font-size: .9rem; }
@@ -175,16 +172,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .lvl-all { display: inline-block; margin-top: 12px; font-size: .86rem; font-weight: 700; }
   @media (max-width: 860px) { .lvl-in { grid-template-columns: 1fr; } }
 
-  /* 내 사진 */
-  .photo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: center; padding: clamp(28px, 5vw, 64px); border-radius: calc(var(--r) * 1.4); background: var(--ink); color: #fff; overflow: hidden; position: relative; transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
-  .photo:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 40px 70px -40px rgba(15,18,34,.8); }
-  .photo h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); } .photo p { margin: 14px 0 26px; color: #b9bfd6; font-size: 1.08rem; max-width: 32em; }
-  .photo-art { position: relative; height: clamp(200px, 26vw, 320px); }
-  .ph { position: absolute; border-radius: 16px; background: linear-gradient(135deg, #5f7bff, #b98cff); box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); transition: transform .6s var(--ease); }
-  .p1 { left: 8%; top: 14%; width: 44%; height: 62%; transform: rotate(-8deg); background: linear-gradient(135deg, #ffb35a, #ff5f8a); } .p2 { left: 32%; top: 4%; width: 44%; height: 66%; transform: rotate(4deg); background: linear-gradient(135deg, #14172a, #7fd3ff); } .p3 { left: 54%; top: 22%; width: 40%; height: 60%; transform: rotate(12deg); background: linear-gradient(135deg, #8bf1b0, #3ac9a5); }
-  .photo:hover .p1 { transform: rotate(-12deg) translateY(-6px); } .photo:hover .p2 { transform: rotate(1deg) translateY(-10px); } .photo:hover .p3 { transform: rotate(16deg) translateY(-4px); }
-  .piece { position: absolute; left: 40%; top: 30%; width: 26%; fill: #fff; filter: drop-shadow(0 20px 30px rgba(0,0,0,.5)); animation: bob 4s ease-in-out infinite; } @keyframes bob { 50% { transform: translateY(-10px) rotate(6deg); } }
-  @media (max-width: 760px) { .photo { grid-template-columns: 1fr; } .photo-art { order: -1; height: 180px; } }
 
 </style>
 
@@ -194,12 +181,11 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import { DAILY_POOL } from '../data/works';
   import { getStreak, getBest } from '../lib/store';
   import { initFavUI } from '../lib/fav';
-  import { docLang, LI as LIDX, UI, type Lang } from '../i18n/ui';
+  import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
   const LANG = docLang(), LI = LIDX[LANG], T = UI[LANG];
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   initFavUI();
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
-  const P = LANG === 'ko' ? '' : `/${LANG}`;
+  const P = prefix(LANG);
   { const st = getStreak(); if (st > 0) { const el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = T.play.streak(st); el.hidden = false; } }
   { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = new Date(Date.now() + 9 * 3600e3 - i * 86400e3).toISOString().slice(0, 10); const pk = dailyPick(d, DAILY_POOL); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.painting.title[LI]; a.innerHTML = `<img src="/jigsaw/t-${pk.painting.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
   { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.painting.title[LI]); }

@@ -3,7 +3,6 @@ const KEY = 'fav:keys';
 const read = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; } };
 const write = (l: string[]) => { try { localStorage.setItem(KEY, JSON.stringify(l)); } catch {} };
 export const favs = () => read();
-export const isFav = (k: string) => read().includes(k);
 export function toggleFav(k: string) { const l = read(); const i = l.indexOf(k); if (i >= 0) l.splice(i, 1); else l.unshift(k); write(l); return i < 0; }
 function paint() { const f = new Set(read()); document.querySelectorAll<HTMLElement>('.fav[data-fav]').forEach((b) => { const on = f.has(b.dataset.fav!); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '♥' : '♡'; }); }
 /** 즐겨찾기 진열대: 페이지에 있는 상자를 복제해 채움 */

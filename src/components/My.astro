@@ -81,17 +81,16 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
   </style>
   <script>
     import { saves, images, hasIDB, type SaveData } from '../lib/db';
-    import { getDone, type DoneEntry } from '../lib/store';
+    import { getDone, fmtSec, type DoneEntry } from '../lib/store';
     import { openLogin, askNick } from '../lib/authui';
-    import { me, logout, deleteAccount, setNickRemote, fetchSync, fetchSave, syncDelSave, authAvailable, fetchLevel, type SaveMeta } from '../lib/account';
+    import { me, logout, deleteAccount, setNickRemote, fetchSync, syncDelSave, authAvailable, fetchLevel, type SaveMeta } from '../lib/account';
     import { BADGES, levelProgress, tierOf } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
-    import { docLang, LI as LIDX, UI, type Lang } from '../i18n/ui';
-    const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = LANG === 'ko' ? '' : `/${LANG}`;
+    import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
+    const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = prefix(LANG);
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, string[]>;
-    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const $ = (id: string) => document.getElementById(id)!;
     const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
       const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
@@ -106,12 +105,12 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       const box = $('l-prog'); box.innerHTML = ''; let list: (SaveData | SaveMeta)[] = []; if (hasIDB()) try { list = await saves.all(); } catch {}
       const have = new Set(list.map((x) => x.id)); const remoteIds = new Set(remote.saves.map((m) => m.id)); for (const m of remote.saves) if (!have.has(m.id)) list.push(m); list.sort((a, b) => b.savedAt - a.savedAt);
       $('e-prog').hidden = !!list.length; $('c-prog').textContent = list.length ? String(list.length) : '';
-      for (const sv of list) box.appendChild(card({ href: `${P}/board/?resume=${encodeURIComponent(sv.id)}`, img: sv.thumb, title: sv.name, sub: `<b>${Math.round((sv.done / sv.total) * 100)}%</b> · ${M.pieces(sv.total)} · ${fmt(sv.elapsed / 1000)}`, bar: (sv.done / sv.total) * 100, badge: remoteIds.has(sv.id) ? A.synced : undefined, onDel: async () => { try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} if (remoteIds.has(sv.id)) { await syncDelSave(sv.id); remote.saves = remote.saves.filter((m) => m.id !== sv.id); } renderProg(); } }));
+      for (const sv of list) box.appendChild(card({ href: `${P}/board/?resume=${encodeURIComponent(sv.id)}`, img: sv.thumb, title: sv.name, sub: `<b>${Math.round((sv.done / sv.total) * 100)}%</b> · ${M.pieces(sv.total)} · ${fmtSec(sv.elapsed / 1000)}`, bar: (sv.done / sv.total) * 100, badge: remoteIds.has(sv.id) ? A.synced : undefined, onDel: async () => { try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} if (remoteIds.has(sv.id)) { await syncDelSave(sv.id); remote.saves = remote.saves.filter((m) => m.id !== sv.id); } renderProg(); } }));
     }
     function renderDone() {
       const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
-      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto ? undefined : `${P}/puzzle/${d.key}/`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmt(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto ? undefined : `${P}/puzzle/${d.key}/`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);

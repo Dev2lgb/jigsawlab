@@ -9,6 +9,7 @@ import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
+import { dailyWindow } from '../lib/daily';
 import Box from './Box.astro';
 const { lang = 'ko', cat } = Astro.props as { lang?: Lang; cat?: string };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
@@ -18,6 +19,7 @@ const here = cat ? all.find((s) => s.id === cat) : null;
 if (cat && !here) throw new Error(`Picker: 카테고리 '${cat}' 에 작품이 없습니다`);
 const shelves = here ? [here] : all;
 const rel = here ? `/play/${here.id}/` : '/play/';
+const win = here ? null : dailyWindow(DAILY_POOL, lang); // 오늘의 퍼즐 칸은 /play/ 에만 있다
 const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle} · jigsawlab`;
 const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
 ---
@@ -25,6 +27,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
   <div class="wrap picker">
     <h1 class="pick-title">{here ? U.catalog.catH1(here.name) : t.title}</h1>
     <p class="pick-sub">{here ? desc : t.sub}</p>
+    {win && <script is:inline type="application/json" id="daily-win" set:html={JSON.stringify(win)} />}
 
     {!here && <div class="sources">
       <a class="src daily" id="pk-daily" href={`${P}/puzzle/${daily.painting.key}/?daily=1`} data-key={daily.painting.key}>
@@ -132,8 +135,8 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     import { fetchSync, syncDelSave, me, type SaveMeta } from '../lib/account';
     import { initFavUI, initSearch } from '../lib/fav';
     import { toast } from '../lib/share';
-    import { todayKST, dailyPick, DAILY_PIECES } from '../lib/jigsaw';
-    import { DAILY_POOL } from '../data/works';
+    import { DAILY_PIECES } from '../lib/jigsaw';
+    import { dailyLite, dayKST } from '../lib/daily';
     import { JIGSAW } from '../i18n/jigsaw';
     import { docLang, prefix, LI, UI } from '../i18n/ui';
     import { fmtSec } from '../lib/store';
@@ -144,9 +147,9 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     const U = UI[LANG], T = JIGSAW[LANG];
 
     // 자정을 넘겨 열어 둔 탭이면 오늘의 그림이 바뀌어 있다 (/play/ 에만 있는 칸)
-    { const a = $('pk-daily') as HTMLAnchorElement | null; const pick = dailyPick(todayKST(), DAILY_POOL);
-      if (a && a.dataset.key !== pick.painting.key) { a.dataset.key = pick.painting.key; a.href = `${P}/puzzle/${pick.painting.key}/?daily=1`;
-        ($('pk-daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`; $('pk-daily-cap')!.textContent = T.dailyCap(pick.painting.title[li], DAILY_PIECES); } }
+    { const a = $('pk-daily') as HTMLAnchorElement | null; if (a) dailyLite(dayKST(), li).then((pick) => { // 자정을 넘긴 탭·묵은 배포 보정 (#daily-win)
+      if (a.dataset.key !== pick.key) { a.dataset.key = pick.key; a.href = `${P}/puzzle/${pick.key}/?daily=1`;
+        ($('pk-daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.key}.webp`; $('pk-daily-cap')!.textContent = T.dailyCap(pick.title, DAILY_PIECES); } }); }
 
     // 옆줄이 화면보다 길어 안에서 스크롤될 때(짧은 화면·모바일 가로 칩), 지금 고른 칸이 보이도록 맞춘다. 페이지는 건드리지 않는다
     { const list = document.querySelector<HTMLElement>('.cats-list'), on = list?.querySelector<HTMLElement>('.cat.on');

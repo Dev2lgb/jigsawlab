@@ -1,6 +1,6 @@
 // API 라우트 + 방(Durable Object) 웹소켓 프로토콜. 배포 빌드 기준 (개발 모드 빌드에서는 없는 라우트에 POST 하면 wrangler 프록시가 죽는다)
 // 검사하는 불변식: 조각·완성 정산과 paid, 하루 상한(한 묶음 통째 거절), 재도전 감산, 내 순위, 방 id 는 경로에서만,
-// take/mv/grab→deny/drop/untake/lock/merge/resync/release 와 나간 사람의 점유 풀기
+// take/mv/grab→deny/drop/untake/lock/merge/resync/release/emo 와 나간 사람의 점유 풀기
 import { BASE, get, post, ok, finish } from './lib.mjs';
 
 // ── 공개 라우트
@@ -59,6 +59,10 @@ try {
   send(B, { t: 'grab', g: '0' }); const dn = await next(B, 'deny'); ok(dn.g === '0', 'ws: 남이 잡은 뭉치 grab → deny');
   send(B, { t: 'mv', g: '0', dx: 99, dy: 99 }); ok(await none(A, 'mv'), 'ws: 남이 잡은 뭉치 mv 는 무시');
   send(A, { t: 'cur', x: 'abc', y: 12.7 }); const cu = await next(B, 'cur'); ok(cu.x === 0 && cu.y === 13, 'ws: cur 숫자 검증', JSON.stringify(cu));
+  // 이모지 — 목록 번호만 중계, 보낸 사람에겐 안 돌려주고(클라이언트가 바로 띄운다), 600ms 안 연타·범위 밖은 조용히 버린다
+  send(A, { t: 'emo', e: 2 }); const em = await next(B, 'emo'); ok(em.e === 2 && em.id === init.you.id, 'ws: emo 브로드캐스트', JSON.stringify(em));
+  send(A, { t: 'emo', e: 3 }); ok(await none(B, 'emo'), 'ws: emo 연타(600ms 안) 거절'); ok(!A.inbox.some((m) => m.t === 'emo'), 'ws: emo 는 보낸 사람에게 안 돌아옴');
+  send(B, { t: 'emo', e: 99 }); send(B, { t: 'emo', e: -1 }); send(B, { t: 'emo', e: 1.5 }); ok(await none(A, 'emo'), 'ws: emo 목록 밖 번호 거절');
   send(A, { t: 'drop', g: '0', dx: 30, dy: 40 }); const dr = await next(B, 'drop'); ok(dr.dx === 30 && dr.dy === 40, 'ws: drop');
   send(B, { t: 'grab', g: '0' }); const gb = await next(A, 'grab'); ok(gb.g === '0' && gb.id !== init.you.id, 'ws: 놓인 뭉치는 남이 grab 가능');
   send(B, { t: 'untake', g: '0' }); const ut = await next(A, 'untake'); ok(ut.g === '0', 'ws: untake');

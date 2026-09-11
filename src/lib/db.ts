@@ -8,7 +8,7 @@ const tx = async (store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStor
 export interface SaveGroup { dx: number; dy: number; idx: number[] }
 export interface SaveData {
   id: string; v: 1; kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; day?: string; seed: number; cols: number; rows: number; total: number; imgW: number; imgH: number;
-  locked: number[]; groups: SaveGroup[]; tray: number[]; pile: number[]; piles: string[]; elapsed: number; moves: number; savedAt: number; thumb: string; done: number;
+  locked: number[]; groups: SaveGroup[]; tray: number[]; elapsed: number; moves: number; savedAt: number; thumb: string; done: number;
   /** 이 판에서 조각 단위로 이미 XP 를 받은 조각 수. 이어하기로 판이 넘어가도 완성 때 두 번 주지 않으려면 같이 따라와야 한다 */
   paid?: number;
 }

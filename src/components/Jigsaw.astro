@@ -282,6 +282,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 멀티 방
   let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player & { x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
   const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
+  // 탭마다 고정된 접속 id — 재접속하면 서버가 같은 pid 의 옛 소켓을 닫아 목록에 내가 여럿으로 남지 않는다. 탭이 다르면 다른 사람(같은 브라우저 두 탭은 둘)
+  const PID = (() => { const fresh = () => Math.random().toString(36).slice(2, 10); try { let p = sessionStorage.getItem('jl:pid'); if (!p) { p = fresh(); sessionStorage.setItem('jl:pid', p); } return p; } catch { return fresh(); } })();
   let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, peek = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
@@ -756,7 +758,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (!room) return; const id = room.id; const gen = ++wsGen; clearTimeout(reconT);
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'; let ws: WebSocket; try { ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); } catch { retryWs(bail); return; } room.ws = ws;
     const alive = () => !!room && gen === wsGen;
-    ws.addEventListener('open', () => { if (!alive()) return; wsTries = 0; send({ t: 'hello', nick: getNick(), photo: !!photoBlob }); clearInterval(pingT); pingT = window.setInterval(() => pingWs(), 15000); });
+    ws.addEventListener('open', () => { if (!alive()) return; wsTries = 0; send({ t: 'hello', nick: getNick(), photo: !!photoBlob, pid: PID }); clearInterval(pingT); pingT = window.setInterval(() => pingWs(), 15000); });
     ws.addEventListener('close', () => { if (!alive()) return; clearInterval(pingT); clearTimeout(pongT); if (!room!.me && !running) return bail?.(); retryWs(bail); });
     ws.addEventListener('message', (ev) => { if (!alive()) return; let m: ServerMsg; try { m = JSON.parse(ev.data); } catch { return; } if (m.t === 'pong') { clearTimeout(pongT); pongT = 0; return; } onRoomMsg(m); });
   }

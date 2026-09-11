@@ -1,6 +1,6 @@
 // API 라우트 + 방(Durable Object) 웹소켓 프로토콜. 배포 빌드 기준 (개발 모드 빌드에서는 없는 라우트에 POST 하면 wrangler 프록시가 죽는다)
 // 검사하는 불변식: 조각·완성 정산과 paid, 하루 상한(한 묶음 통째 거절), 재도전 감산, 내 순위, 방 id 는 경로에서만,
-// take/mv/grab→deny/drop/untake/lock/merge/resync/release/emo 와 나간 사람의 점유 풀기
+// take/mv/grab→deny/drop/untake/lock/merge/resync/release/emo, 같은 pid 재접속의 옛 소켓 정리와 나간 사람의 점유 풀기
 import { BASE, get, post, ok, finish } from './lib.mjs';
 
 // ── 공개 라우트
@@ -31,7 +31,8 @@ import { BASE, get, post, ok, finish } from './lib.mjs';
 // ── 방 프로토콜 (DO)
 const room = await post('/api/room', { key: 'wave', n: 48 }); ok(typeof room.body?.id === 'string' && room.body.id.length === 6, 'room: 만들기', JSON.stringify(room));
 const rid = room.body.id;
-{ const r = await fetch(`${BASE}/api/room/${rid}/create`, { method: 'POST', body: '{}' }); ok(r.status >= 400 && r.status !== 400, `room: /create 는 밖에서 안 열림 — DO 가 아니라 Astro 가 막는다 (${r.status})`); }
+// 몸통 없이 — 몸통을 실은 POST 에 몸통을 안 읽고 응답하면 wrangler 개발 프록시가 'Can't read from request stream after response has been sent' 를 던지고 다음 요청이 'Network connection lost' 로 죽는다(타이밍 따라)
+{ const r = await fetch(`${BASE}/api/room/${rid}/create`, { method: 'POST' }); ok(r.status >= 400 && r.status !== 400, `room: /create 는 밖에서 안 열림 — DO 가 아니라 Astro 가 막는다 (${r.status})`); }
 { const d = await get(`/api/room/${rid}`); ok(d.id === rid && d.total === 48 && !('lang' in d) && d.players === 0, 'room: 정보 (lang 없음)', JSON.stringify(d)); }
 { const r = await post('/api/room', { key: 'nope', n: 48 }); ok(r.status === 400, 'room: 없는 그림 → 400'); }
 // ── 서버 렌더 페이지 — [...lang] 은 진짜 언어 접두어일 때만 (공유 카드 /s/, 초대 /i/)
@@ -52,7 +53,7 @@ const none = (ws, t, ms = 400) => new Promise((res) => setTimeout(() => res(!ws.
 const send = (ws, m) => ws.send(JSON.stringify(m));
 try {
   const A = await open(rid), B = await open(rid);
-  send(A, { t: 'hello', nick: 'A' }); const init = await next(A, 'init'); ok(init.state?.total === 48 && init.you?.nick === 'A' && init.hasPhoto === false, 'ws: init');
+  send(A, { t: 'hello', nick: 'A', pid: 'pa' }); const init = await next(A, 'init'); ok(init.state?.total === 48 && init.you?.nick === 'A' && init.hasPhoto === false, 'ws: init');
   send(B, { t: 'hello', nick: 'B' }); await next(B, 'init'); const j = await next(A, 'join'); ok(j.p?.nick === 'B', 'ws: join 브로드캐스트');
   send(A, { t: 'take', g: 0, dx: 10.4, dy: 20.6 }); const tk = await next(B, 'take'); ok(tk.g === '0' && tk.dx === 10 && tk.dy === 21 && tk.id === init.you.id, 'ws: take (좌표 반올림)', JSON.stringify(tk));
   send(A, { t: 'mv', g: '0', dx: 15, dy: 25 }); const mv = await next(B, 'mv'); ok(mv.g === '0' && mv.dx === 15 && mv.dy === 25, 'ws: mv');
@@ -73,8 +74,15 @@ try {
   send(A, { t: 'take', g: 3, dx: 0, dy: 0 }); await next(B, 'take'); send(A, { t: 'take', g: 4, dx: 0, dy: 0 }); await next(B, 'take');
   send(A, { t: 'merge', g: '4', into: '3', dx: 0, dy: 0 }); const mgA = await next(A, 'merge'), mgB = await next(B, 'merge'); ok(mgA.g === '4' && mgA.into === '3' && mgB.into === '3', 'ws: merge');
   send(A, { t: 'take', g: 5, dx: 500, dy: 500 }); await next(B, 'take'); send(A, { t: 'lock', g: '5', dx: 500, dy: 500 }); const rs2 = await next(A, 'resync'); ok(!!rs2, 'ws: 제자리 아닌 lock → resync');
-  A.close(); const lv = await next(B, 'leave'); ok(lv.id === init.you.id, 'ws: leave');
-  const rel = await next(B, 'release'); ok(rel.g === '5', 'ws: 나간 사람 점유 release', JSON.stringify(rel));
+  // 같은 탭(pid)이 다시 붙으면 옛 소켓을 그 자리에서 닫고 점유를 푼다 — 소리 없이 죽은 접속이 목록에 남아 같은 사람이 여럿으로 보이던 문제
+  B.inbox = B.inbox.filter((m) => m.t !== 'join'); // A 의 첫 join 이 남아 있다(둘 다 연 뒤 hello 를 보냈으므로)
+  const A2 = await open(rid); send(A2, { t: 'hello', nick: 'A', pid: 'pa' }); const init2 = await next(A2, 'init');
+  ok(init2.players.length === 2 && !init2.players.some((p) => p.id === init.you.id), 'ws: 같은 pid 재접속 → 옛 접속은 목록에서 빠짐', JSON.stringify(init2.players));
+  const lv0 = await next(B, 'leave'); ok(lv0.id === init.you.id, 'ws: 옛 접속 leave');
+  const rel0 = await next(B, 'release'); ok(rel0.g === '5', 'ws: 옛 접속의 점유 release', JSON.stringify(rel0));
+  const j2 = await next(B, 'join'); ok(j2.p?.id === init2.you.id, 'ws: 새 접속 join', JSON.stringify(j2));
+  await new Promise((r) => setTimeout(r, 300)); ok(A.readyState >= 2, `ws: 옛 소켓은 서버가 닫음 (readyState ${A.readyState})`);
+  A2.close(); const lv = await next(B, 'leave'); ok(lv.id === init2.you.id, 'ws: leave');
   B.close();
   const info = await get(`/api/room/${rid}`); ok(info.locked === 1 && info.players === 0, 'room: 잠긴 조각 1, 접속 0', JSON.stringify(info));
 } catch (e) { ok(false, 'ws: ' + e.message); }

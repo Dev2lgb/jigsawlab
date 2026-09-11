@@ -38,7 +38,7 @@ export async function newPage(br, { member = false, viewport = { width: 1200, he
 /** 판이 열려 조각이 잘린 뒤까지. 훅(window.__jigsaw)은 개발 모드 빌드에만 있다 */
 export const waitPlay = async (page, hook = true) => { await page.waitForFunction((h) => document.querySelector('.scene.play')?.classList.contains('active') && document.getElementById('jg-loading')?.hidden && document.querySelectorAll('#jg-tray .tp').length > 0 && (!h || !!window.__jigsaw), hook, { timeout: 30000 }); await page.waitForTimeout(300); };
 export const trayCount = (page) => page.$$eval('#jg-tray .tp', (els) => els.length);
-export const leftCount = async (page) => Number((await page.$eval('#jg-left', (e) => e.textContent)).replace(/\D/g, ''));
+export const leftCount = async (page) => Number(await page.$eval('#jg-left-n', (e) => e.textContent));
 export const demo = (page, n) => page.evaluate((k) => window.__jigsaw.demo(k), n);
 export const waitResult = (page) => page.waitForFunction(() => document.querySelector('.scene.result')?.classList.contains('active'), null, { timeout: 20000 });
 export const hud = async (page) => ((await page.isVisible('#jg-xp-hud')) ? page.$eval('#jg-xp-hud', (e) => e.textContent) : null);

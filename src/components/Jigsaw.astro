@@ -40,7 +40,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   <div class="play-wrap">
     <div class="hud">
       <span class="chip"><Fragment set:html={icon('clock', 14)} /> <b id="jg-time">0:00</b></span>
-      <span class="chip" id="jg-left"></span>
       <span class="hud-name muted" id="jg-hud-name"></span>
       <button type="button" class="tb" id="jg-tosolo-invite" hidden><Fragment set:html={icon('users', 15)} /><span>{U.play.together}</span></button>
       <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('user-plus', 15)} /><span>{U.play.invite}</span></button></span>
@@ -56,10 +55,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     <div class="progress" aria-hidden="true"><i id="jg-prog"></i></div>
     <p class="roomnote" id="jg-roomnote" hidden></p>
     <div class="boardwrap" id="jg-boardwrap"><canvas id="jg-board"></canvas><p class="loading muted" id="jg-loading">{t.loading}</p>
+      <div class="left-n" id="jg-left"><b id="jg-left-n">0</b><span id="jg-left-tot"></span></div>
       <canvas class="fx" id="jg-fx"></canvas>
       <div class="emofx" id="jg-emofx" aria-hidden="true"></div>
     </div>
-    <div class="tray-bar" id="jg-traybar"><button type="button" class="tb" id="jg-emo" hidden title={U.play.emoji}><Fragment set:html={icon('smile', 15)} /><span>{U.play.emoji}</span></button><span class="sp"></span><span class="xpc" id="jg-xp-hud" hidden></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
+    <div class="tray-bar" id="jg-traybar"><button type="button" class="tb" id="jg-emo" hidden title={U.play.emoji}><Fragment set:html={icon('smile', 15)} /><span>{U.play.emoji}</span></button><div class="pal" id="jg-pal" hidden role="group" aria-label={U.play.sortColor}></div><span class="sp"></span><span class="xpc" id="jg-xp-hud" hidden></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
     <div class="tray-drop" id="jg-traydrop" hidden><b>{U.play.dropHere}</b></div>
     <div class="emopick" id="jg-emopick" hidden role="dialog" aria-label={U.play.emoji}><div class="ep-list" id="jg-emopick-list"></div></div>
@@ -143,14 +143,25 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .pl-list :global(li .rn) { flex: none; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .75rem; font-weight: 600; cursor: pointer; }
   .pldlg .row { display: flex; justify-content: flex-end; } .pldlg .btn { display: inline-flex; align-items: center; gap: 6px; }
   @media (max-width: 640px) { .roombar { margin-left: 0; gap: 4px; } #jg-invite, #jg-tosolo-invite, #jg-players-btn { height: 32px; padding: 0 9px; border-radius: 10px; font-size: .9rem; } #jg-invite :global(span), #jg-tosolo-invite :global(span) { display: none; } #jg-invite, #jg-tosolo-invite { width: 32px; padding: 0; justify-content: center; } .hud { flex-wrap: nowrap; overflow: hidden; gap: 4px; } }
-  .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } .hud .chip:nth-child(2) { display: none; } }
+  .hud-name { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-left: 4px; } @media (max-width: 640px) { .hud-name { display: none; } }
   .progress { height: 3px; background: var(--line-soft); flex: none; } .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
   @media (max-width: 480px) { .hud { gap: 4px; padding: 6px max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left)); } .hud .chip { font-size: .78rem; padding: 3px 8px; } .ib { width: 32px; height: 32px; } }
   .ib { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 1rem; cursor: pointer; display: grid; place-items: center; } .ib[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .left-n { position: absolute; z-index: 2; top: 7px; right: max(8px, env(safe-area-inset-right)); pointer-events: none; display: inline-flex; align-items: baseline; gap: 1px; padding: 2px 9px; border-radius: 999px; background: rgba(255,255,255,.74); color: var(--muted); font-size: .72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .left-n b { color: var(--ink); font-size: .84rem; font-weight: 800; }
   .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
   .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .boardwrap canvas.drag { cursor: grabbing; }
   .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
   .tray-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); background: var(--bg-2); border-top: 1px solid var(--line); }
+  .pal { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 3px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .pal::-webkit-scrollbar { display: none; }
+  .pal[hidden] { display: none; }
+  .pal :global(.pc) { flex: none; width: 22px; height: 22px; padding: 0; border: 1px solid rgba(23,26,36,.14); border-radius: 7px; cursor: pointer; transition: transform .12s var(--ease), opacity .15s; }
+  .pal :global(.pc:hover), .pal :global(.pc:focus-visible) { transform: scale(1.14); }
+  .pal :global(.pc.off) { opacity: .26; }
+  .tray-bar.paloon .sp { flex: 0 0 0; } .tray-bar.paloon #jg-sort span { display: none; }
+  /* 좁은 폰에서 띠가 눌리지 않게: 색 띠가 떠 있는 동안만 XP 칩을 한 치수 줄인다 (390px 에 여덟 칩이 다 선다) */
+  @media (max-width: 480px) { .pal { gap: 2px; } .pal :global(.pc) { width: 17px; height: 20px; border-radius: 6px; } .tray-bar.paloon .xpc { font-size: .72rem; padding: 3px 7px; } }
   .emopick { position: fixed; z-index: 12; left: 50%; transform: translateX(-50%); padding: 8px; border-radius: 18px; background: var(--bg); box-shadow: 0 24px 60px -20px rgba(15,18,34,.55), 0 0 0 1px var(--line); animation: pp .18s var(--ease); } @keyframes pp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
   .ep-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; } .ep-list :global(button) { width: 52px; height: 52px; border-radius: 14px; border: 0; background: transparent; font-size: 1.7rem; line-height: 1; cursor: pointer; transition: transform .12s var(--ease), background .12s; } .ep-list :global(button:hover), .ep-list :global(button:focus-visible) { background: var(--bg-2); transform: scale(1.15); } .ep-list :global(button:active) { transform: scale(.95); }
   /* 방 이모지 — 판 한가운데 떠올랐다 사라진다. 동시에 여러 개면 --slot 으로 옆에 비껴 선다. 끌기를 안 막게 pointer-events 없음 */
@@ -280,7 +291,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
 
   // ── 게임 상태 — 느슨한 조각은 모두 "뭉치(Group)"에 속한다. 뭉치의 (dx,dy)는 제자리 대비 오프셋이라 뭉치 안 조각들은 격자 관계를 그대로 유지한다
   type Group = { id: number; dx: number; dy: number; pieces: Piece[]; sid?: string };
-  type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; hue: number; lum: number };
+  type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; hue: number; lum: number; sat: number };
   // 멀티 방
   let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player & { x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
   const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
@@ -340,7 +351,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
-    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
+    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
     scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -348,8 +359,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const bmpScale = Math.min(1, MAXSIDE / Math.max(imgW, imgH));
     let i = 0;
     for (let r = 0; r < g.rows; r++) { grid[r] = []; for (let c = 0; c < g.cols; c++) {
-      const bmp = renderPiece(cut, r, c, img, bmpScale); const [hue, lum] = avgColor(bmp.canvas);
-      const p: Piece = { r, c, bmp, g: null, locked: false, hue, lum }; pieces.push(p); grid[r][c] = p;
+      const bmp = renderPiece(cut, r, c, img, bmpScale); const [hue, lum, sat] = avgColor(bmp.canvas);
+      const p: Piece = { r, c, bmp, g: null, locked: false, hue, lum, sat }; pieces.push(p); grid[r][c] = p;
       if (++i % 60 === 0 && total > 150) { $('jg-loading').textContent = `${T.loading} ${i}/${total}`; await new Promise((res) => setTimeout(res)); if (myGen !== gen) return; }
     } }
     if (rs) {
@@ -365,19 +376,26 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; pieceOf.set(el, p); bindTray(el, p); trayIO.observe(el); return el; }
   /** 조각을 트레이에 세운다 (되돌리기·방의 untake/deny 공용).
-   *  order 는 저장되는 트레이 순서다 — 색상 정렬이 판 위 조각을 order 에서 떨구므로 여기서 다시 넣지 않으면
-   *  되돌린 조각이 저장에서 빠져 이어하기 때 판에도 트레이에도 없이 사라진다. 낡은 칸은 관찰도 함께 끊는다 */
+   *  order 는 저장되는 트레이 순서다 — 여기서 넣지 않으면 되돌린 조각이 저장에서 빠져 이어하기 때
+   *  판에도 트레이에도 없이 사라진다. order 에 자리가 남아 있으면 맨 뒤가 아니라 그 자리로 돌려보낸다
+   *  (색상순으로 세워 두었으면 제 색 자리). 낡은 칸은 관찰도 함께 끊는다 */
   function toTray(p: Piece) {
     if (p.el) { trayIO.unobserve(p.el); p.el.remove(); }
-    const i = order.indexOf(p); if (i >= 0) order.splice(i, 1);
-    order.push(p); tray.appendChild(trayEl(p));
+    let i = order.indexOf(p); if (i < 0) { order.push(p); i = order.length - 1; }
+    const el = trayEl(p);
+    let next: HTMLElement | null = null;
+    for (let j = i + 1; j < order.length; j++) { const q = order[j]; if (q.el && q.el.parentNode === tray) { next = q.el; break; } }
+    tray.insertBefore(el, next); refreshPal();
   }
   function tick() { if (!running) return; $('jg-time').textContent = fmtSec((performance.now() - t0) / 1000); xp.tick(); }
-  function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
+  function updateHud() {
+    const rest = total - lockedN; $('jg-left-n').textContent = String(rest); $('jg-left-tot').textContent = `/${total}`;
+    $('jg-left').setAttribute('aria-label', T.left(rest)); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; refreshPal();
+  }
 
   // ── 색 평균 (트레이 색상 정렬용)
   const cc = document.createElement('canvas'); cc.width = 4; cc.height = 4; const cctx = cc.getContext('2d', { willReadFrequently: true })!;
-  function avgColor(cv: HTMLCanvasElement): [number, number] { cctx.clearRect(0, 0, 4, 4); cctx.drawImage(cv, 0, 0, 4, 4); const d = cctx.getImageData(0, 0, 4, 4).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 100) continue; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } if (!n) return [0, 0]; r /= n * 255; g /= n * 255; b /= n * 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0; if (mx !== mn) { const dd = mx - mn; h = mx === r ? ((g - b) / dd + (g < b ? 6 : 0)) : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4; h /= 6; } const sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)); return [sat < 0.12 ? -1 + l : h, l]; }
+  function avgColor(cv: HTMLCanvasElement): [number, number, number] { cctx.clearRect(0, 0, 4, 4); cctx.drawImage(cv, 0, 0, 4, 4); const d = cctx.getImageData(0, 0, 4, 4).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 100) continue; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } if (!n) return [0, 0, 0]; r /= n * 255; g /= n * 255; b /= n * 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0; if (mx !== mn) { const dd = mx - mn; h = mx === r ? ((g - b) / dd + (g < b ? 6 : 0)) : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4; h /= 6; } const sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)); return [sat < 0.12 ? -1 + l : h, l, sat]; }
 
   // ── 판 위 조각 윤곽선 (켜면 한 번 그려 캐시)
   function outlineCanvas() { if (outlineLayer) return outlineLayer; if (pieces.length < total) { const e = document.createElement('canvas'); e.width = e.height = 1; return e; } const cv = document.createElement('canvas'); const k = Math.min(1, 1600 / Math.max(cut.W, cut.H)); cv.width = Math.ceil(cut.W * k); cv.height = Math.ceil(cut.H * k); const c = cv.getContext('2d')!; c.scale(k, k); c.lineWidth = Math.max(1.5, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.28)'; for (const p of pieces) c.stroke(piecePath(cut, p.r, p.c)); outlineLayer = cv; return cv; }
@@ -410,10 +428,62 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const gone = () => { pop.remove(); emoSlots.delete(slot); }; inner.addEventListener('animationend', gone, { once: true }); setTimeout(gone, 2500);
   }
   $('jg-emo').addEventListener('click', openEmoPick);
+  /** 트레이 순서. 판 위·잠긴 조각도 빠뜨리지 않고 같이 세운다 — 꺼냈다 되돌린 조각이 제 자리(색상순이면 제 색 자리)로
+   *  돌아가려면 order 안에 자리가 남아 있어야 한다. 저장에는 트레이에 선 몫만 나간다(boardSnapshot) */
   function sortTray(mode: 'color' | 'shuffle') {
-    const vis = order.filter((p) => !p.locked && !p.g);
-    if (mode === 'shuffle') vis.sort(() => Math.random() - 0.5); else vis.sort((a, b) => a.hue - b.hue || a.lum - b.lum);
-    order = vis; for (const p of vis) if (p.el) tray.appendChild(p.el); tray.scrollLeft = 0; scheduleSave();
+    const seen = new Set(order); const all = [...order, ...pieces.filter((p) => !seen.has(p))];
+    if (mode === 'shuffle') all.sort(() => Math.random() - 0.5); else all.sort((a, b) => a.hue - b.hue || a.lum - b.lum);
+    order = all; for (const p of all) if (p.el && p.el.parentNode === tray) tray.appendChild(p.el);
+    tray.scrollLeft = 0; scheduleSave(); if (mode === 'color') buildPal(); else hidePal();
+  }
+
+  // ── 색 팔레트: 색상순으로 세웠을 때만 트레이 바에 뜨는 색 띠. 트레이를 여덟 토막 내어 대표색을 보여 주고,
+  //    누르면 그 색이 시작되는 자리로 트레이를 굴린다. 자리가 좁은 폰을 위해 띠 자체도 가로로 굴러간다
+  const PAL_N = 8;
+  let palCuts: number[] = []; // 구간마다 시작 hue — order 가 hue 오름차순인 동안만 뜻이 있다
+  const inTray = (p: Piece) => !p.locked && !p.g && !!p.el && p.el.parentNode === tray && !p.el.hidden;
+  /** 무채색 조각은 hue 에 -1+밝기로 접혀 있다(avgColor) — 색칩은 그걸 회색으로 편다 */
+  function chipColor(p: Piece) {
+    return p.hue < 0 ? `hsl(0 0% ${Math.round((p.hue + 1) * 100)}%)`
+      : `hsl(${Math.round(p.hue * 360)} ${Math.round(Math.min(1, Math.max(0.25, p.sat)) * 78)}% ${Math.round(Math.min(0.88, Math.max(0.12, p.lum)) * 100)}%)`;
+  }
+  function palIdx(h: number) { let i = 0; while (i + 1 < palCuts.length && h >= palCuts[i + 1]) i++; return i; }
+  /** 구간 대표색은 평균이 아니라 그 구간에서 가장 진한 조각으로 — 평균을 쓰면 옅은 그림(칸딘스키·수채)에서 칩이 죄다
+   *  비슷한 베이지가 되어 띠가 무슨 색인지 알아볼 수 없다. hue 순으로 세워 둔 구간이라 대표성은 해치지 않는다 */
+  function palColor(vis: Piece[], a: number, b: number) {
+    const seg = vis.slice(a, b + 1), col = seg.filter((p) => p.hue >= 0);
+    // 회색이 반을 넘는 구간은 회색으로 — hue 0 언저리(빨강)가 몇 개 섞였다고 어두운 구간을 빨강으로 적으면 거짓말이 된다
+    if (col.length <= seg.length / 2) return chipColor(seg[Math.floor(seg.length / 2)]);
+    // 색·밝기는 구간의 한가운데 조각을 따르고(그 자리에 실제로 보이는 색) 채도만 구간 최대로 올린다 —
+    // 평균 채도로 찍으면 옅은 그림(칸딘스키·수채)에서 칩이 죄다 비슷한 베이지가 되어 띠를 알아볼 수 없다
+    const mid = col[Math.floor(col.length / 2)];
+    return chipColor({ ...mid, sat: Math.max(...col.map((p) => p.sat)) });
+  }
+  function buildPal() {
+    const vis = order.filter(inTray); const box = $('jg-pal'); box.innerHTML = ''; palCuts = [];
+    if (vis.length < PAL_N * 2) { hidePal(); return; } // 조각이 얼마 안 남으면 띠가 할 일이 없다
+    const step = vis.length / PAL_N;
+    for (let i = 0; i < PAL_N; i++) {
+      const a = Math.floor(i * step), b = Math.min(vis.length - 1, Math.floor((i + 1) * step) - 1);
+      palCuts.push(vis[a].hue);
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'pc';
+      btn.style.background = palColor(vis, a, b); btn.addEventListener('click', () => jumpPal(i));
+      box.appendChild(btn);
+    }
+    box.hidden = false; $('jg-traybar').classList.add('paloon'); refreshPal();
+  }
+  function hidePal() { const box = $('jg-pal'); box.hidden = true; box.innerHTML = ''; palCuts = []; $('jg-traybar').classList.remove('paloon'); }
+  /** 다 꺼낸 색은 흐리게. 조각을 놓거나 되돌릴 때마다 불린다 */
+  function refreshPal() {
+    if (!palCuts.length) return;
+    const cnt = new Array(PAL_N).fill(0); for (const p of order) if (inTray(p)) cnt[palIdx(p.hue)]++;
+    const cs = $('jg-pal').children; for (let i = 0; i < cs.length; i++) (cs[i] as HTMLElement).classList.toggle('off', !cnt[i]);
+  }
+  /** 그 색 구간에 남아 있는 첫 조각으로. 자리를 굳혀 두지 않고 그때 찾으므로 조각이 빠져도 어긋나지 않는다 */
+  function jumpPal(i: number) {
+    const p = order.find((q) => inTray(q) && palIdx(q.hue) >= i); if (!p?.el) return;
+    const to = tray.scrollLeft + p.el.getBoundingClientRect().left - tray.getBoundingClientRect().left - 8;
+    tray.scrollTo({ left: Math.max(0, to), behavior: 'smooth' });
   }
   $('jg-sort').addEventListener('click', () => sortTray('color')); $('jg-shuffle').addEventListener('click', () => sortTray('shuffle'));
 
@@ -617,7 +687,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   fullBtn.addEventListener('blur', () => setPeek(false)); addEventListener('blur', () => setPeek(false));
   document.addEventListener('visibilitychange', () => { if (document.hidden) setPeek(false); });
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
-  function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = edgeOnly && !isEdge(p); }
+  function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = edgeOnly && !isEdge(p); refreshPal(); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; await xp.flush(true); running = false; await forgetSave(); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
@@ -628,7 +698,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; if (room) { g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: g.dx, dy: g.dy }); } return g; }
   function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; draw(); if (room && g.sid) netMove(g); }
   // 들어 올린 조각이 서버 거절로 이미 트레이에 돌아가 있으면 여기서 끝낸다
-  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; if (!groups.includes(g)) { p.el?.classList.remove('lift'); draw(); return; } const r = wrap.getBoundingClientRect(); if (ok && cy < r.bottom) { p.el?.remove(); place(g); } else { ungroup(g); p.el?.classList.remove('lift'); netUntake(g); draw(); } }
+  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; if (!groups.includes(g)) { p.el?.classList.remove('lift'); draw(); return; } const r = wrap.getBoundingClientRect(); if (ok && cy < r.bottom) { p.el?.remove(); place(g); refreshPal(); } else { ungroup(g); p.el?.classList.remove('lift'); netUntake(g); draw(); } }
   // ── 판 위 조각을 트레이로 되돌리기: 트레이나 더미 탭 위에서 놓으면 트레이로 돌아간다.
   //  한 조각짜리만 받는다 — 어렵게 붙여 둔 뭉치가 손이 미끄러져 통째로 흩어지면 곤란하고, 방에서도 서버(untake)가 한 조각짜리만 받는다
   const canReturn = (g: Group | null): g is Group => !!g && g.pieces.length === 1 && !g.pieces[0].locked;

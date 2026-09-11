@@ -5,12 +5,18 @@ export { TOTAL_WORKS } from '../data/counts';
 import { TOTAL_WORKS } from '../data/counts';
 
 // ── XP
-// 조각 하나를 제자리에 놓으면 1 XP 가 기본. 시간·수순은 안 본다(클라이언트가 보내는 값이라 조작이 쉽고,
-// 빨리 푸는 사람이 아니라 많이 맞춘 사람이 위로 가는 편이 랭킹으로도 건강하다)
-export const XP_PER_PIECE = 1;
+// 조각 하나를 제자리에 놓으면 XP. 큰 판일수록 조각 하나 놓기가 어려우므로(후보가 많고 조각이 작다) 조각당 XP 가 단계로 오른다 —
+// 조각당 1 로 두면 시간당 XP 는 48조각 새 그림 돌리기가 압도적이라 유인이 거꾸로 걸린다(작품이 518점이라 재도전 감산도 안 걸린다).
+// 시간·수순은 안 본다(클라이언트가 보내는 값이라 조작이 쉽고, 빨리 푸는 사람이 아니라 많이 맞춘 사람이 위로 가는 편이 랭킹으로도 건강하다).
+// 조각 수 n 도 클라이언트가 보내는 값이지만 재도전 감산이 이미 그 값으로 판정하고, 부정의 빗장은 어차피 하루 상한이다.
+// 단계표인 이유는 설명이 한 줄로 끝나서 — 랭킹 규칙·홈 카드(i18n ui 의 lv.rules·homeCards)가 이 표를 글로 옮겨 적었으니 표를 바꾸면 5개 국어를 같이 고칠 것.
+// 경계는 프리셋(48·100·200·300·500·1000·2000) 사이에 둔다 — 격자 때문에 100 을 청해도 99 가 되는 식으로 n 이 프리셋과 어긋난다
+export const PIECE_RATES: readonly (readonly [below: number, rate: number])[] = [[150, 1], [400, 1.5], [750, 2], [1500, 3], [Infinity, 4]];
+/** 이 조각 수의 판에서 조각 하나가 주는 XP */
+export const pieceRate = (n: number): number => PIECE_RATES.find(([below]) => n < below)![1];
 export const DAILY_BONUS = 1.5;   // 오늘의 퍼즐
 export const REPEAT_RATE = 0.25;  // 이미 그만큼 깬 그림을 다시 (오늘의 퍼즐도 다시 열 수 있으므로 똑같이 적용)
-export const DAY_CAP = 5000;      // 하루에 받을 수 있는 XP 상한
+export const DAY_CAP = 10000;     // 하루에 받을 수 있는 XP 상한 — 2000조각 한 판이 8,000 이라 5,000 으로 두면 판 하나 안에서 걸린다
 export const MIN_SEC_PER_PIECE = 0.25; // 조각 하나에 이보다 빠르면 사람 손이 아니라고 보고 XP 도 지표도 안 준다 (기록 자체는 남는다)
 
 export type Kind = 'gallery' | 'daily' | 'photo' | 'live';
@@ -20,9 +26,9 @@ export interface Solve { kind: Kind; key: string; n: number; sec: number; mine?:
 /** 사람이 손으로 놓은 것으로 볼 수 있는 기록인지 */
 export const plausible = (s: Solve, mine: number) => s.kind === 'live' || !(s.sec > 0) || s.sec >= mine * MIN_SEC_PER_PIECE;
 
-/** 이 판에 걸리는 배율 — 오늘의 퍼즐 보너스와 재도전 감산. 판 화면이 HUD 에 쓸 배율도 여기서 나온다 */
+/** 이 판에서 조각 하나가 주는 XP — 조각 수 가중치 × 오늘의 퍼즐 보너스 × 재도전 감산. 판 화면이 HUD 에 쓸 배율도 여기서 나온다 */
 export const rateFor = (kind: Kind, n: number, prevN: number | null): number =>
-  (kind === 'daily' ? DAILY_BONUS : 1) * (prevN !== null && n <= prevN ? REPEAT_RATE : 1);
+  pieceRate(n) * (kind === 'daily' ? DAILY_BONUS : 1) * (prevN !== null && n <= prevN ? REPEAT_RATE : 1);
 
 /** 한 판이 주는 XP. prevN = 이 그림을 전에 깬 최대 조각 수(없으면 null) */
 export function xpFor(s: Solve, prevN: number | null): number {
@@ -31,11 +37,11 @@ export function xpFor(s: Solve, prevN: number | null): number {
   // 기준은 판 전체가 아니라 내가 놓은 조각 — 방에 늦게 들어와 몇 조각만 놓고 끝난 판도 정상이다
   if (!plausible(s, mine)) return 0;
   const paid = Math.max(0, Math.min(mine, Math.round(s.paid ?? 0)));
-  return Math.round((mine - paid) * XP_PER_PIECE * rateFor(s.kind, n, prevN));
+  return Math.round((mine - paid) * rateFor(s.kind, n, prevN));
 }
 
 /** 이 조각 수를 끝내면 받을 XP (처음 맞추는 그림 기준 — 재도전 감산·하루 상한은 뺀 값) */
-export const earnFor = (n: number, kind: Kind = 'gallery') => Math.round(n * (kind === 'daily' ? DAILY_BONUS : 1));
+export const earnFor = (n: number, kind: Kind = 'gallery') => Math.round(n * rateFor(kind, n, null));
 
 // ── 레벨 곡선: 레벨 L 에 닿는 데 필요한 누적 XP = 50·L·(L−1)
 // L2 100 · L5 1,000 · L10 4,500 · L20 19,000 · L30 43,500 · L50 122,500

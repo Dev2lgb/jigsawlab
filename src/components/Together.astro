@@ -5,7 +5,8 @@ import { BODY } from '../i18n/body';
 // 목록이 아니라 진행 중인 판 하나만 보여 주므로 접속자가 0명이어도 판은 살아 있어 보인다.
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
-import { LIVE_ID } from '../lib/jigsaw';
+import { LIVE_ID, LIVE_PIECES } from '../lib/jigsaw';
+import { pieceRate } from '../lib/level';
 import { WORKS } from '../data/works';
 import { icon } from '../lib/icons';
 import Guide from './Guide.astro';
@@ -38,7 +39,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
           <p class="lv-meta"><b id="lv-pct"></b><span id="lv-left"></span></p>
           <p class="lv-online" id="lv-online">&nbsp;</p>
           <a class="btn primary lg lv-cta" href={board} id="lv-cta"><Fragment set:html={icon('users', 18)} /> <span>{L.ctaFirst}</span></a>
-          <p class="xp-row"><a class="xp-tip" href={`${P}/rank/`}>{T.lv.earnLive}</a></p>
+          <p class="xp-row"><a class="xp-tip" href={`${P}/rank/`}>{T.lv.earnLive(pieceRate(LIVE_PIECES))}</a></p>
         </div>
       </div>
     </div>

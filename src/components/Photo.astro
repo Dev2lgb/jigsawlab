@@ -94,6 +94,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
   <script>
     import { images, hasIDB } from '../lib/db';
     import { gridFor } from '../lib/jigsaw';
+    import { earnFor } from '../lib/level';
     import { toast } from '../lib/share';
     import { docLang, prefix } from '../i18n/langs';
     const P = prefix(docLang());
@@ -106,9 +107,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     const bail = () => { toast(failMsg); startBtn.disabled = false; drop.hidden = false; picked.hidden = true; };
 
     let chosen: File | null = null, aspect = 1, wantN = Number(startBtn.dataset.n);
-    // 내 사진은 배수가 없어 조각 수가 곧 XP
+    // 내 사진은 오늘의 퍼즐 배수도 재도전 감산도 없어 조각 수 가중치만 붙는다(earnFor)
     const xpTip = $('ph-xp'), xpTpl = xpTip.dataset.tpl!;
-    const showGrid = () => { const g = gridFor(wantN, aspect), n = g.cols * g.rows; grid.textContent = tpl.replace('{c}', String(g.cols)).replace('{r}', String(g.rows)).replace('{n}', String(n)); xpTip.textContent = xpTpl.replace('{n}', n.toLocaleString()); };
+    const showGrid = () => { const g = gridFor(wantN, aspect), n = g.cols * g.rows; grid.textContent = tpl.replace('{c}', String(g.cols)).replace('{r}', String(g.rows)).replace('{n}', String(n)); xpTip.textContent = xpTpl.replace('{n}', earnFor(n).toLocaleString()); };
 
     async function pick(f: File) {
       if (!f.type.startsWith('image/') || !hasIDB()) return bail();

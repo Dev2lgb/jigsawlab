@@ -217,7 +217,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, type Award, type SaveMeta } from '../lib/account';
   import { createXp } from '../lib/xp';
   import { trayOrderAfterSync } from '../lib/board';
-  import { BADGES, rateFor } from '../lib/level';
+  import { BADGES, pieceRate, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { createDust, outerEdges } from '../lib/dust';
   import { showAwardDialog } from '../lib/levelup';
@@ -415,7 +415,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
 
   // ── 조각 단위 XP (회원만) — 셈과 불변식은 lib/xp.ts. 재도전 감산(×¼)은 서버가 정하지만 이 기기의 완성 기록으로 미리 짐작해 둔다(bestDoneN) —
   // 안 그러면 첫 묶음 응답에 HUD 숫자가 갑자기 ¼ 로 내려앉는다. 화면의 숫자는 여기(HUD)와 판 설정 알약(updateGrid)에만
-  const localRate = () => (!src || src.kind === 'photo' || room?.live ? 1 : rateFor(src.kind, total, bestDoneN(src.key)));
+  // 사진·모두의 퍼즐은 오늘의 퍼즐 배수도 재도전 감산도 없어 조각 수 가중치만 (서버의 rateFor(kind, n, null) 과 같다)
+  const localRate = () => (!src ? 1 : src.kind === 'photo' || room?.live ? pieceRate(total) : rateFor(src.kind, total, bestDoneN(src.key)));
   const xp = createXp({
     ctx: () => (src ? { kind: src.kind === 'photo' ? 'photo' : room?.live ? 'live' : src.kind, key: src.kind === 'photo' ? 'photo' : src.key, total } : null),
     done: () => complete,

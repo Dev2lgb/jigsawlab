@@ -117,7 +117,8 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       <button type="button" class="gdlg-x" id="install-close" aria-label={T.acct.close}><Fragment set:html={icon('x', 18)} /></button>
       <img class="install-icon" src="/apple-touch-icon.png" alt="" width="72" height="72" />
       <h2 id="install-h">{T.app.installTitle}</h2>
-      <p class="auth-lead" data-ios={T.app.iosLead} data-other={T.app.otherLead}>{T.app.iosLead}</p>
+      <p class="auth-lead" data-ios={T.app.iosLead} data-other={T.app.otherLead} data-samsung={T.app.samsungLead}>{T.app.iosLead}</p>
+      <a class="btn primary install-chrome" id="install-chrome" hidden>{T.app.openChrome}</a>
       <ol class="install-steps" id="install-steps"><li><Fragment set:html={icon('share', 18)} /><span>{T.app.iosStep1}</span></li><li><Fragment set:html={icon('plus-square', 18)} /><span>{T.app.iosStep2}</span></li></ol>
     </div>
   </div>
@@ -187,17 +188,21 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     const ib = document.getElementById('install-btn')!, mi = document.getElementById('menu-install')!, idlg = document.getElementById('install-dlg')!;
     const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // 삼성 인터넷은 WebAPK 를 옛 targetSdk 로 찍어 안드로이드 14+ 가 '이전 버전용 앱'이라며 설치를 막는다(삼성 쪽 문제) → 프롬프트 대신 같은 주소를 Chrome 으로 여는 intent 링크
+    const samsung = /SamsungBrowser/i.test(navigator.userAgent);
     let deferred: any = null;
     const showInstall = (on: boolean) => { ib.classList.toggle('on', on); mi.hidden = !on; };
     const installDlg = (on: boolean) => { idlg.hidden = !on; document.documentElement.classList.toggle('dlg-open', !!document.querySelector('.gdlg:not([hidden])')); if (on) setMenu(false); };
     const install = async () => {
+      const lead = idlg.querySelector<HTMLElement>('.auth-lead')!, chrome = document.getElementById('install-chrome') as HTMLAnchorElement, steps = document.getElementById('install-steps')!;
+      if (samsung) { lead.textContent = lead.dataset.samsung!; steps.hidden = true; chrome.hidden = false; chrome.href = `intent://${location.host}${location.pathname}${location.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome')};end`; installDlg(true); return; }
       if (deferred) { const ev = deferred; deferred = null; setMenu(false); ev.prompt(); try { const { outcome } = await ev.userChoice; if (outcome === 'accepted') showInstall(false); else deferred = ev; } catch { deferred = ev; } return; }
-      const lead = idlg.querySelector<HTMLElement>('.auth-lead')!; lead.textContent = ios ? lead.dataset.ios! : lead.dataset.other!; document.getElementById('install-steps')!.hidden = !ios; installDlg(true);
+      lead.textContent = ios ? lead.dataset.ios! : lead.dataset.other!; steps.hidden = !ios; chrome.hidden = true; installDlg(true);
     };
     if (!standalone) {
       addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; showInstall(true); });
       addEventListener('appinstalled', () => { deferred = null; showInstall(false); });
-      if (ios) showInstall(true);
+      if (ios || samsung) showInstall(true);
     }
     ib.addEventListener('click', install); mi.addEventListener('click', install);
     document.getElementById('install-bg')!.addEventListener('click', () => installDlg(false)); document.getElementById('install-close')!.addEventListener('click', () => installDlg(false)); addEventListener('keydown', (e) => { if (e.key === 'Escape') installDlg(false); });
@@ -268,6 +273,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   @keyframes sheet { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
   .menu-sheet > a:not(.btn), .menu-install { padding: 14px 6px; font-size: 1.15rem; font-weight: 700; border-bottom: 1px solid var(--line-soft); } .menu-sheet .btn { margin-top: 14px; }
   .menu-install { display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid var(--line-soft); background: none; color: var(--ink); font-family: inherit; text-align: left; cursor: pointer; } .menu-install[hidden] { display: none; }
+  .install-chrome { display: flex; width: 100%; box-sizing: border-box; margin-top: 4px; } .install-chrome[hidden] { display: none; }
   .install-icon { display: block; width: 72px; height: 72px; border-radius: 18px; margin-bottom: 14px; box-shadow: 0 10px 24px -12px rgba(15,18,34,.5); }
   .install-steps { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: st; } .install-steps li { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--bg-2); font-weight: 700; } .install-steps li::before { counter-increment: st; content: counter(st); width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; font-size: .78rem; display: grid; place-items: center; flex: none; }
   .menu-langs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; } .menu-langs a { padding: 6px 12px; border-radius: 999px; background: var(--bg-3); font-size: .85rem; font-weight: 600; color: var(--muted); } .menu-langs a[aria-current] { background: var(--ink); color: #fff; }

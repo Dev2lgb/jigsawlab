@@ -218,7 +218,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
-  import { me, syncDone, syncLive, syncPieces, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, type Award, type SaveMeta } from '../lib/account';
+  import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, type Award, type SaveMeta } from '../lib/account';
+  import { createXp } from '../lib/xp';
+  import { trayOrderAfterSync } from '../lib/board';
   import { BADGES, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { showAwardDialog } from '../lib/levelup';
@@ -233,19 +235,27 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
   const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+  type Work = (typeof WORKS)[number];
+  const artUrl = (key: string) => `/jigsaw/${key}.webp`, thumbUrl = (key: string) => `/jigsaw/t-${key}.webp`;
+  const workName = (w: Work) => T.paintingBy(w.title[LI], w.artist[LI], w.year);
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
   const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; blob?: Blob; seed?: number; day?: string; fixedN?: number; photoId?: string };
+  const gallerySrc = (w: Work): Source => ({ kind: 'gallery', key: w.key, name: workName(w), url: artUrl(w.key) });
   let pendingSave: SaveData | null = null; // 선택한 그림·조각 수에 저장된 판이 있으면 여기에
   let src: Source | null = null, wantN = 48, img: ImageBitmap | null = null, imgW = 0, imgH = 0;
   let photoBlob: Blob | null = null; // 내 사진(webp). 사진 방에서 친구에게 WebRTC 로 보내는 원본
   const setup = $('jg-setup'), thumb = $('jg-thumb') as HTMLImageElement;
   const closeSetup = () => { setup.hidden = true; }; $('jg-close').addEventListener('click', closeSetup); $('jg-modal-bg').addEventListener('click', closeSetup);
   const MAXSIDE = 2400;
-  async function loadSource(s: Source, auto = false, quiet = false) {
+  /** 조각 수 프리셋 버튼 표시 (null 이면 모두 끔 — 직접 입력) */
+  const markPreset = (n: number | null) => document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', n !== null && Number(b.dataset.n) === n));
+  /** 그림을 읽어 판을 준비한다. auto = 바로 시작(설정 없이), quiet = 설정 다이얼로그를 띄우지 않는다 (둘 다 아니면 사진일 때만 조각 수를 묻는다) */
+  async function loadSource(s: Source, o: { auto?: boolean; quiet?: boolean } = {}) {
+    const auto = !!o.auto, quiet = !!o.quiet;
     src = s; img = null; pendingSave = null; setup.hidden = s.kind !== 'photo' || auto || quiet; $('jg-chosen-name').textContent = s.name; $('jg-grid').textContent = '…';
     const file = s.file ?? s.blob; const blobUrl = file ? URL.createObjectURL(file) : s.url!; thumb.src = blobUrl;
     try {
@@ -255,7 +265,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       const sc = Math.min(1, MAXSIDE / Math.max(w, h)); const cv = document.createElement('canvas'); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc); cv.getContext('2d')!.drawImage(bmp, 0, 0, cv.width, cv.height);
       img = await createImageBitmap(cv); imgW = cv.width; imgH = cv.height;
       if (s.kind === 'photo') { photoBlob = s.blob ?? null; if (s.file) { s.photoId = `photo-${Date.now().toString(36)}`; cv.toBlob((b) => { if (!b) return; photoBlob = b; if (hasIDB()) images.put(s.photoId!, b).catch(() => {}); }, 'image/webp', 0.85); } }
-      if (s.fixedN) { wantN = s.fixedN; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.classList.toggle('on', Number(b.dataset.n) === wantN)); ($('jg-custom') as HTMLInputElement).value = ''; }
+      if (s.fixedN) { wantN = s.fixedN; markPreset(wantN); ($('jg-custom') as HTMLInputElement).value = ''; }
       updateGrid(); await checkSave();
       if (auto) { if (pendingSave) start(pendingSave); else start(); }
     } catch { toast(T.imgFail); setup.hidden = true; src = null; }
@@ -267,8 +277,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const dropRemote = (id: string) => { remoteSaves = remoteSaves.filter((m) => m.id !== id); syncDelSave(id); };
   async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } } }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
-  document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { wantN = Number(b.dataset.n); document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.toggle('on', x === b)); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
-  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000) { wantN = v; document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((x) => x.classList.remove('on')); updateGrid(); } });
+  document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { wantN = Number(b.dataset.n); markPreset(wantN); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
+  $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000) { wantN = v; markPreset(null); updateGrid(); } });
 
   // ── 게임 상태 — 느슨한 조각은 모두 "뭉치(Group)"에 속한다. 뭉치의 (dx,dy)는 제자리 대비 오프셋이라 뭉치 안 조각들은 격자 관계를 그대로 유지한다
   type Group = { id: number; dx: number; dy: number; pieces: Piece[]; sid?: string };
@@ -281,14 +291,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
   let complete = false, completeAlpha = 0, gid = 0;
-  // ── 조각 단위 XP. 조각을 놓을 때마다 쌓이고, 서버로는 모아서 보낸다 (조각마다 부르면 무료 티어가 못 버틴다)
-  //  xpWait 아직 안 보낸 조각 · xpPaid 이 판에서 이미 보낸 조각(완성 정산에서 그만큼 뺀다, 이어하기에도 실려 간다) · xpBoard 화면에 보이는 이 판의 XP
-  const XP_BATCH = 60, XP_MS = 300_000; // 타이머는 크래시 대비일 뿐(화면 이탈·나가기는 즉시 보낸다) — 90초로 두면 천천히 푸는 사람은 이 타이머가 D1 쓰기의 대부분이었다
-  let xpWait = 0, xpPaid = 0, xpBoard = 0, xpFirm = 0, xpPrev = 0, xpCarry = 0, xpT = 0, xpCapped = false;
-  //  xpPrev 이어하기로 물려받은 조각 · xpCarry 그 몫의 XP(배율을 알게 되면 다시 잡는다) · xpFirm 이번 판에서 서버가 준 XP
-  let xpBusy: Promise<void> | null = null; // 보내는 중인 묶음. 완성 정산은 이게 끝난 뒤라야 paid 가 맞다
-  let xpRateSrv: number | null = null;     // 서버가 알려 준 실제 배율 (재도전 감산까지 반영)
-  let xpRateLocal = 1;                     // 이 기기의 완성 기록으로 미리 짐작한 배율 — 서버 값이 오기 전까지 HUD 가 쓴다
   const lockReq = new Set<string>();       // 방에서 서버에 청해 둔 잠그기 — 받아들여져야 내 조각으로 친다
   const takeReq = new Set<string>();       // 트레이에서 꺼내며 서버에 청해 둔 take — 거절(deny)되면 트레이로 되돌릴 것과 판 위 뭉치를 잡은 것(grab)을 가른다
   // '남이 잡고 있음' 표시(room.holders)는 내 판의 기억일 뿐이라 묵을 수 있다 — 그 사람이 소리 없이 끊겼거나, 재접속으로 id 가 바뀌었거나,
@@ -299,6 +301,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   let myLocked = 0; // 공개 판에서 이번 회차에 내가 제자리에 놓은 조각 수 (여럿이 며칠에 걸쳐 맞추므로 시간·수순 대신 이걸 보여 준다)
   let dragging: Group | null = null, lifting: Group | null = null;
   const canvas = $('jg-board') as HTMLCanvasElement, ctx = canvas.getContext('2d')!, wrap = $('jg-boardwrap'), tray = $('jg-tray');
+  /** 끌던 것을 놓는다 (조각은 그 자리에) — 남이 가져갔거나 서버가 거절했거나 핀치로 넘어갈 때 */
+  const endDrag = () => { dragging = null; canvas.classList.remove('drag'); clearReturnHover(); };
   const view = { s: 1, tx: 0, ty: 0 }; let fitS = 1; const dpr = () => Math.min(2, window.devicePixelRatio || 1);
   const maxS = () => Math.max(fitS * 6, 220 / Math.min(cut.pw, cut.ph)), minS = () => fitS * 0.5; // 1000조각도 조각 하나가 220px 로 보일 때까지 확대
   let lastW = 0, lastH = 0;
@@ -322,7 +326,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cv.style.width = `${(p.bmp.w * fit).toFixed(1)}px`; cv.style.height = `${(p.bmp.h * fit).toFixed(1)}px`;
     cv.getContext('2d')!.drawImage(p.bmp.canvas, 0, 0, cv.width, cv.height);
   }
-  const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = (el as any).__p as Piece; if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; drawThumb(cv, p); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
+  const pieceOf = new WeakMap<HTMLElement, Piece>(); // 트레이 칸 → 조각
+  const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = pieceOf.get(el); if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; drawThumb(cv, p); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
 
   let cutSeed = 0;
   async function start(resume?: SaveData) {
@@ -332,13 +337,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const g = rs ? { cols: rs.cols, rows: rs.rows } : gridFor(wantN, imgW / imgH); total = g.cols * g.rows;
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
-    if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
+    if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; closeFull();
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xpWait = 0; xpPaid = rs?.paid ?? 0; xpPrev = xpPaid; xpCarry = 0; xpFirm = 0; xpBoard = 0; xpCapped = false; xpRateSrv = null; xpRateLocal = localRate(); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); xpT = performance.now(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
-    const bmpScale = Math.min(1, 2400 / Math.max(imgW, imgH));
+    const bmpScale = Math.min(1, MAXSIDE / Math.max(imgW, imgH));
     let i = 0;
     for (let r = 0; r < g.rows; r++) { grid[r] = []; for (let c = 0; c < g.cols; c++) {
       const bmp = renderPiece(cut, r, c, img, bmpScale); const [hue, lum] = avgColor(bmp.canvas);
@@ -353,11 +358,10 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const frag = document.createDocumentFragment();
     for (const p of order) { if (p.locked || p.g) continue; frag.appendChild(trayEl(p)); }
     tray.appendChild(frag);
-    xpCarry = Math.round(xpPrev * xpRate()); showXp();
     renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
     if (!room && src.kind !== 'photo') me().then((u) => { if (u && running && !room && gen === myGen) $('jg-cloud').hidden = false; });
   }
-  function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; (el as any).__p = p; bindTray(el, p); trayIO.observe(el); return el; }
+  function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; pieceOf.set(el, p); bindTray(el, p); trayIO.observe(el); return el; }
   /** 조각을 트레이에 세운다 (되돌리기·방의 untake/deny 공용).
    *  order 는 저장되는 트레이 순서다 — 색상 정렬이 판 위 조각을 order 에서 떨구므로 여기서 다시 넣지 않으면
    *  되돌린 조각이 저장에서 빠져 이어하기 때 판에도 트레이에도 없이 사라진다. 낡은 칸은 관찰도 함께 끊는다 */
@@ -366,7 +370,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const i = order.indexOf(p); if (i >= 0) order.splice(i, 1);
     order.push(p); tray.appendChild(trayEl(p));
   }
-  function tick() { if (!running) return; $('jg-time').textContent = fmtSec((performance.now() - t0) / 1000); if (xpWait > 0 && performance.now() - xpT > XP_MS) flushXp(); }
+  function tick() { if (!running) return; $('jg-time').textContent = fmtSec((performance.now() - t0) / 1000); xp.tick(); }
   function updateHud() { $('jg-left').textContent = T.left(total - lockedN); ($('jg-prog') as HTMLElement).style.width = `${total ? (lockedN / total) * 100 : 0}%`; }
 
   // ── 색 평균 (트레이 색상 정렬용)
@@ -405,67 +409,54 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   $('jg-sort').addEventListener('click', () => sortTray('color')); $('jg-shuffle').addEventListener('click', () => sortTray('shuffle'));
 
-  // ── 조각 단위 XP (회원만). 조각을 놓는 즉시 화면 숫자가 오르고, 서버로는 60조각·5분마다 모아 보낸다.
-  //  보낸 조각 수(xpPaid)는 저장에도 실려 이어하기로 판이 넘어가도 완성 정산에서 두 번 주지 않는다
-  // 재도전 감산(×0.25)은 서버가 정하지만 이 기기의 완성 기록으로 미리 짐작해 둔다(bestDoneN) — 안 그러면
-  // 첫 묶음 응답에 HUD 숫자가 갑자기 ¼ 로 내려앉는다. 서버 배율이 오면 물려받은 몫까지 그걸로 다시 잡는다
+  // ── 조각 단위 XP (회원만) — 셈과 불변식은 lib/xp.ts. 재도전 감산(×¼)은 서버가 정하지만 이 기기의 완성 기록으로 미리 짐작해 둔다(bestDoneN) —
+  // 안 그러면 첫 묶음 응답에 HUD 숫자가 갑자기 ¼ 로 내려앉는다. 화면의 숫자는 여기(HUD)와 판 설정 알약(updateGrid)에만
   const localRate = () => (!src || src.kind === 'photo' || room?.live ? 1 : rateFor(src.kind, total, bestDoneN(src.key)));
-  const xpRate = () => xpRateSrv ?? xpRateLocal;
-  function showXp() { const e = $('jg-xp-hud'); xpBoard = xpCarry + xpFirm + Math.round(xpWait * xpRate()); if (!xpBoard) { e.hidden = true; return; } e.textContent = V.gained(xpBoard); e.hidden = false; }
-  function gotPieces(k: number) { if (k <= 0) return; xpWait += k; showXp(); if (xpWait >= XP_BATCH || performance.now() - xpT > XP_MS) flushXp(); }
-  function flushXp(force = false): Promise<void> {
-    if (xpBusy || !src || xpWait <= 0 || (!force && complete)) return xpBusy ?? Promise.resolve();
-    if (!authAvailable()) { xpWait = 0; return Promise.resolve(); }
-    const k = xpWait, kind = src.kind === 'photo' ? 'photo' : room?.live ? 'live' : src.kind, key = src.kind === 'photo' ? 'photo' : src.key;
-    // 보내는 순간 준 것으로 친다 — 화면을 떠나며 부르면 응답을 못 기다리는데, 그때 저장에 들어갈 값이 맞아야 한다
-    xpWait = 0; xpPaid += k; xpT = performance.now();
-    const run = async () => {
-      if (!(await me())) { xpPaid -= k; return; } // 비회원 — 쌓을 데가 없다
-      const a = await syncPieces(kind, key, total, k).catch(() => null);
-      if (!a) { xpWait += k; xpPaid -= k; return; } // 못 보냈으면 다음 기회에
-      if (typeof a.rate === 'number') xpRateSrv = a.rate;
-      xpCarry = Math.round(xpPrev * xpRate()); xpFirm += a.gained; showXp(); scheduleSave();
-      // 맞추는 흐름을 끊지 않게 판 위에서는 토스트만. 업적·레벨업 다이얼로그는 완성 뒤 결과 화면에서
-      if (a.levelUp) toast(V.levelUp(a.level)); else if (a.capped && !xpCapped) { xpCapped = true; toast(V.capped); }
-    };
-    const pr = run().finally(() => { if (xpBusy === pr) xpBusy = null; });
-    xpBusy = pr;
-    return pr;
-  }
-  /** 보내는 중인 묶음이 끝날 때까지. 완성 정산이 먼저 닿으면 서버가 그 묶음을 못 보고 정산해 XP 가 샌다 */
-  const settleXp = () => xpBusy ?? Promise.resolve();
+  const xp = createXp({
+    ctx: () => (src ? { kind: src.kind === 'photo' ? 'photo' : room?.live ? 'live' : src.kind, key: src.kind === 'photo' ? 'photo' : src.key, total } : null),
+    done: () => complete,
+    show: (n) => { const e = $('jg-xp-hud'); e.hidden = !n; if (n) e.textContent = V.gained(n); },
+    saved: () => scheduleSave(),
+    levelUp: (level) => toast(V.levelUp(level)), // 맞추는 흐름을 끊지 않게 판 위에서는 토스트만. 업적·레벨업 다이얼로그는 완성 뒤 결과 화면에서
+    capped: () => toast(V.capped),
+  });
   // 모두의 퍼즐: 내가 보탠 조각을 서버에 알린다(업적 '모두의 퍼즐'·맞춘 조각 수). 회차가 끝날 때만이 아니라
   // 나갈 때·화면을 떠날 때도 — 완성 순간에 접속해 있는 사람은 드물다. 이미 알린 몫은 빼고 보낸다.
   // XP 자체는 조각 묶음으로 이미 갔으므로(paid) 여기서 새로 붙는 건 아직 안 보낸 나머지뿐이다
   let liveRep = { mine: 0, paid: 0 };
   function reportLive(wait = true): Promise<Award | null> {
     if (!room?.live || !src || myLocked <= liveRep.mine) return Promise.resolve(null);
-    const m = myLocked - liveRep.mine, p = Math.max(0, xpPaid - liveRep.paid), key = src.key, n = total; liveRep = { mine: myLocked, paid: xpPaid };
+    const m = myLocked - liveRep.mine, p = Math.max(0, xp.paid - liveRep.paid), key = src.key, n = total; liveRep = { mine: myLocked, paid: xp.paid };
     const go = () => syncLive(key, n, m, p);
-    return wait ? settleXp().then(go) : go(); // 화면을 떠날 때는 못 기다린다 — paid 는 보내는 순간 센 값이라 순서가 바뀌어도 두 번 주지 않는다
+    return wait ? xp.settle().then(go) : go(); // 화면을 떠날 때는 못 기다린다 — paid 는 보내는 순간 센 값이라 순서가 바뀌어도 두 번 주지 않는다
   }
 
   // ── 진행 저장 (IndexedDB, 기기 안). 놓을 때마다 예약, 화면 이탈 시 즉시
   let saveT = 0;
+  /** 판 상태를 조각 번호로 — 진행 저장과 방 만들기(지금 판을 서버로) 공용 */
+  function boardSnapshot() { const idx = new Map(pieces.map((p, i) => [p, i])); return { locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), tray: order.filter((p) => !p.locked && !p.g).map((p) => idx.get(p)!) }; }
+  /** 이 판의 저장을 지운다 (이 기기와 서버) — 새로 시작·처음부터·완성·방으로 올릴 때 */
+  async function forgetSave() { if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
   // 서버 업로드는 바뀐 게 있을 때만 — 탭을 숨길 때마다 판 전체를 올리는데, 폰에서 알림 보고 돌아오기를 열 번 하면 똑같은 판이 열 번 갔다.
   // 바뀔 때마다 번호를 올리고 마지막으로 올린 번호와 같으면 건너뛴다 (올리는 동안 바뀌면 번호가 앞서 있어 다음에 다시 간다)
   let saveVer = 0, upVer = -1;
   function scheduleSave() { saveVer++; if (!hasIDB() || !running || room) return; clearTimeout(saveT); saveT = window.setTimeout(saveNow, 700); }
   async function saveNow(flush = false): Promise<boolean> {
     if (!hasIDB() || !src || !cut || complete || !pieces.length || room) return false;
-    const idx = new Map(pieces.map((p, i) => [p, i]));
     const tc = document.createElement('canvas'); const k = 200 / Math.max(cut.W, cut.H); tc.width = Math.round(cut.W * k); tc.height = Math.round(cut.H * k); const tctx = tc.getContext('2d')!; tctx.fillStyle = '#e6e8ee'; tctx.fillRect(0, 0, tc.width, tc.height); tctx.globalAlpha = 0.25; tctx.drawImage(img!, 0, 0, tc.width, tc.height); tctx.globalAlpha = 1; tctx.drawImage(lockedLayer, 0, 0, tc.width, tc.height);
-    const data: SaveData = { id: saveId(), v: 1, kind: src.kind, key: src.kind === 'photo' ? src.photoId! : src.key, name: src.name, day: src.day, seed: cutSeed, cols: cut.cols, rows: cut.rows, total, imgW, imgH, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), tray: order.filter((p) => !p.locked && !p.g).map((p) => idx.get(p)!), pile: pieces.map((p) => p.pile), piles, elapsed: performance.now() - t0, moves, savedAt: Date.now(), thumb: tc.toDataURL('image/webp', 0.6), done: lockedN, paid: xpPaid };
+    const data: SaveData = { id: saveId(), v: 1, kind: src.kind, key: src.kind === 'photo' ? src.photoId! : src.key, name: src.name, day: src.day, seed: cutSeed, cols: cut.cols, rows: cut.rows, total, imgW, imgH, ...boardSnapshot(), pile: pieces.map((p) => p.pile), piles, elapsed: performance.now() - t0, moves, savedAt: Date.now(), thumb: tc.toDataURL('image/webp', 0.6), done: lockedN, paid: xp.paid };
     try { await saves.put(data); } catch {}
     if (!flush) return false;
     const v = saveVer; if (upVer === v) return true; // 마지막 업로드 뒤 바뀐 게 없다
     const ok = await syncSave(data); if (ok) upVer = v; return ok;
   }
-  addEventListener('pagehide', () => { if (running) { flushXp(true); saveNow(true); reportLive(false); } }); document.addEventListener('visibilitychange', () => { if (document.hidden && running) { flushXp(true); saveNow(true); reportLive(false); } });
+  // 화면을 떠날 때 — 응답은 못 기다린다. 미룬 XP 묶음·진행 저장·모두의 퍼즐 기여를 한꺼번에
+  const onLeave = () => { if (!running) return; xp.flush(true); saveNow(true); reportLive(false); };
+  addEventListener('pagehide', onLeave); document.addEventListener('visibilitychange', () => { if (document.hidden) onLeave(); });
   async function resumeSave(sv: SaveData) {
-    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, false, true); }
-    else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp`, seed: sv.seed, day: sv.day, fixedN: sv.total }, false); }
-    else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: `/jigsaw/${sv.key}.webp` }, false); }
+    if (sv.kind === 'photo') { let blob: Blob | undefined; try { blob = await images.get(sv.key); } catch {} if (!blob) { toast(T.imgFail); try { await saves.del(sv.id); } catch {} return; } await loadSource({ kind: 'photo', key: sv.key, name: sv.name, blob, photoId: sv.key }, { quiet: true }); }
+    else if (sv.kind === 'daily') { if (!WORKS.find((x) => x.key === sv.key)) return; await loadSource({ kind: 'daily', key: sv.key, name: sv.name, url: artUrl(sv.key), seed: sv.seed, day: sv.day, fixedN: sv.total }); }
+    else { if (!WORKS.find((x) => x.key === sv.key)) return; wantN = sv.total; await loadSource({ kind: 'gallery', key: sv.key, name: sv.name, url: artUrl(sv.key) }); }
     if (!img) return; start(sv);
   }
 
@@ -509,12 +500,15 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const makeGroup = (p: Piece, dx: number, dy: number): Group => { const g = { id: ++gid, dx, dy, pieces: [p] }; p.g = g; groups.push(g); return g; };
 
   // ── 놓기: 제자리면 잠그고, 이웃 뭉치와 맞으면 붙인다 (짧은 스냅 트윈 후 합침)
+  const snapTol = () => Math.min(cut.pw, cut.ph) * 0.4; // 이 안에 들어오면 제자리·이웃으로 본다 (서버 room.ts 는 1.5배로 너그럽게 판정)
+  /** 제자리에 놓였다 — 방이면 서버에 잠그기를 청하고(받아들여져야 내 조각으로 친다), 스냅 뒤 잠근다 */
+  function reqLock(g: Group) { if (room && g.sid) { send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); lockReq.add(g.sid); } snap(g, 0, 0, () => lockGroup(g)); }
   function place(g: Group) {
     moves++;
-    const tol = Math.min(cut.pw, cut.ph) * 0.4;
+    const tol = snapTol();
     // 방에서는 놓은 순간의 좌표를 같이 보낸다. mv 는 스로틀이 걸려 서버 좌표가 뒤처지는데, 그 좌표로 판정하면
     // 서버가 조용히 거절해 "나는 맞췄는데 상대에겐 남의 손에 잡힌 채로 굳는" 어긋남이 생겼다
-    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) { send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); lockReq.add(g.sid); } snap(g, 0, 0, () => lockGroup(g)); return; }
+    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { reqLock(g); return; }
     const other = findNeighbor(g, tol);
     if (other) { if (room && g.sid && other.sid) send({ t: 'merge', g: g.sid, into: other.sid, dx: g.dx, dy: g.dy }); snap(g, other.dx, other.dy, () => merge(g, other)); return; }
     // 화면 밖에 놓이면(HUD 위에서 놓거나 위로 튕겨 꺼낸 경우) 보이는 곳까지 밀어 넣는다 — 안 그러면 조각이 사라진 것처럼 보인다
@@ -542,8 +536,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     for (const p of g.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(g), 1); toFront(into); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); if (into.sid) room.holders.delete(into.sid); }
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
-    const tol = Math.min(cut.pw, cut.ph) * 0.4;
-    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) { send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); lockReq.add(into.sid); } snap(into, 0, 0, () => lockGroup(into)); return; }
+    const tol = snapTol();
+    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { reqLock(into); return; }
     let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
     draw(); scheduleSave();
   }
@@ -552,7 +546,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); }
     const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); }
     lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw(); renderPiles();
-    if (!room) gotPieces(g.pieces.length); // 방에서는 남이 놓은 것도 여기로 오므로 내가 보낼 때(myLocked) 센다
+    if (!room) xp.got(g.pieces.length); // 방에서는 남이 놓은 것도 여기로 오므로 내가 보낼 때(myLocked) 센다
     if (lockedN === total) finish(); else scheduleSave();
   }
   // ── 완성 연출: 팡파르 + 색종이 + 빛 쓸기, 끝나면 결과로 (레벨업 다이얼로그도 같은 것을 쓴다 — lib/celebrate.ts)
@@ -567,7 +561,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   canvas.addEventListener('pointerdown', (e) => {
     if (ptrs.size >= 2) return;
     canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 2) { if (dragging) { if (room && dragging.sid) { room.holders.delete(dragging.sid); send({ t: 'drop', g: dragging.sid, dx: dragging.dx, dy: dragging.dy }); } dragging = null; canvas.classList.remove('drag'); clearReturnHover(); draw(); } startPinch(); return; }
+    if (ptrs.size === 2) { if (dragging) { if (room && dragging.sid) { room.holders.delete(dragging.sid); send({ t: 'drop', g: dragging.sid, dx: dragging.dx, dy: dragging.dy }); } endDrag(); draw(); } startPinch(); return; }
     const b = toBoard(e.clientX, e.clientY); const g = hit(b.x, b.y);
     if (g && !tweens.has(g)) { if (room && g.sid) { if (heldByOther(g.sid)) { toast(U.heldBy(room.players.get(room.holders.get(g.sid)!)?.nick ?? '')); return; } room.holders.set(g.sid, room.me!.id); send({ t: 'grab', g: g.sid }); } dragging = g; dragOff = { x: b.x - g.dx, y: b.y - g.dy }; toFront(g); canvas.classList.add('drag'); draw(); }
   });
@@ -585,7 +579,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const up = (e: PointerEvent) => {
     if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
     if (!dragging || ptrs.size !== 0) return;
-    const g = dragging; dragging = null; canvas.classList.remove('drag'); clearReturnHover();
+    const g = dragging; endDrag();
     // pointercancel 은 놓은 게 아니라 취소다 — 되돌리지 않는다 (트레이에서 꺼낼 때와 같은 규칙)
     if (e.type === 'pointerup' && canReturn(g)) {
       const tab = pileTabAt(e.clientX, e.clientY);
@@ -619,19 +613,23 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
-  $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; await flushXp(true); running = false; try { await saves.del(saveId()); } catch {} dropRemote(saveId()); pendingSave = null; start(); });
+  $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; await xp.flush(true); running = false; await forgetSave(); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
-  $('jg-quit').addEventListener('click', async () => { if (room && photoBlob && src?.kind === 'photo' && room.players.size > 1 && !confirm(U.quitHostAsk)) return; if (running && !complete) { await flushXp(true); await saveNow(true); } await reportLive(false); running = false; clearInterval(timer); gen++; if (room) { stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; } goPick(); });
+  $('jg-quit').addEventListener('click', async () => { if (room && photoBlob && src?.kind === 'photo' && room.players.size > 1 && !confirm(U.quitHostAsk)) return; if (running && !complete) { await xp.flush(true); await saveNow(true); } await reportLive(false); running = false; clearInterval(timer); gen++; leaveRoom(); goPick(); });
   new ResizeObserver(() => { if (scenes.current === 'play') onResize(); }).observe(wrap);
 
   // ── 트레이: 옆으로 밀면 스크롤, 위로 올리면 꺼내기 (꺼낸 조각은 새 뭉치가 된다)
   function liftFromTray(p: Piece, cx: number, cy: number): Group { p.el?.classList.add('lift'); const b = toBoard(cx, cy); const g = makeGroup(p, b.x - cut.pw / 2 - p.c * cut.pw, b.y - cut.ph / 2 - p.r * cut.ph); lifting = g; if (room) { g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: g.dx, dy: g.dy }); } return g; }
   function moveLift(g: Group, p: Piece, cx: number, cy: number) { const b = toBoard(cx, cy); g.dx = b.x - cut.pw / 2 - p.c * cut.pw; g.dy = b.y - cut.ph / 2 - p.r * cut.ph; hoverTab(cx, cy); draw(); if (room && g.sid) netMove(g); }
   // 들어 올린 조각이 서버 거절로 이미 트레이에 돌아가 있으면 여기서 끝낸다
-  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; if (!groups.includes(g)) { p.el?.classList.remove('lift'); overTab?.classList.remove('over'); overTab = null; draw(); return; } overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); const untake = () => { if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); takeReq.delete(g.sid); } }; if (tab) { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { groups.splice(groups.indexOf(g), 1); p.g = null; p.el?.classList.remove('lift'); untake(); draw(); } }
+  function dropLift(g: Group, p: Piece, cx: number, cy: number, ok: boolean) { lifting = null; if (!groups.includes(g)) { p.el?.classList.remove('lift'); overTab?.classList.remove('over'); overTab = null; draw(); return; } overTab?.classList.remove('over'); overTab = null; const tab = ok ? pileTabAt(cx, cy) : null; const r = wrap.getBoundingClientRect(); if (tab) { ungroup(g); p.el?.classList.remove('lift'); netUntake(g); moveToPile(p, Number(tab.dataset.pile)); draw(); } else if (ok && cy < r.bottom) { p.el?.remove(); renderPiles(); place(g); } else { ungroup(g); p.el?.classList.remove('lift'); netUntake(g); draw(); } }
   // ── 판 위 조각을 트레이로 되돌리기: 트레이나 더미 탭 위에서 놓으면 트레이로 돌아간다.
   //  한 조각짜리만 받는다 — 어렵게 붙여 둔 뭉치가 손이 미끄러져 통째로 흩어지면 곤란하고, 방에서도 서버(untake)가 한 조각짜리만 받는다
   const canReturn = (g: Group | null): g is Group => !!g && g.pieces.length === 1 && !g.pieces[0].locked;
+  /** 한 조각짜리 뭉치를 판에서 뗀다 (조각은 뭉치 없는 상태로 — 트레이에 세우는 건 toTray) */
+  const ungroup = (g: Group) => { groups.splice(groups.indexOf(g), 1); g.pieces[0].g = null; };
+  /** 방: 트레이에서 꺼냈던 조각을 도로 넣었다고 알린다 */
+  const netUntake = (g: Group) => { if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); takeReq.delete(g.sid); } };
   const overTray = (y: number) => y >= tray.getBoundingClientRect().top;
   /** 끄는 중 알려 주기. 조각은 보드 밖으로 나가면 잘려서 안 보이니 트레이 쪽 표시가 유일한 신호다 */
   function hoverReturn(x: number, y: number) {
@@ -644,8 +642,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function clearReturnHover() { overTab?.classList.remove('over'); overTab = null; tray.classList.remove('over'); $('jg-traydrop').hidden = true; }
   /** 판 위 한 조각을 트레이로. pile 이 0 이상이면 그 더미로 */
   function returnToTray(g: Group, pile: number) {
-    const p = g.pieces[0]; tweens.delete(g); groups.splice(groups.indexOf(g), 1); p.g = null;
-    if (room && g.sid) { send({ t: 'untake', g: g.sid }); room.bySid.delete(g.sid); room.holders.delete(g.sid); takeReq.delete(g.sid); }
+    const p = g.pieces[0]; tweens.delete(g); ungroup(g); netUntake(g);
     // 지금 안 보고 있는 더미로 돌아가면 조각이 사라진 것처럼 보인다 — 보고 있는 더미로 넣는다
     if (pile >= 0) p.pile = pile; else if (activePile !== 0) p.pile = activePile;
     // 테두리 조각만 보는 중에 가운데 조각을 되돌리면 트레이에서 숨겨져 버린다. 방금 되돌린 것은 보여야 하니 필터를 푼다
@@ -705,10 +702,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (art?.img) { h.style.setProperty('--boot-art', `url("${art.img}")`); h.setAttribute('data-boot-art', '1'); } if (art?.name) { nm.textContent = art.name; nm.classList.add('on'); }
     if (!on) { h.removeAttribute('data-boot'); h.removeAttribute('data-boot-art'); h.style.removeProperty('--boot-art'); nm.classList.remove('on'); }
   };
+  /** 판을 못 열었다 — 로딩 화면을 걷고 고르는 화면으로 */
+  const bailOut = (msg?: string) => { fullLoad(false); goPick(msg); };
   async function joinRoom(id: string, keepImage = false) {
     fullLoad(true, U.joining);
     const live = id === LIVE_ID;
-    const bail = (msg: string = live ? L.full : U.roomGone) => { fullLoad(false); goPick(msg); };
+    const bail = (msg: string = live ? L.full : U.roomGone) => bailOut(msg);
     let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
     if (!info || info.error) return bail();
     const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
@@ -722,12 +721,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       // 내 사진 방: 사진은 서버에 없다. 방장이면 메모리(또는 이 브라우저 IndexedDB)에 있고, 아니면 방장에게 WebRTC 로 받는다
       if (!(keepImage && img && src?.kind === 'photo')) {
         img = null; photoBlob = null; let pid = ''; try { pid = localStorage.getItem(`roomphoto:${id}`) ?? sessionStorage.getItem(`roomphoto:${id}`) ?? ''; } catch {}
-        if (pid && hasIDB()) { let blob: Blob | undefined; try { blob = await images.get(pid); } catch {} if (blob) await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob, photoId: pid }, false, true); }
+        if (pid && hasIDB()) { let blob: Blob | undefined; try { blob = await images.get(pid); } catch {} if (blob) await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob, photoId: pid }, { quiet: true }); }
         // 내 사진이 없는데 방에 사진 가진 사람도 없다 = 방장이 나간 방. 90초 기다리다 실패하지 말고 바로 알려 준다
         if (!img && info.hasPhoto === false) { room = null; return bail(U.photoGone); }
         if (!img) { src = { kind: 'photo', key: 'photo', name: T.myPhoto }; photoBlob = null; fullLoad(true, U.photoRecv); }
       }
-    } else { await loadSource({ kind: 'gallery', key: w!.key, name: T.paintingBy(w!.title[LI], w!.artist[LI], w!.year), url: `/jigsaw/${w!.key}.webp` }, false, true); if (!img) { room = null; return bail(); } }
+    } else { await loadSource(gallerySrc(w!), { quiet: true }); if (!img) { room = null; return bail(); } }
     roomBail = bail; connectRoom(bail);
     history.replaceState(null, '', `${location.pathname}?room=${id}`);
   }
@@ -735,7 +734,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     return new Promise((res) => {
       fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
       $('jg-gate-k').textContent = info.live ? L.gateKicker : U.gate.kicker;
-      const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = `/jigsaw/t-${w.key}.webp`; $('jg-gate-h').textContent = w ? T.paintingBy(w.title[LI], w.artist[LI], w.year) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
+      const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = thumbUrl(w.key); $('jg-gate-h').textContent = w ? workName(w) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
       $('jg-gate-login').onclick = () => openLogin(location.pathname + location.search);
       const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement;
       const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; res(v); };
@@ -753,7 +752,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const r = recvBlob((d) => { if (recvFrom) send({ t: 'sig', to: recvFrom, d }); }, 30_000, (got, size) => { if (size) fullLoad(true, `${U.photoRecv} ${Math.round((got / size) * 100)}%`); }); recv = r;
     r.blob.then(async (blob) => {
       if (!room) return; recv = null; if (recvFrom) peers.delete(recvFrom); recvFrom = '';
-      await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob }, false, true); if (!img) { photoRetry(3000); return; }
+      await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, blob }, { quiet: true }); if (!img) { photoRetry(3000); return; }
       send({ t: 'havephoto' }); send({ t: 'sync' }); fullLoad(true, U.joining);
     }).catch(() => { if (room && !img) photoRetry(2000); });
     send({ t: 'needphoto' });
@@ -762,6 +761,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 주기적으로 ping 을 보내 pong 이 없으면 끊긴 것으로 보고 다시 붙는다. 재접속하면 서버가 init 으로 전체 상태를 다시 준다
   let wsGen = 0, wsTries = 0; let pingT = 0, pongT = 0, reconT = 0;
   function stopWs() { wsGen++; clearInterval(pingT); clearTimeout(pongT); clearTimeout(reconT); }
+  /** 방에서 나온다 — 소켓·하트비트·사진 전달을 끊고 방 상태를 지운다 */
+  function leaveRoom() { if (!room) return; stopWs(); closePeers(); openPlayers(false); try { room.ws?.close(); } catch {} room = null; }
   function connectRoom(bail?: () => void) {
     if (!room) return; const id = room.id; const gen = ++wsGen; clearTimeout(reconT);
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'; let ws: WebSocket; try { ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); } catch { retryWs(bail); return; } room.ws = ws;
@@ -777,7 +778,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     reconT = window.setTimeout(async () => {
       if (!room) return;
       // 몇 번 실패하면 방이 아직 있는지 확인. 없어졌으면(48시간 만료 등) 그만 두드리고 제목 화면으로
-      if (wsTries >= 3) { let ok = false; try { const r = await fetch(`/api/room/${room.id}`); ok = r.ok; } catch {} if (!room) return; if (!ok) { stopWs(); closePeers(); openPlayers(false); room = null; running = false; clearInterval(timer); goPick(U.roomGone); return; } }
+      if (wsTries >= 3) { let ok = false; try { const r = await fetch(`/api/room/${room.id}`); ok = r.ok; } catch {} if (!room) return; if (!ok) { leaveRoom(); running = false; clearInterval(timer); goPick(U.roomGone); return; } }
       connectRoom(bail);
     }, wait);
   }
@@ -795,8 +796,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     // 같은 판을 다시 받는 것(재접속·재동기화)이면 더미와 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
     const same = !fresh && !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
     const keepPiles = same ? piles.slice() : [U.pileAll]; const keepPile = same ? pieces.map((p) => p.pile) : [];
-    const prevTray = same ? [...tray.children].map((e) => pieces.indexOf((e as any).__p)).filter((i) => i >= 0) : [];
-    const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: (() => { const used = new Set<number>(st.locked); for (const g of Object.values(st.groups as Record<string, { idx: number[] }>)) g.idx.forEach((i) => used.add(i)); const t: number[] = prevTray.filter((i) => !used.has(i)); const seen = new Set(t); const rest: number[] = []; for (let i = 0; i < st.total; i++) if (!used.has(i) && !seen.has(i)) rest.push(i); for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; } return t.concat(rest); })(), pile: keepPile, piles: keepPiles, elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
+    const prevTray = same ? [...tray.children].map((e) => { const p = pieceOf.get(e as HTMLElement); return p ? pieces.indexOf(p) : -1; }).filter((i) => i >= 0) : [];
+    const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: trayOrderAfterSync(st.total, st.locked, Object.values(st.groups as Record<string, { idx: number[] }>).map((g) => g.idx), prevTray), pile: keepPile, piles: keepPiles, elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
     // 같은 판을 다시 까는 동안 끌던 뭉치와 확대 상태를 잃지 않는다. 전에는 start() 가 dragging 을 지우고 fit() 으로 시야를 되돌려서,
     // 재접속·재동기화가 끌던 중에 오면 조각이 마우스를 안 따라오고 확대가 풀렸다. 게다가 놓았다는 말(drop)을 안 보내 서버엔 내가 잡은 채로 남았다 —
     // 남들 화면엔 내 테두리를 두른 조각이 떠 있고, 위 heldByOther 가 없던 때는 아무도 못 잡았다
@@ -830,26 +831,26 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       case 'leave': room.players.delete(m.id); for (const [g, h] of room.holders) if (h === m.id) room.holders.delete(g); renderPlayers(); draw(); return;
       case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       // 끄는 동안은 커서를 안 보내므로(netCursor) 화살표를 지운다 — 안 지우면 잡은 자리에 얼어붙어 조각은 움직이는데 마우스는 딴 데 있는 것처럼 보인다. 다음 cur 에 다시 그린다
-      case 'grab': { room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); const pl = room.players.get(m.id); if (pl) pl.x = undefined; const g = room.bySid.get(m.g); if (g) { toFront(g); if (g === dragging) { dragging = null; canvas.classList.remove('drag'); clearReturnHover(); toast(U.heldBy(pl?.nick ?? '')); } } draw(); return; }
+      case 'grab': { room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); const pl = room.players.get(m.id); if (pl) pl.x = undefined; const g = room.bySid.get(m.g); if (g) { toFront(g); if (g === dragging) { endDrag(); toast(U.heldBy(pl?.nick ?? '')); } } draw(); return; }
       case 'release': { room.holders.delete(m.g); const g = room.bySid.get(m.g); if (g) tweens.delete(g); draw(); return; }
       // 이미 내 판에 있는 조각을 남이 꺼냈다고 하면 서버와 어긋난 것 — 상태를 다시 받는다
       case 'take': { const p = pieces[Number(m.g)]; if (!p) return; if (p.locked || p.g) { reqSync(); return; } p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); { const pl = room.players.get(m.id); if (pl) pl.x = undefined; } renderPiles(); draw(); return; }
-      case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; room.bySid.delete(m.g); room.holders.delete(m.g); toTray(p); applyEdgeFilter(); renderPiles(); draw(); return; }
+      case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; ungroup(g); room.bySid.delete(m.g); room.holders.delete(m.g); toTray(p); applyEdgeFilter(); renderPiles(); draw(); return; }
       // 서버가 거절 — 예전엔 조각을 지우기만 해서 트레이에도 판에도 없이 사라졌다. 트레이로 되돌리고 상태를 다시 받는다
       // 트레이에서 꺼낸 것(take)이 거절되면 트레이로 되돌리고, 판 위 뭉치를 잡은 것(grab)이 거절되면 판에 그대로 둔다 — 서버에는 남이 잡은 채로 판 위에 있다
-      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); clearReturnHover(); } if (lifting === g) lifting = null; if (takeReq.delete(m.g) && g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; toTray(p); applyEdgeFilter(); room.bySid.delete(m.g); } room.holders.delete(m.g); toast(U.heldBy('')); renderPiles(); draw(); } lockReq.delete(m.g); reqSync(); return; }
+      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); if (lifting === g) lifting = null; if (takeReq.delete(m.g) && g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; ungroup(g); toTray(p); applyEdgeFilter(); room.bySid.delete(m.g); } room.holders.delete(m.g); toast(U.heldBy('')); renderPiles(); draw(); } lockReq.delete(m.g); reqSync(); return; }
       case 'mv': { holdT.set(m.g, performance.now()); const g = room.bySid.get(m.g); if (g && g !== dragging) netGlide(g, m.dx, m.dy); return; }
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
-      case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } tweens.delete(g); merge(g, into); } else draw(); return; }
+      case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) endDrag(); tweens.delete(g); merge(g, into); } else draw(); return; }
       // 내가 청해 둔 잠그기가 받아들여졌을 때만 내 조각으로 친다 — 남과 같은 뭉치를 동시에 놓으면 서버가 거절한다(resync).
       // myLocked 를 lockGroup 보다 먼저 올려야 이 조각이 마지막일 때 완성 정산이 제 수를 본다
-      case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); const k = lockReq.delete(m.g) ? g.pieces.length : 0; if (k) { myLocked += k; gotPieces(k); } lockGroup(g); } return; }
+      case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); g.dx = 0; g.dy = 0; tweens.delete(g); const k = lockReq.delete(m.g) ? g.pieces.length : 0; if (k) { myLocked += k; xp.got(k); } lockGroup(g); } return; }
       // 공개 판: 한 판이 끝나거나 너무 오래 멈춰 있으면 서버가 다음 그림으로 갈아 끼운다
       case 'next': {
         const st = m.state; const w = WORKS.find((x) => x.key === st.key); if (!w) { location.reload(); return; }
-        const name = T.paintingBy(w.title[LI], w.artist[LI], w.year);
-        roomNote(null); fullLoad(true, L.opening, { img: `/jigsaw/t-${w.key}.webp`, name });
-        loadSource({ kind: 'gallery', key: w.key, name, url: `/jigsaw/${w.key}.webp` }, false, true).then(() => {
+        const name = workName(w);
+        roomNote(null); fullLoad(true, L.opening, { img: thumbUrl(w.key), name });
+        loadSource(gallerySrc(w), { quiet: true }).then(() => {
           if (!room || !img) return; applyRoomState(st, { fresh: true }).then(() => toast(L.nextToast(name)));
         });
         return;
@@ -865,25 +866,24 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // ※ 방을 만드는 곳은 여기와 PuzzleDetail.astro 두 곳뿐. 둘 다 host:<id> 를 심어야 초대 안내가 뜬다
   $('jg-tosolo-invite').addEventListener('click', async (e) => {
     if (!src || !cut || room) return; const b = e.currentTarget as HTMLButtonElement; b.disabled = true; fullLoad(true, U.creating);
-    const idx = new Map(pieces.map((p, i) => [p, i]));
-    const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: pieces.filter((p) => p.locked).map((p) => idx.get(p)!), groups: groups.map((g) => ({ dx: g.dx, dy: g.dy, idx: g.pieces.map((p) => idx.get(p)!) })), elapsed: performance.now() - t0 };
-    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, lang: LANG, state } : { key: src.key, n: total, lang: LANG, state }) }); const d = await r.json<any>(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) { sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); localStorage.setItem(`roomphoto:${d.id}`, src.photoId); } } catch {} running = false; clearInterval(timer); if (hasIDB()) try { await saves.del(saveId()); } catch {} dropRemote(saveId()); b.disabled = false;
+    const snap0 = boardSnapshot(); const state = { seed: cutSeed, cols: cut.cols, rows: cut.rows, locked: snap0.locked, groups: snap0.groups, elapsed: performance.now() - t0 };
+    try { const r = await fetch('/api/room', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(src.kind === 'photo' ? { key: 'photo', w: imgW, h: imgH, n: total, state } : { key: src.key, n: total, state }) }); const d = await r.json<any>(); if (!d.id) throw 0; try { sessionStorage.setItem(`entered:${d.id}`, '1'); sessionStorage.setItem(`host:${d.id}`, '1'); if (src.kind === 'photo' && src.photoId) { sessionStorage.setItem(`roomphoto:${d.id}`, src.photoId); localStorage.setItem(`roomphoto:${d.id}`, src.photoId); } } catch {} running = false; clearInterval(timer); await forgetSave(); b.disabled = false;
       if (src.kind === 'photo') { history.replaceState(null, '', `${location.pathname}?room=${d.id}`); joinRoom(d.id, true); return; }
       location.href = `${location.pathname}?room=${d.id}`; } catch { fullLoad(false); b.disabled = false; toast(U.roomGone); }
   });
   // 초대는 /i/ 로 보낸다 — 서버 렌더라 방마다 그림·조각 수·인원이 들어간 OG 가 나간다(/board/ 는 정적이라 불가)
-  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${PFX}${room.live ? '/together/' : `/i/?room=${room.id}`}`; const r = await share(room.live ? { title: L.shareTitle, text: L.shareText, url } : { title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast((window as any).__i18n.copied); };
+  const inviteShare = async () => { if (!room) return; const url = `${location.origin}${PFX}${room.live ? '/together/' : `/i/?room=${room.id}`}`; const r = await share(room.live ? { title: L.shareTitle, text: L.shareText, url } : { title: U.inviteTitle, text: U.inviteText, url }); if (r === 'copied') toast(UI[LANG].foot.copied); };
   $('jg-invite').addEventListener('click', inviteShare); $('jg-invite2').addEventListener('click', () => { openPlayers(false); inviteShare(); });
 
   // ── 완성
   function finish() {
     running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
-    complete = true; if (hasIDB() && src && !room) { saves.del(saveId()).catch(() => {}); dropRemote(saveId()); if (src.kind === 'photo' && src.photoId) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; $('jg-full').hidden = true; closeFull(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; $('jg-full').hidden = true; closeFull(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     requestAnimationFrame(() => { resize(); fit(); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
-    xpWait = 0; // 남은 조각은 아래 완성 정산이 한 번에 친다 (서버가 paid 만큼 빼고 준다)
+    xp.discard(); // 남은 조각은 아래 완성 정산이 한 번에 친다 (서버가 paid 만큼 빼고 준다)
     if (room?.live) { reportLive().then(liveAward); roomNote(L.doneNote(myLocked)); celebrateWait(); return; }
     prepareResult(sec);
     celebrateWait(() => scenes.go('result'));
@@ -896,7 +896,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (!room) fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
     // 방에서 맞춘 판은 내가 놓은 조각만큼만 XP 로 친다 (mine). 기록 자체는 늘 한 판으로 남는다
     // member: 로그인한 채 맞춘 판만 서버에 올라간다(Base.astro 가 로그인 확인 뒤 html.member 를 붙인다). 비회원으로 맞춘 판은 나중에 로그인해도 XP 를 주지 않는다
-    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xpPaid, member: document.documentElement.classList.contains('member'), ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); settleXp().then(() => syncDone({ ...entry, paid: xpPaid })).then(showAward); }
+    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xp.paid, member: document.documentElement.classList.contains('member'), ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); xp.settle().then(() => syncDone({ ...entry, paid: xp.paid })).then(showAward); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmtSec(sec), pTitle) : T.shareTitle(total, fmtSec(sec)); sb.dataset.text = T.shareText;
     sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${PFX}/photo/` : `${location.origin}${PFX}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
@@ -927,7 +927,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (showAwardDialog(a)) return; // 레벨업·업적이면 다이얼로그, 아니면 판 위에 한 줄
     if (a.gained > 0) toast(V.gained(a.gained)); else if (a.capped) toast(V.capped);
   }
-  document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = (window as any).__i18n; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
+  document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
   if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
@@ -937,14 +937,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   async function boot() {
     const q = new URLSearchParams(location.search); const k = q.get('k'), pn = Number(q.get('n')), pt = WORKS.find((x) => x.key === k);
     const clean = () => history.replaceState(null, '', location.pathname);
-    const bail = (msg?: string) => { fullLoad(false); goPick(msg); };
     if (q.get('room')) return joinRoom(q.get('room')!.toLowerCase());
     if (q.get('resume')) {
       const id = q.get('resume')!; clean(); fullLoad(true, T.opening);
       let sv: SaveData | null = null; try { sv = (await saves.get(id)) ?? null; } catch {}
       if (!sv) { await remoteReady; if (remoteSaves.some((m) => m.id === id)) sv = await fetchSave(id); }
-      if (!sv) return bail(T.saveGone);
-      fullLoad(true, T.opening, { img: sv.thumb, name: sv.name }); await resumeSave(sv); if (!img) bail(); return;
+      if (!sv) return bailOut(T.saveGone);
+      fullLoad(true, T.opening, { img: sv.thumb, name: sv.name }); await resumeSave(sv); if (!img) bailOut(); return;
     }
     if (q.get('photo')) {
       const ph = q.get('photo')!;
@@ -952,14 +951,14 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       if (ph !== '1') {
         clean(); let blob: Blob | undefined;
         if (hasIDB()) { try { blob = await images.get(ph); } catch {} }
-        if (!blob) return bail(T.imgFail);
+        if (!blob) return bailOut(T.imgFail);
         images.del(ph).catch(() => {});
         // n 이 함께 오면(=/photo/ 에서 조각 수까지 정하고 온 것) 다이얼로그 없이 바로 판을 편다
         const auto = pn >= 6 && pn <= 2000; if (auto) wantN = pn;
         const together = auto && q.get('together') === '1'; // /photo/ 에서 '친구랑 같이' 로 온 경우
         fullLoad(true, T.loading);
-        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) }, auto && !together);
-        if (!img) return bail(); // loadSource 가 실패하면 이미 토스트를 띄운다
+        await loadSource({ kind: 'photo', key: 'photo', name: T.myPhoto, file: new File([blob], 'photo', { type: blob.type || 'image/jpeg' }) }, { auto: auto && !together });
+        if (!img) return bailOut(); // loadSource 가 실패하면 이미 토스트를 띄운다
         // 사진 방은 판이 있어야 만들 수 있다(조각 상태를 함께 올린다). 판을 먼저 펴고 방 만들기를 누른다
         if (together) { await start(); $('jg-tosolo-invite').click(); return; }
         if (!auto) fullLoad(false); // auto 면 start() 가 화면을 넘긴다
@@ -970,15 +969,15 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (q.get('daily') || (pt && q.get('d') === '1')) {
       const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL);
       const name = `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' ');
-      clean(); fullLoad(true, T.opening, { img: `/jigsaw/t-${pk.painting.key}.webp`, name });
-      await loadSource({ kind: 'daily', key: pk.painting.key, name, url: `/jigsaw/${pk.painting.key}.webp`, seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, true); if (!img) bail(); return;
+      clean(); fullLoad(true, T.opening, { img: thumbUrl(pk.painting.key), name });
+      await loadSource({ kind: 'daily', key: pk.painting.key, name, url: artUrl(pk.painting.key), seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, { auto: true }); if (!img) bailOut(); return;
     }
     if (pt) {
-      if (pn >= 6 && pn <= 2000) wantN = pn; const name = T.paintingBy(pt.title[LI], pt.artist[LI], pt.year);
-      clean(); fullLoad(true, T.opening, { img: `/jigsaw/t-${pt.key}.webp`, name });
-      await loadSource({ kind: 'gallery', key: pt.key, name, url: `/jigsaw/${pt.key}.webp` }, true); if (!img) bail(); return;
+      if (pn >= 6 && pn <= 2000) wantN = pn;
+      clean(); fullLoad(true, T.opening, { img: thumbUrl(pt.key), name: workName(pt) });
+      await loadSource(gallerySrc(pt), { auto: true }); if (!img) bailOut(); return;
     }
-    if (k) return bail(T.imgFail); // 모르는 key
+    if (k) return bailOut(T.imgFail); // 모르는 key
     goPick(); // 쿼리가 없으면 열 판이 없다
   }
   boot();

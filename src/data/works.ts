@@ -27,4 +27,3 @@ if (WORKS.length !== TOTAL_WORKS) throw new Error(`works: 작품이 ${WORKS.leng
 /** 오늘의 퍼즐 후보 (패턴·포스터·추상 제외) */
 const dailyCats = new Set(CATEGORIES.filter((c) => c.daily).map((c) => c.id));
 export const DAILY_POOL: Work[] = WORKS.filter((w) => dailyCats.has(w.cat));
-export const img = (key: string) => `/jigsaw/${key}.webp`, thumb = (key: string) => `/jigsaw/t-${key}.webp`, og = (key: string) => `/jigsaw/o-${key}.jpg`;

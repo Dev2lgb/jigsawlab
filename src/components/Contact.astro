@@ -1,8 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
-import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
+import { altsFor, prefix, type Lang } from '../i18n/ui';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
-const T = UI[lang], P = prefix(lang);
+const P = prefix(lang);
 const C = {
   ko: { title: '문의', lead: '버그, 제안, 저작권 문의, 광고·제휴 이야기 모두 이메일로 주세요. 보통 하루 안에 답합니다.', mail: '이메일 보내기', items: [['🐛 버그·제안', '어느 그림, 몇 조각, 어떤 기기·브라우저였는지 적어 주시면 훨씬 빨리 고쳐요.'], ['©️ 저작권·초상권', '문제가 되는 그림이나 페이지 주소를 알려 주시면 확인 후 바로 내립니다.'], ['🤝 광고·제휴', '퍼즐 브랜드, 미술관, 매체 협업 환영합니다.']] },
   en: { title: 'Contact', lead: 'Bugs, ideas, copyright questions, ads and partnerships: email is the way. Replies usually within a day.', mail: 'Send an email', items: [['🐛 Bugs & ideas', 'Tell us the painting, piece count, device and browser and we can fix it much faster.'], ['©️ Copyright', 'Send the page or image in question and we will check and take it down promptly.'], ['🤝 Ads & partnerships', 'Puzzle brands, museums and media are welcome.']] },

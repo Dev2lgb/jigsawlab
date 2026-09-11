@@ -2,9 +2,8 @@
 import Base from '../../layouts/Base.astro';
 import Home from '../../components/Home.astro';
 import { altsFor, UI } from '../../i18n/ui';
-import { JIGSAW } from '../../i18n/jigsaw';
 import { WORKS } from '../../data/works';
-const T = UI.en, t = JIGSAW.en;
+const T = UI.en;
 ---
 <Base title={T.seoTitle} desc={T.seoDesc(WORKS.length)} lang="en" alts={altsFor('/')} path="/en/">
   <Home lang="en" />

@@ -5,7 +5,7 @@
 //   /play/<cat>/  그 카테고리만 전부. 상자는 어느 쪽이든 /puzzle/<key>/ 상세로 간다
 import Base from '../layouts/Base.astro';
 import { JIGSAW } from '../i18n/jigsaw';
-import { UI, LI, prefix, type Lang } from '../i18n/ui';
+import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
@@ -21,7 +21,7 @@ const rel = here ? `/play/${here.id}/` : '/play/';
 const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle} · jigsawlab`;
 const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
 ---
-<Base title={title} desc={desc} lang={lang} alts={{ ko: rel, en: `/en${rel}`, ja: `/ja${rel}` }} path={`${P}${rel}`} ads={false}>
+<Base title={title} desc={desc} lang={lang} alts={altsFor(rel)} path={`${P}${rel}`} ads={false}>
   <div class="wrap picker">
     <h1 class="pick-title">{here ? U.catalog.catH1(here.name) : t.title}</h1>
     <p class="pick-sub">{here ? desc : t.sub}</p>
@@ -135,13 +135,13 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     import { todayKST, dailyPick, DAILY_PIECES } from '../lib/jigsaw';
     import { DAILY_POOL } from '../data/works';
     import { JIGSAW } from '../i18n/jigsaw';
-    import { docLang, LI, UI } from '../i18n/ui';
+    import { docLang, prefix, LI, UI } from '../i18n/ui';
+    import { fmtSec } from '../lib/store';
 
     const $ = (id: string) => document.getElementById(id);
     const LANG = docLang(), li = LI[LANG];
-    const P = LANG === 'ko' ? '' : `/${LANG}`;
+    const P = prefix(LANG);
     const U = UI[LANG], T = JIGSAW[LANG];
-    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
     // 자정을 넘겨 열어 둔 탭이면 오늘의 그림이 바뀌어 있다 (/play/ 에만 있는 칸)
     { const a = $('pk-daily') as HTMLAnchorElement | null; const pick = dailyPick(todayKST(), DAILY_POOL);
@@ -185,7 +185,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
         const a = document.createElement('a'); a.className = 'rs'; a.href = `${P}/board/?resume=${encodeURIComponent(sv.id)}`;
         const im = document.createElement('img'); im.src = sv.thumb; im.alt = '';
         const ti = document.createElement('div'); ti.className = 'rs-t'; ti.textContent = sv.name;
-        const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.play.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmt(sv.elapsed / 1000)}`);
+        const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.play.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmtSec(sv.elapsed / 1000)}`);
         const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
         if ('remote' in sv) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.play.cloud; a.appendChild(c); }
         for (const n of [im, bar, ti, st]) a.appendChild(n);

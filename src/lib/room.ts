@@ -38,6 +38,8 @@ export class Room extends DurableObject {
     const rid = url.pathname.match(/^\/api\/room\/([a-z0-9]{4,12})/)?.[1] ?? '';
     if (req.method === 'POST' && url.pathname.endsWith('/create')) {
       if (st) return Response.json({ id: st.id, exists: true });
+      // 방 id 는 경로에서만. 몸통의 id 를 믿으면 다른 id 로 상태가 만들어지고, 공개 판 자리(live)를 일반 방이 선점할 수 있다
+      if (!rid || rid === LIVE_ID) return Response.json({ error: 'id' }, { status: 400 });
       const b = await req.json<any>();
       // 내 사진 방: 사진은 서버에 오지 않고 크기만 받는다 (사진은 방장 브라우저 → 친구 브라우저 WebRTC 직접 전송)
       const w = b.key === 'photo' ? { key: 'photo', w: Math.round(Number(b.w)), h: Math.round(Number(b.h)) } : WORK_BY_KEY[b.key]; if (!w || !(w.w >= 50 && w.w <= 4000 && w.h >= 50 && w.h <= 4000)) return Response.json({ error: 'key' }, { status: 400 });
@@ -49,7 +51,7 @@ export class Room extends DurableObject {
       if (st0) { const placed = new Set<number>(); locked = (st0.locked as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < total); locked.forEach((i) => placed.add(i)); const gs: Record<string, RoomGroup> = {};
         for (const sg of (st0.groups as { dx: number; dy: number; idx: number[] }[]) ?? []) { const idx = sg.idx.filter((i) => Number.isInteger(i) && i >= 0 && i < total && !placed.has(i)); if (!idx.length) continue; idx.forEach((i) => placed.add(i)); gs[String(idx[0])] = { dx: r0(sg.dx), dy: r0(sg.dy), idx }; }
         groups = gs; }
-      this.state = { id: b.id, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0), lang: String(b.lang || 'ko').slice(0, 2) };
+      this.state = { id: rid, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0), lang: String(b.lang || 'ko').slice(0, 2) };
       await this.ctx.storage.put('state', this.state); await this.ctx.storage.setAlarm(Date.now() + 48 * 3600e3);
       return Response.json({ id: this.state.id });
     }

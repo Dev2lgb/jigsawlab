@@ -11,7 +11,7 @@ export function openLogin(next = location.pathname + location.search) {
   const a = $('auth-google') as HTMLAnchorElement | null; if (!a) { location.href = loginUrl(next); return; }
   a.href = loginUrl(next); show('auth-dlg', true);
 }
-export const closeLogin = () => show('auth-dlg', false);
+const closeLogin = () => show('auth-dlg', false);
 /** 닉네임 입력 다이얼로그. 취소하면 null (처음 정할 때는 호출한 쪽에서 randomNick 으로 채움). mode: 'new' 처음 정하기 / 'edit' 바꾸기 */
 export function askNick(initial = '', mode: 'new' | 'edit' = 'edit'): Promise<string | null> {
   return new Promise((res) => {

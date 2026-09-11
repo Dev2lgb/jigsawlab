@@ -1,7 +1,12 @@
 // 완성 연출 — 팡파르·딸깍 소리(WebAudio)와 색종이·빛 쓸기(캔버스).
 // 판(Jigsaw.astro)과 레벨업·업적 다이얼로그가 같이 쓴다. 소리는 첫 사용자 제스처 뒤에만 난다
 let ac: AudioContext | null = null;
-const actx = () => { ac ??= new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); return ac; };
+const make = () => (ac ??= new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)());
+// 아이폰 사파리는 제스처(손 뗌·클릭) 안에서만 오디오를 풀어 준다. 조각 소리는 스냅 애니메이션(rAF)이 끝난 뒤에 나서
+// 그때 resume() 해 봐야 거절돼 소리가 영영 안 났다 — 손을 뗄 때마다 미리 풀어 둔다(앱 전환·전화로 다시 잠겨도 다음 터치에 풀린다)
+const unlock = () => { try { const a = make(); if (a.state !== 'running') { a.resume().catch(() => {}); const b = a.createBufferSource(); b.buffer = a.createBuffer(1, 1, 22050); b.connect(a.destination); b.start(0); } } catch {} };
+if (typeof window !== 'undefined') for (const ev of ['pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, unlock, { capture: true, passive: true });
+const actx = () => { const a = make(); if (a.state === 'suspended') a.resume().catch(() => {}); return a; };
 export const dpr = () => Math.min(2, window.devicePixelRatio || 1);
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 

@@ -44,7 +44,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <button type="button" class="tb" id="jg-tosolo-invite" hidden><Fragment set:html={icon('users', 15)} /><span>{U.play.together}</span></button>
       <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('user-plus', 15)} /><span>{U.play.invite}</span></button></span>
       <span class="sp"></span>
-      <button type="button" class="ib" id="jg-full" title={t.original} aria-label={t.original}><Fragment set:html={icon('image', 18)} /></button>
+      <button type="button" class="ib" id="jg-full" title={t.original} aria-label={t.original} aria-pressed="false"><Fragment set:html={icon('image', 18)} /></button>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false"><Fragment set:html={icon('eye', 18)} /></button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false"><Fragment set:html={icon('edge', 18)} /></button>
       <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false"><Fragment set:html={icon('grid', 18)} /></button>
@@ -59,14 +59,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     </div>
     <div class="tray-bar" id="jg-traybar"><div class="piles" id="jg-piles"></div><span class="sp"></span><span class="xpc" id="jg-xp-hud" hidden></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
-    <div class="modal imgview" id="jg-fullview" hidden>
-      <div class="modal-bg"></div>
-      <figure class="iv-box" role="dialog" aria-modal="true" aria-label={t.original}>
-        <canvas id="jg-fullview-cv"></canvas>
-        <figcaption id="jg-fullview-name"></figcaption>
-        <button type="button" class="close" aria-label={t.toTitle}>✕</button>
-      </figure>
-    </div>
     <div class="tray-drop" id="jg-traydrop" hidden><b>{U.play.dropHere}</b></div>
     <div class="pilepick" id="jg-pilepick" hidden><p class="pp-h">{U.play.moveTo}</p><div class="pp-list" id="jg-pilepick-list"></div></div>
     <div class="modal" id="jg-pldlg" hidden>
@@ -172,11 +164,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
   .tray :global(.tp.lift) { visibility: hidden; }
   /* 원본 그림 보기 */
-  .imgview { z-index: 40; padding: clamp(12px, 4vw, 40px); }
-  .iv-box { position: relative; margin: 0; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .iv-box canvas { display: block; max-width: 100%; max-height: calc(100vh - 130px); width: auto; height: auto; border-radius: 12px; box-shadow: 0 30px 70px -20px rgba(15,18,34,.7); background: var(--bg); }
-  .iv-box figcaption { color: #fff; font-size: .9rem; font-weight: 600; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,.6); max-width: 90vw; }
-  .imgview .close { top: -6px; right: -6px; z-index: 1; }
+  #jg-full { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* 판 위 조각을 여기로 끌어오면 트레이로 되돌아간다 */
   .tray.over { background: var(--gold-soft); box-shadow: inset 0 0 0 2px var(--gold); }
   .tray-drop { position: fixed; z-index: 11; display: grid; place-items: center; pointer-events: none; }
@@ -289,7 +277,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player & { x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
   const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
   let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
-  let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
+  let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, peek = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
   let complete = false, completeAlpha = 0, gid = 0;
   const lockReq = new Set<string>();       // 방에서 서버에 청해 둔 잠그기 — 받아들여져야 내 조각으로 친다
@@ -339,7 +327,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
-    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; closeFull();
+    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
     scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
@@ -473,7 +461,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(0, 0, cut.W, cut.H);
-    if (showHint && img) { ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
+    if ((showHint || peek) && img) { ctx.globalAlpha = peek ? 1 : 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = 'rgba(59,91,255,.55)'; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
     if (outline && !complete) ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H);
     ctx.drawImage(lockedLayer, 0, 0);
@@ -595,22 +583,17 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
   canvas.addEventListener('dblclick', (e) => { const b = toBoard(e.clientX, e.clientY); if (!hit(b.x, b.y)) fit(); });
   $('jg-hint').addEventListener('click', () => { showHint = !showHint; $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
-  // ── 원본 그림 보기: 판 위에 큼직하게. 조각 비트맵을 뜬 그 원본(img)을 그대로 그려 사진·명화 어느 쪽이든 맞는다.
-  //  화면 크기에 맞춰 줄여 그리므로 2400px 짜리를 통째로 물고 있지 않고, 닫을 때 캔버스를 비워 돌려준다
-  const fullView = $('jg-fullview'), fullCv = $('jg-fullview-cv') as HTMLCanvasElement;
-  function openFull() {
-    if (!img || !src) return;
-    const cap = Math.min(1600, Math.max(innerWidth, innerHeight) * (window.devicePixelRatio || 1));
-    const k = Math.min(1, cap / Math.max(imgW, imgH));
-    fullCv.width = Math.max(1, Math.round(imgW * k)); fullCv.height = Math.max(1, Math.round(imgH * k));
-    fullCv.getContext('2d')!.drawImage(img, 0, 0, fullCv.width, fullCv.height);
-    $('jg-fullview-name').textContent = src.name;
-    fullView.hidden = false;
-  }
-  function closeFull() { if (fullView.hidden) return; fullView.hidden = true; fullCv.width = fullCv.height = 1; }
-  $('jg-full').addEventListener('click', () => (fullView.hidden ? openFull() : closeFull()));
-  fullView.addEventListener('click', closeFull); // 그림을 눌러도 닫힌다 — 창이 HUD 를 덮어 버튼으로는 못 닫는다
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFull(); });
+  // ── 원본 그림 보기: 누르고 있는 동안만 밑그림을 선명하게(alpha 1). 포인터를 잡아 두어 버튼 밖에서 손을 떼도 풀리고, 탭이 가려지거나 초점을 잃어도 풀린다.
+  //  터치 길게 누르기의 문맥 메뉴·글자 선택은 CSS(touch-action·user-select·touch-callout)와 contextmenu 막기로 잠재운다. 키보드는 스페이스·엔터를 누르고 있는 동안
+  const fullBtn = $('jg-full');
+  function setPeek(on: boolean) { if (peek === on) return; peek = on; fullBtn.setAttribute('aria-pressed', String(on)); draw(); }
+  fullBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); try { fullBtn.setPointerCapture(e.pointerId); } catch {} setPeek(true); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) fullBtn.addEventListener(ev, () => setPeek(false));
+  fullBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+  fullBtn.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPeek(true); } });
+  fullBtn.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') setPeek(false); });
+  fullBtn.addEventListener('blur', () => setPeek(false)); addEventListener('blur', () => setPeek(false));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) setPeek(false); });
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
   function applyEdgeFilter() { for (const p of pieces) if (p.el) p.el.hidden = (edgeOnly && !isEdge(p)) || (activePile !== 0 && p.pile !== activePile); }
   $('jg-edge').addEventListener('click', () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyEdgeFilter(); });
@@ -879,7 +862,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // ── 완성
   function finish() {
     running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
-    complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; $('jg-full').hidden = true; closeFull(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; $('jg-full').hidden = true; setPeek(false); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     requestAnimationFrame(() => { resize(); fit(); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]);

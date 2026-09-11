@@ -219,6 +219,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { trayOrderAfterSync } from '../lib/board';
   import { BADGES, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
+  import { createDust, outerEdges } from '../lib/dust';
   import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
@@ -336,7 +337,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -466,6 +467,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // ── 그리기 (스냅 트윈이 있으면 계속 다시 그림)
   type Tween = { x0: number; y0: number; x1: number; y1: number; t0: number; dur: number; done: () => void; lin?: boolean };
   const tweens = new Map<Group, Tween>();
+  const dust = createDust(); // 조각이 자리에 들어갈 때 가장자리에서 피어오르는 먼지 (lib/dust.ts). 잠그기·붙이기에서 심고 drawNow 가 그린다
+  const pieceSide = () => Math.min(cut.pw, cut.ph);
   let drawQueued = false, restShadow = false; // restShadow: 판 위 느슨한 조각에 옅은 그림자 (조각이 적을 때만)
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -483,10 +486,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     // 화면 밖 조각은 건너뜀. 판 위 느슨한 조각이 적을 때는 옅은 그림자를 깔아 다 맞춰진 그림 위에 얹혀도 눈에 띄게
     const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); let looseN = 0; for (const g of groups) looseN += g.pieces.length; restShadow = looseN <= 48;
     for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
+    const dusty = dust.render(ctx, now);
     if (room) { for (const g of groups) { const h = g.sid && room.holders.get(g.sid); if (!h || h === room.me?.id) continue; const pl = room.players.get(h); const p0 = g.pieces[0]; ctx.save(); ctx.strokeStyle = pl?.color ?? '#888'; ctx.lineWidth = 3 / view.s; ctx.setLineDash([6 / view.s, 4 / view.s]); ctx.strokeRect(px(p0) - cut.padX, py(p0) - cut.padY, cut.pw + cut.padX * 2, cut.ph + cut.padY * 2); ctx.restore(); }
       for (const pl of room.players.values()) { if (pl.x === undefined || pl.id === room.me?.id) continue; ctx.save(); ctx.translate(pl.x, pl.y!); ctx.scale(1 / view.s, 1 / view.s); ctx.fillStyle = pl.color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 18); ctx.lineTo(5, 13); ctx.lineTo(12, 13); ctx.closePath(); ctx.fill(); ctx.font = '700 12px "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif'; const w = ctx.measureText(pl.nick).width + 12; ctx.fillStyle = pl.color; ctx.beginPath(); ctx.roundRect(14, 4, w, 20, 10); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, 20, 18); ctx.restore(); } }
     for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
-    if (tweens.size) draw();
+    if (tweens.size || dusty) draw();
   }
   function drawGroup(g: Group, lifted: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
     const shadow = g.pieces.length <= 40 && (lifted || restShadow);
@@ -536,6 +540,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   function snap(g: Group, x1: number, y1: number, done: () => void) { tweens.set(g, { x0: g.dx, y0: g.dy, x1, y1, t0: performance.now(), dur: 140, done }); draw(); }
   function merge(g: Group, into: Group) {
+    { const tol = snapTol(); if (Math.abs(into.dx) >= tol || Math.abs(into.dy) >= tol) dust.puff(outerEdges(g.pieces, cut.pw, cut.ph, into.dx, into.dy, into.pieces), pieceSide(), 0.5); }
     for (const p of g.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(g), 1); toFront(into); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); if (into.sid) room.holders.delete(into.sid); }
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
@@ -548,7 +553,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const lc = lockedLayer.getContext('2d')!;
     for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); }
     const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); }
-    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); draw();
+    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); dust.puff(outerEdges(g.pieces, cut.pw, cut.ph), pieceSide()); draw();
     if (!room) xp.got(g.pieces.length); // 방에서는 남이 놓은 것도 여기로 오므로 내가 보낼 때(myLocked) 센다
     if (lockedN === total) finish(); else scheduleSave();
   }

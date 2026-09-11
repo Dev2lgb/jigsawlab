@@ -77,11 +77,11 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
   </style>
   <script>
     import { gridFor, todayKST, dailyPick } from '../lib/jigsaw';
-    import { earnFor } from '../lib/level';
+    import { rateFor } from '../lib/level';
     import { DAILY_POOL } from '../data/works';
     import { initFavUI } from '../lib/fav';
     initFavUI();
-    import { getBest } from '../lib/store';
+    import { getBest, bestDoneN } from '../lib/store';
     import { docLang, UI, type Lang } from '../i18n/ui';
     const LANG = docLang(), T = UI[LANG];
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -98,7 +98,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     for (const ev of ['pointerenter', 'touchstart', 'focus'] as const) solo.addEventListener(ev, warm, { passive: true });
     solo.addEventListener('click', (e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; flTxt.textContent = flTxt.dataset.opening!; fl.classList.add('on'); });
     const asp = () => (img.naturalWidth || 1200) / (img.naturalHeight || 950);
-    const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/board/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmt(b)) : T.detail.noBest; xpTip.textContent = T.lv.earn(earnFor(g.cols * g.rows).toLocaleString()); };
+    const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/board/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmt(b)) : T.detail.noBest; const nn = g.cols * g.rows, pn = bestDoneN(key), xp = Math.round(nn * rateFor('gallery', nn, pn)).toLocaleString(); xpTip.textContent = pn !== null && nn <= pn ? T.lv.earnRepeat(xp) : T.lv.earn(xp); };
     document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.addEventListener('click', () => select(Number(b.dataset.n))));
     const fill = () => { document.querySelectorAll<HTMLButtonElement>('.preset').forEach((a) => { const g = gridFor(Number(a.dataset.n), asp()); a.querySelector('small')!.textContent = T.detail.gridOf(g.cols, g.rows); }); select(picked); };
     img.complete ? fill() : img.addEventListener('load', fill);

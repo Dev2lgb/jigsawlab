@@ -158,7 +158,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       else { nk.textContent = a.dataset.login!; a.href = '#'; a.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }); }
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
       if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(docLang()); if (n && (await setNickRemote(n))) nk.textContent = n; }
-      // 로그인 직후 이 기기 기록을 합치면 그동안의 판이 한꺼번에 XP 가 된다 — 로그인의 값어치라 그 자리에서 알려 준다
+      // 로그인한 채 맞췄는데 서버에 못 올라간 판(완성 때 전송 실패)을 올린다. 비회원으로 맞춘 판은 로그인해도 안 준다
       if (u) mergeLocalDone().then(async (a) => {
         if (!a || a.gained <= 0) return;
         const { showAwardDialog } = await import('../lib/levelup');

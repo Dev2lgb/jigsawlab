@@ -4,9 +4,9 @@ import { gridFor, seeded, LIVE_ID, LIVE_PIECES } from './jigsaw';
 import { WORK_BY_KEY, DAILY_POOL } from '../data/works';
 
 // 메시지·상태 타입은 room-proto.ts (클라이언트와 공유). by = 지금 이 뭉치를 잡고 있는 사람 — 상태에 같이 저장한다(절전으로 메모리가 날아가도 유지). 끊긴 사람의 점유는 holder() 가 자동으로 푼다
-import type { RoomGroup, RoomState, Player, RoomInfo, ClientMsg, ServerMsg } from './room-proto';
+import { EMOJIS, type RoomGroup, type RoomState, type Player, type RoomInfo, type ClientMsg, type ServerMsg } from './room-proto';
 export type { RoomGroup, RoomState };
-type Att = Player & { photo?: boolean };
+type Att = Player & { photo?: boolean; emoAt?: number }; // emoAt = 마지막 이모지 시각(연타 제한). 절전으로 메모리가 날아가도 남게 attachment 에
 const COLORS = ['#e0245e', '#f0a71b', '#2f9e6b', '#3b5bff', '#a54cff', '#ff6a3d', '#0aa3b5', '#c2b31c'];
 const MAX_PLAYERS = 8;
 // ── 상설 공개 판 — 사이트가 굴리는 방 하나('live'). 아무도 만들지 않고 사라지지도 않으며, 한 판이 끝나면 다음 그림으로 이어진다
@@ -14,6 +14,7 @@ const LIVE_MAX = 16;        // 공개방 정원 (링크 초대 방은 MAX_PLAYER
 const NEXT_WAIT = 25e3;     // 완성한 그림을 다 같이 보고 다음 판으로 넘어가기까지
 const STALL = 7 * 86400e3;  // 이만큼 한 조각도 안 놓이면 미완인 채로 접고 다음 그림으로 (아무도 안 오는 판이 영영 남지 않게)
 const HOLD_MAX = 90e3;      // 잡은 채 이만큼 가만히 있으면 점유를 푼다 — 공개방은 아무나 들어오므로
+const EMO_MIN = 600;        // 이모지 최소 간격 — 클라이언트 쿨다운(800ms)보다 살짝 느슨하게, 지연 흔들림에 정상 사용이 안 잘리도록
 const HOST_GRACE = 45e3; // 사진 가진 사람이 모두 끊긴 뒤 방을 끝내기까지 기다리는 시간(잠깐 끊긴 것과 구분)
 const rand32 = () => (Math.random() * 2 ** 32) >>> 0;
 // 좌표는 정수로 반올림해 저장한다. 판 좌표가 이미지 픽셀 단위라 0.5px 차이는 보이지 않고,
@@ -92,6 +93,8 @@ export class Room extends DurableObject<Cloudflare.Env> {
       case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { this.sendTo(ws, { t: 'deny', g: String(i) }); return; } const g = String(i); st.groups[g] = { dx: num(m.dx, 0), dy: num(m.dy, 0), idx: [i], by: att.id, t: Date.now() }; this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
       case 'untake': { const c = this.claim(st, m, att); if (!c || c.gr.idx.length !== 1) return; if (!c.mine) return this.resync(ws); delete st.groups[c.g]; this.broadcast({ t: 'untake', g: c.g }, ws); this.scheduleSave(); return; }
       case 'cur': this.broadcast({ t: 'cur', id: att.id, x: num(m.x, 0), y: num(m.y, 0) }, ws); return;
+      // 이모지 — 상태 없이 중계만. 목록 밖 번호·연타는 조용히 버린다(클라이언트가 먼저 막으니 여기 걸리는 건 콘솔로 보낸 것뿐)
+      case 'emo': { const e = Number(m.e); if (!Number.isInteger(e) || e < 0 || e >= EMOJIS.length) return; const now = Date.now(); if (att.emoAt && now - att.emoAt < EMO_MIN) return; att.emoAt = now; ws.serializeAttachment(att); this.broadcast({ t: 'emo', id: att.id, e }, ws); return; }
       case 'grab': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) { this.sendTo(ws, { t: 'deny', g: c.g }); return; } c.gr.by = att.id; c.gr.t = Date.now(); this.broadcast({ t: 'grab', id: att.id, g: c.g }, ws); return; }
       case 'mv': { const c = this.claim(st, m, att); if (!c || !c.mine) return; const { g, gr } = c; gr.by = att.id; gr.t = Date.now(); gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); this.broadcast({ t: 'mv', g, dx: gr.dx, dy: gr.dy }, ws); return; }
       case 'drop': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.resync(ws); const { g, gr } = c; gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); release(gr); this.broadcast({ t: 'drop', g, dx: gr.dx, dy: gr.dy }, ws); this.scheduleSave(); return; }

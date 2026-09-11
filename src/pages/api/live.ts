@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { LIVE_ID } from '../../lib/jigsaw';
 import { WORK_BY_KEY } from '../../data/works';
+import type { RoomInfo } from '../../lib/room-proto';
 export const prerender = false;
 const KEY = 'https://jigsawlab.app/__live';
 const JSON_HDR = { 'content-type': 'application/json' };
@@ -20,7 +21,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (hit) return fresh(hit.body, hit.status); // 캐시본은 max-age 를 달고 있으니 몸통만 꺼내 다시 싼다
   const stub = env.ROOMS.get(env.ROOMS.idFromName(LIVE_ID));
   const r = await stub.fetch(new Request(`https://room/api/room/${LIVE_ID}`));
-  const d = await r.json<{ key?: string; work?: unknown } & Record<string, unknown>>();
+  const d = await r.json<RoomInfo & { work?: unknown }>();
   // 제목은 여기서 얹는다 — 랜딩이 작품 목록을 통째로 내려받지 않게. 다섯 언어를 다 담아 캐시는 하나로
   const w = d && d.key ? WORK_BY_KEY[d.key] : null;
   if (w) d.work = { key: w.key, title: w.title, artist: w.artist, year: w.year };

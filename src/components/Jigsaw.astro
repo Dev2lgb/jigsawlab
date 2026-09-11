@@ -218,6 +218,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { share, toast } from '../lib/share';
   import { saves, images, hasIDB, type SaveData } from '../lib/db';
   import { sendBlob, recvBlob, type Peer } from '../lib/rtc';
+  import type { ClientMsg, ServerMsg, RoomState, RoomInfo, Player } from '../lib/room-proto';
   import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, type Award, type SaveMeta } from '../lib/account';
   import { createXp } from '../lib/xp';
   import { trayOrderAfterSync } from '../lib/board';
@@ -285,8 +286,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; pile: number; hue: number; lum: number };
   let piles: string[] = [], activePile = 0; // piles[0] = 전체(기본)
   // 멀티 방
-  let room: { id: string; live: boolean; ws: WebSocket | null; me: { id: string; nick: string; color: string } | null; players: Map<string, { id: string; nick: string; color: string; x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
-  const send = (m: unknown) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
+  let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player & { x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
+  const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
   let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
@@ -679,7 +680,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 조각을 끄는 동안 보내는 좌표. 웹소켓 메시지 하나가 곧 Durable Object 요청 하나라 간격이 그대로 비용이 된다.
   // 100ms(10/s)로 띄엄띄엄 보내고, 받는 쪽에서 그 사이를 선형으로 메워 부드럽게 보이게 한다
   const MV_MS = 100;
-  function netMove(g: Group) { const now = performance.now(); if (now - mvT < MV_MS) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
+  function netMove(g: Group) { if (!g.sid) return; const now = performance.now(); if (now - mvT < MV_MS) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   /** 남이 끄는 조각을 다음 좌표까지 선형으로 미끄러뜨린다(도착점은 drop 이 정확히 맞춰 준다) */
   function netGlide(g: Group, x: number, y: number) { tweens.set(g, { x0: g.dx, y0: g.dy, x1: x, y1: y, t0: performance.now(), dur: MV_MS * 1.15, lin: true, done: () => {} }); draw(); }
   function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
@@ -708,7 +709,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     fullLoad(true, U.joining);
     const live = id === LIVE_ID;
     const bail = (msg: string = live ? L.full : U.roomGone) => bailOut(msg);
-    let info: any; try { info = await (await fetch(`/api/room/${id}`)).json(); } catch { return bail(); }
+    let info: RoomInfo & { error?: string }; try { info = await (await fetch(`/api/room/${id}`)).json<RoomInfo & { error?: string }>(); } catch { return bail(); }
     if (!info || info.error) return bail();
     const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
     // 진입 화면: 로그인(선택) 또는 닉네임만 적고 손님으로. 로그인했거나 이 방에 이미 들어온 적 있으면 건너뜀
@@ -730,7 +731,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     roomBail = bail; connectRoom(bail);
     history.replaceState(null, '', `${location.pathname}?room=${id}`);
   }
-  function roomGate(info: any, w: (typeof WORKS)[number] | null): Promise<string | null> {
+  function roomGate(info: RoomInfo, w: (typeof WORKS)[number] | null): Promise<string | null> {
     return new Promise((res) => {
       fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
       $('jg-gate-k').textContent = info.live ? L.gateKicker : U.gate.kicker;
@@ -769,7 +770,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const alive = () => !!room && gen === wsGen;
     ws.addEventListener('open', () => { if (!alive()) return; wsTries = 0; send({ t: 'hello', nick: getNick(), photo: !!photoBlob }); clearInterval(pingT); pingT = window.setInterval(() => pingWs(), 15000); });
     ws.addEventListener('close', () => { if (!alive()) return; clearInterval(pingT); clearTimeout(pongT); if (!room!.me && !running) return bail?.(); retryWs(bail); });
-    ws.addEventListener('message', (ev) => { if (!alive()) return; let m: any; try { m = JSON.parse(ev.data); } catch { return; } if (m.t === 'pong') { clearTimeout(pongT); pongT = 0; return; } onRoomMsg(m); });
+    ws.addEventListener('message', (ev) => { if (!alive()) return; let m: ServerMsg; try { m = JSON.parse(ev.data); } catch { return; } if (m.t === 'pong') { clearTimeout(pongT); pongT = 0; return; } onRoomMsg(m); });
   }
   function pingWs() { if (!room?.ws || room.ws.readyState !== 1 || pongT) return; send({ t: 'ping' }); pongT = window.setTimeout(() => { pongT = 0; try { room?.ws?.close(); } catch {} }, 8000); }
   let wsDropped = false;
@@ -791,13 +792,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const roomNote = (msg: string | null) => { const e = $('jg-roomnote'); e.textContent = msg ?? ''; e.hidden = !msg; };
   /** 서버가 준 판 상태를 화면에 펼친다. fresh = 다른 그림으로 갈아 끼우는 것(공개 판의 다음 회차) —
    *  더미와 트레이 순서를 물려받지 않는다 */
-  function applyRoomState(st: any, o: { dead?: boolean; fresh?: boolean } = {}) {
+  function applyRoomState(st: RoomState, o: { dead?: boolean; fresh?: boolean } = {}) {
     const fresh = !!o.fresh;
     // 같은 판을 다시 받는 것(재접속·재동기화)이면 더미와 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
     const same = !fresh && !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
     const keepPiles = same ? piles.slice() : [U.pileAll]; const keepPile = same ? pieces.map((p) => p.pile) : [];
     const prevTray = same ? [...tray.children].map((e) => { const p = pieceOf.get(e as HTMLElement); return p ? pieces.indexOf(p) : -1; }).filter((i) => i >= 0) : [];
-    const rs: any = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: trayOrderAfterSync(st.total, st.locked, Object.values(st.groups as Record<string, { idx: number[] }>).map((g) => g.idx), prevTray), pile: keepPile, piles: keepPiles, elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
+    const rs: SaveData = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: trayOrderAfterSync(st.total, st.locked, Object.values(st.groups as Record<string, { idx: number[] }>).map((g) => g.idx), prevTray), pile: keepPile, piles: keepPiles, elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
     // 같은 판을 다시 까는 동안 끌던 뭉치와 확대 상태를 잃지 않는다. 전에는 start() 가 dragging 을 지우고 fit() 으로 시야를 되돌려서,
     // 재접속·재동기화가 끌던 중에 오면 조각이 마우스를 안 따라오고 확대가 풀렸다. 게다가 놓았다는 말(drop)을 안 보내 서버엔 내가 잡은 채로 남았다 —
     // 남들 화면엔 내 테두리를 두른 조각이 떠 있고, 위 heldByOther 가 없던 때는 아무도 못 잡았다
@@ -814,7 +815,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       draw(); renderPlayers(); if (!fresh) maybeInvite(); fullLoad(false); roomNote(o.dead ? U.hostGone : null); if (wsDropped) { wsDropped = false; toast(U.reconnected); }
     });
   }
-  function onRoomMsg(m: any) {
+  function onRoomMsg(m: ServerMsg) {
     if (!room) return;
     switch (m.t) {
       case 'init': {

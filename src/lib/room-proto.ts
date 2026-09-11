@@ -10,7 +10,7 @@ export interface RoomInfo { id: string; key: string; photo: boolean; hasPhoto: b
 
 /** 클라이언트 → 서버. g 는 뭉치 id(첫 조각 번호의 문자열) */
 export type ClientMsg =
-  | { t: 'hello'; nick?: string; photo?: boolean }
+  | { t: 'hello'; nick?: string; photo?: boolean; pid?: string }  // pid = 탭마다 고정된 id. 같은 pid 의 옛 소켓을 서버가 닫는다(재접속 정리)
   | { t: 'nick'; nick: string }
   | { t: 'take'; g: string | number; dx: number; dy: number }   // 트레이에서 꺼냄
   | { t: 'untake'; g: string }                                   // 한 조각짜리를 트레이로 되돌림

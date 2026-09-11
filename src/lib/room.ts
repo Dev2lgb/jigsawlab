@@ -101,7 +101,7 @@ export class Room extends DurableObject {
         if (Math.abs(ax) > tol * 1.5 || Math.abs(ay) > tol * 1.5) return this.resync(ws);
         st.locked.push(...A.idx); delete st.groups[g]; st.lastAt = Date.now(); this.broadcast({ t: 'lock', g, idx: A.idx });
         // 공개 판은 완성해도 끝나지 않는다. 완성작을 잠깐 같이 보고 다음 그림으로 (알람은 아무도 안 남아 있어도 깨어난다)
-        if (st.locked.length >= st.total && !st.doneAt) { st.doneAt = Date.now(); this.broadcast({ t: 'done', at: st.doneAt }); if (st.live) { await this.ctx.storage.put('state', st); await this.ctx.storage.setAlarm(Date.now() + NEXT_WAIT); } }
+        if (st.locked.length >= st.total && !st.doneAt) { st.doneAt = Date.now(); this.broadcast({ t: 'done', at: st.doneAt }); await this.countSolved(); if (st.live) { await this.ctx.storage.put('state', st); await this.ctx.storage.setAlarm(Date.now() + NEXT_WAIT); } }
         this.scheduleSave(); return; }
       case 'ping': ws.send('{"t":"pong"}'); return;
       // 상태 다시 받기 (사진을 늦게 받은 참가자가 판을 다시 맞출 때). 입장 알림은 다시 보내지 않음
@@ -112,6 +112,8 @@ export class Room extends DurableObject {
       case 'sig': { const to = String(m.to); const d = m.d; if (!d || typeof d !== 'object' || JSON.stringify(d).length > 20000) return; const dst = this.ctx.getWebSockets().find((w) => (w.deserializeAttachment() as Att)?.id === to); if (dst) try { dst.send(JSON.stringify({ t: 'sig', from: att.id, d })); } catch {} return; }
     }
   }
+  /** 사이트 전체 완성 판 수 +1 (홈의 숫자). 판이 끝나는 곳은 여기 하나라 한 번만 — 전에는 접속자마다 /api/stats 를 올려 인원수만큼 부풀었다 */
+  async countSolved() { const DB = (this.env as { DB?: D1Database }).DB; if (!DB) return; await DB.prepare("INSERT INTO stats (key, n) VALUES ('solved', 1) ON CONFLICT(key) DO UPDATE SET n = n + 1").run().catch(() => {}); }
   /** 사진 가진 사람이 (다시) 들어옴 — 끝난 것으로 표시했던 방을 되살린다 */
   photoBack(except?: WebSocket) { const st = this.state; if (!st || st.key !== 'photo') return; if (!st.hostLeftAt && !st.dead) return; st.hostLeftAt = 0; st.dead = false; this.ctx.storage.put('state', st); this.broadcast({ t: 'hostback' }, except); }
   /** 공개 판 한 회차 깔기 — 그림은 회차로 정해지고, 조각 수는 늘 1000 */

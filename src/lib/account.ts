@@ -24,9 +24,19 @@ export async function setNickRemote(nick: string): Promise<boolean> {
 const post = (body: unknown) => { const s = JSON.stringify(body); return fetch('/api/sync', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: s, keepalive: s.length < 60_000 }).catch(() => null); };
 /** 서버가 매긴 XP·레벨·새 업적 (회원만) */
 export interface Award { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean; rate?: number }
+// 어디까지 합쳤는지(at)를 회원별로 localStorage 에 둔다 — 탭마다(sessionStorage) 기록 200건을 통째로 다시 보내면
+// 전부 무시되더라도 요청과 정리 쿼리는 매번 돌았다. 회원별이라 같은 기기의 다른 계정은 제 몫을 따로 합친다
+const ls = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} } };
+const merged = (uid: string) => Number(ls.get(`auth:merged:${uid}`) ?? 0) || 0;
+const markMerged = (uid: string, at: number) => { if (at > merged(uid)) ls.set(`auth:merged:${uid}`, String(at)); };
 const awardOf = async (r: Response | null): Promise<Award | null> => { if (!r?.ok) return null; try { const d: any = await r.json(); return d?.award ?? null; } catch { return null; } };
 /** 로그인 상태면 완성 기록 1건 올림 → 받은 XP·레벨·새 업적 */
-export async function syncDone(entry: unknown): Promise<Award | null> { if (!(await me())) return null; return awardOf(await post({ action: 'done', entry })); }
+export async function syncDone(entry: unknown): Promise<Award | null> {
+  const u = await me(); if (!u) return null; const r = await post({ action: 'done', entry }); const at = Number((entry as { at?: number })?.at) || 0;
+  // 이 기록이 안 합친 것 중 유일하면 표시를 올린다 — 아니면 다음 합치기가 옛 것과 같이 보낸다 (이미 올라간 건 서버가 무시)
+  if (r?.ok && at && getDone().every((e) => !e.member || e.at <= merged(u.id) || e.at === at)) markMerged(u.id, at);
+  return awardOf(r);
+}
 /** 모두의 퍼즐 한 회차에 내가 보탠 조각 (완성 기록 목록에는 안 남고 XP·업적에만 반영) */
 export async function syncLive(key: string, n: number, mine: number, paid = 0): Promise<Award | null> { if (mine <= 0 || !(await me())) return null; return awardOf(await post({ action: 'live', key, n, mine, paid })); }
 /** 맞추는 도중 제자리에 놓은 조각을 모아서 올림 — 완성까지 안 가도 XP 가 붙는다.
@@ -35,8 +45,15 @@ export async function syncPieces(kind: string, key: string, n: number, placed: n
   if (placed <= 0 || !(await me())) return null;
   return awardOf(await post({ action: 'pieces', kind, key, n, placed }));
 }
-/** 로그인 직후 한 번: 이 기기의 완성 기록을 서버에 합침 */
-export async function mergeLocalDone(): Promise<Award | null> { if (ss.get('auth:merged')) return null; const l = getDone(); ss.set('auth:merged', '1'); return l.length ? awardOf(await post({ action: 'merge', entries: l })) : null; }
+/** 이 기기의 완성 기록 중 로그인한 채 맞췄는데(member) 아직 서버에 못 올린 것을 올림 — 완성 때 전송이 실패한 판의 재시도.
+ *  비회원으로 맞춘 판은 로그인해도 안 보낸다: 로그인 전 기록은 서버가 검증할 길이 없고, '로그인하면 다음 판부터' 가 규칙으로 단순하다.
+ *  페이지마다 부르지만 보낼 게 없으면 요청 자체를 안 한다 */
+export async function mergeLocalDone(): Promise<Award | null> {
+  const u = await me(); if (!u) return null;
+  const l = getDone().filter((e) => e.member && e.at > merged(u.id)); if (!l.length) return null;
+  const r = await post({ action: 'merge', entries: l }); if (!r?.ok) return null;
+  markMerged(u.id, Math.max(...l.map((e) => e.at))); return awardOf(r);
+}
 
 export interface LevelInfo { user: { id: string; nick: string } | null; xp: number; level: number; stats: Stats; badges: { code: string; at: number }[]; week: { key: string; xp: number; rank: number | null }; rank: number | null }
 export interface RankRow { r: number; nick: string; xp: number; level: number; badges: number }

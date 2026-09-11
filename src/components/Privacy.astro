@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { UI, prefix, type Lang } from '../i18n/ui';
+import { BODY } from '../i18n/body';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang);
 // 운영 주체 표기와 연락처 — 여기 두 줄만 고치면 5개 국어에 다 반영된다.
@@ -8,48 +9,7 @@ const T = UI[lang], P = prefix(lang);
 // 송달 가능한 실제 주소를 요구하므로, 독일어권 유입이 늘면 그때 주소를 넣을지 판단해야 한다
 const OPERATOR = 'jigsawlab';
 const MAIL = 'dev2lgb@gmail.com';
-const body = {
-  ko: `<p>jigsawlab은 가입 없이 쓰는 직소 퍼즐 사이트예요. 개인정보는 최소한만 다룹니다. 시행일 2026년 9월 6일, 최종 개정 2026년 9월 7일.</p>
-<h2>사진</h2><p>내 사진으로 퍼즐을 만들 때 사진은 브라우저 안에서만 잘리고 그려집니다. 서버로 전송되거나 저장되지 않습니다. 내 사진 퍼즐에 친구를 초대하면 사진은 WebRTC 로 내 브라우저에서 친구 브라우저로 직접 전달됩니다. 서버는 두 브라우저를 연결하는 신호(연결 주소)만 중계하고 사진 자체는 받지도 저장하지도 않습니다.</p>
-<h2>브라우저에 저장되는 것</h2><p>최고 기록, 닉네임, 오늘의 퍼즐 연속 완주 일수가 이 브라우저의 localStorage에만 저장됩니다. 브라우저 데이터를 지우면 함께 사라집니다.</p>
-<h2>Google 로그인 (선택)</h2><p>로그인하지 않아도 모든 기능을 쓸 수 있습니다. 완성 기록과 하던 퍼즐을 기기 사이에 이어 가고 싶을 때만 Google 로 로그인하면 됩니다. 로그인 시 Google 에 요청하는 정보는 계정 고유 번호(OpenID sub) 하나뿐이며, 이메일·이름·프로필 사진은 요청하지 않습니다. 고유 번호는 서버 비밀키로 해시한 가명 ID 로만 저장하므로 저장된 값에서 Google 계정을 알아낼 수 없습니다.</p>
-<p>로그인하면 서버에 저장되는 것: 가명 ID, 닉네임, 완성 기록(그림 key·조각 수·시간·놓은 횟수·날짜), 하던 퍼즐의 판 상태(명화·오늘의 퍼즐만, 내 사진 퍼즐은 제외). 로그인 세션은 서명된 쿠키(jl_s, 180일)로 유지됩니다. 내 퍼즐 페이지에서 언제든 로그아웃하거나 계정과 서버 기록을 모두 삭제할 수 있으며, 삭제는 즉시 반영됩니다.</p>
-<h2>퍼즐 방(같이하기)</h2><p>방을 만들면 그림 key·조각 수·조각 위치·참가자 닉네임이 방이 끝난 뒤 최대 48시간 서버(Cloudflare Durable Objects)에 남았다가 자동 삭제됩니다.</p>
-<h2>광고와 제휴 링크</h2><p>광고(Google AdSense)와 제휴 링크가 실릴 수 있습니다. 광고 제공자는 쿠키로 맞춤 광고를 보여줄 수 있으며, 제휴 링크로 구매가 이루어지면 일정 수수료를 받습니다.</p>
-<h2>운영 주체와 문의</h2><p>이 사이트는 개인이 운영하는 ${OPERATOR} 입니다. 위에 적은 정보의 처리 책임자도 ${OPERATOR} 이고요. 이 방침에 대한 질문, 또는 내 정보의 열람·정정·삭제·처리 거부를 원하시면 ${MAIL} 로 보내 주세요. 로그인한 분은 <b>내 퍼즐</b> 화면에서 계정과 서버 기록 전부를 언제든 직접 지울 수 있습니다.</p>`,
-  en: `<p>jigsawlab is a jigsaw puzzle site with no sign-up. We handle as little personal data as possible. Last updated 7 September 2026.</p>
-<h2>Photos</h2><p>When you make a puzzle from your own photo, the photo is cut and drawn inside your browser only. It is never uploaded or stored. If you invite friends to a photo puzzle, the photo travels directly from your browser to theirs over WebRTC. Our server only relays the connection signals and never receives or stores the photo.</p>
-<h2>Stored in your browser</h2><p>Best times, nickname and daily streak are kept in this browser's localStorage only. Clearing browser data removes them.</p>
-<h2>Google sign-in (optional)</h2><p>Everything works without signing in. Sign in with Google only if you want your finished puzzles and boards in progress to follow you across devices. The only thing we request from Google is the account's unique number (OpenID sub); no email, name or profile photo. That number is stored only as a pseudonymous ID hashed with a server secret, so the stored value cannot be traced back to your Google account.</p>
-<p>When signed in, the server stores: the pseudonymous ID, your nickname, finished records (painting key, piece count, time, placements, date) and the board state of puzzles in progress (paintings and daily puzzles only; photo puzzles are never synced). The session is kept in a signed cookie (jl_s, 180 days). You can sign out or delete your account together with all server records at any time from the My puzzles page; deletion takes effect immediately.</p>
-<h2>Puzzle rooms</h2><p>When you create a room, the painting key, piece count, piece positions and player nicknames are kept on our server (Cloudflare Durable Objects) for up to 48 hours after the room ends, then deleted automatically.</p>
-<h2>Ads and affiliate links</h2><p>Ads (Google AdSense) and affiliate links may appear. Ad providers may use cookies for personalised ads; purchases through affiliate links may earn us a commission.</p>
-<h2>Controller and contact</h2><p>This site is operated by ${OPERATOR}, run by one person, who is also the controller of the data described above. To ask about this policy, or to request access to, correction of, deletion of, or objection to the handling of your data, write to ${MAIL}. If you are signed in you can also delete your account and every server record yourself, at any time, from the <b>My puzzles</b> page.</p>`,
-  ja: `<p>jigsawlab は登録不要のジグソーパズルサイトです。個人情報は最小限しか扱いません。最終改定 2026年9月7日。</p>
-<h2>写真</h2><p>自分の写真でパズルを作るとき、写真はブラウザの中だけで切り分けて描かれます。サーバーに送信・保存されることはありません。写真パズルに友だちを招待すると、写真は WebRTC で自分のブラウザから友だちのブラウザへ直接送られます。サーバーは接続のための信号を中継するだけで、写真そのものを受け取ることも保存することもありません。</p>
-<h2>ブラウザに保存されるもの</h2><p>最高記録・ニックネーム・今日のパズルの連続日数が、このブラウザの localStorage にのみ保存されます。ブラウザのデータを消すと一緒に消えます。</p>
-<h2>Google ログイン(任意)</h2><p>ログインしなくてもすべての機能を使えます。完成記録と途中のパズルを端末間で引き継ぎたいときだけ Google でログインしてください。Google に要求する情報はアカウント固有番号(OpenID sub)のみで、メール・名前・プロフィール写真は要求しません。固有番号はサーバーの秘密鍵でハッシュした仮名 ID としてのみ保存するため、保存された値から Google アカウントを特定することはできません。</p>
-<p>ログイン中にサーバーへ保存するもの: 仮名 ID、ニックネーム、完成記録(絵の key・ピース数・タイム・置いた回数・日付)、途中のパズルの盤面(名画・今日のパズルのみ。写真パズルは同期しません)。セッションは署名付き Cookie(jl_s、180日)で保持します。マイパズルのページからいつでもログアウト、またはアカウントとサーバー上の記録をすべて削除でき、削除は即時に反映されます。</p>
-<h2>パズル部屋(一緒に遊ぶ)</h2><p>部屋を作ると、絵の key・ピース数・ピースの位置・参加者のニックネームが、部屋の終了後最大48時間サーバー(Cloudflare Durable Objects)に残り、その後自動的に削除されます。</p>
-<h2>広告とアフィリエイト</h2><p>広告(Google AdSense)やアフィリエイトリンクが表示されることがあります。広告提供者は Cookie でパーソナライズ広告を表示する場合があり、アフィリエイトリンク経由の購入で手数料を受け取ることがあります。</p>
-<h2>運営者と問い合わせ</h2><p>このサイトは個人が運営する ${OPERATOR} です。上に記した情報の管理責任者も ${OPERATOR} です。本方針についてのご質問、またはご自身の情報の開示・訂正・削除・処理の停止をご希望の場合は ${MAIL} までご連絡ください。ログイン中の方は<b>マイパズル</b>の画面から、アカウントとサーバー上の記録をいつでもご自身で削除できます。</p>`,
-  de: `<p>jigsawlab ist eine Puzzle-Website ohne Anmeldung. Wir verarbeiten so wenige personenbezogene Daten wie möglich. Zuletzt aktualisiert am 7. September 2026.</p>
-<h2>Fotos</h2><p>Wenn du ein Puzzle aus deinem eigenen Foto machst, wird das Foto ausschließlich in deinem Browser geschnitten und gezeichnet. Es wird nie hochgeladen oder gespeichert. Lädst du Freunde zu einem Fotopuzzle ein, geht das Foto per WebRTC direkt von deinem Browser in ihren. Unser Server leitet nur die Verbindungssignale weiter und erhält oder speichert das Foto nie.</p>
-<h2>Im Browser gespeichert</h2><p>Bestzeiten, Spitzname und die tägliche Serie liegen allein im localStorage dieses Browsers. Beim Löschen der Browserdaten verschwinden sie.</p>
-<h2>Google-Anmeldung (freiwillig)</h2><p>Ohne Anmeldung funktioniert alles. Melde dich nur dann mit Google an, wenn gelöste Puzzles und angefangene Bretter dir über mehrere Geräte folgen sollen. Von Google fragen wir ausschließlich die eindeutige Kontonummer ab (OpenID sub) — keine E-Mail-Adresse, keinen Namen, kein Profilbild. Diese Nummer wird nur als pseudonyme Kennung gespeichert, gehasht mit einem Servergeheimnis, sodass sich der gespeicherte Wert nicht auf dein Google-Konto zurückführen lässt.</p>
-<p>Bei angemeldeter Nutzung speichert der Server: die pseudonyme Kennung, deinen Spitznamen, gelöste Einträge (Bildschlüssel, Teilezahl, Zeit, Züge, Datum) und den Brettzustand angefangener Puzzles (nur Gemälde und Tagespuzzles; Fotopuzzles werden nie synchronisiert). Die Sitzung liegt in einem signierten Cookie (jl_s, 180 Tage). Du kannst dich jederzeit abmelden oder dein Konto samt aller Servereinträge auf der Seite „Meine Puzzles" löschen; die Löschung wirkt sofort.</p>
-<h2>Puzzleräume</h2><p>Legst du einen Raum an, werden Bildschlüssel, Teilezahl, Teilepositionen und die Spitznamen der Mitspielenden bis zu 48 Stunden nach Ende des Raums auf unserem Server (Cloudflare Durable Objects) vorgehalten und danach automatisch gelöscht.</p>
-<h2>Werbung und Affiliate-Links</h2><p>Es können Werbung (Google AdSense) und Affiliate-Links erscheinen. Werbeanbieter können Cookies für personalisierte Werbung einsetzen; für Käufe über Affiliate-Links können wir eine Provision erhalten.</p>
-<h2>Verantwortlicher und Kontakt</h2><p>Diese Seite wird von ${OPERATOR} betrieben, geführt von einer Einzelperson, die zugleich Verantwortliche im Sinne der DSGVO für die oben beschriebenen Daten ist. Für Fragen zu dieser Erklärung oder zur Ausübung deiner Rechte auf Auskunft, Berichtigung, Löschung und Widerspruch schreib an ${MAIL}. Bist du angemeldet, kannst du dein Konto und sämtliche Servereinträge außerdem jederzeit selbst auf der Seite <b>Meine Puzzles</b> löschen.</p>`,
-  es: `<p>jigsawlab es un sitio de rompecabezas sin registro. Tratamos la menor cantidad posible de datos personales. Última actualización: 7 de septiembre de 2026.</p>
-<h2>Fotos</h2><p>Cuando haces un rompecabezas con tu propia foto, la foto se corta y se dibuja únicamente dentro de tu navegador. Nunca se sube ni se almacena. Si invitas a alguien a un rompecabezas hecho con una foto, la foto viaja directamente de tu navegador al suyo mediante WebRTC. Nuestro servidor solo transmite las señales de conexión y nunca recibe ni guarda la foto.</p>
-<h2>Guardado en tu navegador</h2><p>Los mejores tiempos, el apodo y la racha diaria se guardan solo en el localStorage de este navegador. Si borras los datos del navegador, desaparecen.</p>
-<h2>Entrar con Google (opcional)</h2><p>Todo funciona sin entrar. Entra con Google solo si quieres que tus rompecabezas terminados y los tableros a medias te sigan de un dispositivo a otro. Lo único que pedimos a Google es el número único de la cuenta (OpenID sub); ni correo, ni nombre, ni foto de perfil. Ese número se guarda únicamente como identificador seudónimo, cifrado con un secreto del servidor, de modo que el valor almacenado no puede rastrearse hasta tu cuenta de Google.</p>
-<p>Con la sesión iniciada, el servidor guarda: el identificador seudónimo, tu apodo, las marcas de los rompecabezas terminados (clave del cuadro, número de piezas, tiempo, colocaciones, fecha) y el estado de los tableros a medias (solo cuadros y retos diarios; los rompecabezas hechos con fotos nunca se sincronizan). La sesión se mantiene en una cookie firmada (jl_s, 180 días). Puedes cerrar sesión o borrar tu cuenta junto con todas las marcas del servidor cuando quieras desde la página «Mis puzles»; el borrado surte efecto de inmediato.</p>
-<h2>Salas</h2><p>Cuando creas una sala, la clave del cuadro, el número de piezas, la posición de las piezas y los apodos de los jugadores se conservan en nuestro servidor (Cloudflare Durable Objects) hasta 48 horas después de que la sala termine, y luego se borran automáticamente.</p>
-<h2>Publicidad y enlaces de afiliación</h2><p>Pueden aparecer anuncios (Google AdSense) y enlaces de afiliación. Los proveedores de publicidad pueden usar cookies para anuncios personalizados; las compras a través de enlaces de afiliación pueden generarnos una comisión.</p>
-<h2>Responsable y contacto</h2><p>Este sitio lo gestiona ${OPERATOR}, llevado por una sola persona, que es además la responsable del tratamiento de los datos descritos arriba. Para preguntar por esta política o para ejercer tus derechos de acceso, rectificación, supresión y oposición, escribe a ${MAIL}. Si has iniciado sesión, también puedes borrar tú mismo la cuenta y todas las marcas del servidor cuando quieras desde la página <b>Mis puzles</b>.</p>`,
-}[lang];
+const body = BODY[lang].privacy.replaceAll('{operator}', OPERATOR).replaceAll('{mail}', MAIL);
 ---
 <Base title={`${T.foot.privacyTitle} · jigsawlab`} desc={T.foot.privacyTitle} lang={lang} path={`${P}/privacy/`}>
   <section class="wrap doc seo"><h1>{T.foot.privacyTitle}</h1><div set:html={body} /></section>

@@ -8,13 +8,12 @@ import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
 import { LIVE_ID } from '../lib/jigsaw';
 import { WORKS } from '../data/works';
 import { icon } from '../lib/icons';
+import Guide from './Guide.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), L = T.live;
 const board = `${P}/board/?room=${LIVE_ID}`;
 /** 문구 안의 숫자 자리를 {n} 으로 남겨 data-* 로 넘긴다 (i18n 을 클라이언트 번들에 통째로 싣지 않으려고 — Photo.astro 와 같은 방식) */
 const tpl = (f: (n: any) => string) => f('{n}');
-const toc = [...BODY[lang].live.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `t${i + 1}`, text: m[1] }));
-let i = 0; const body = BODY[lang].live.replace(/<h2>/g, () => `<h2 id="t${++i}">`);
 const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitle, description: L.seoDesc, step: L.steps.map(([h, b], n) => ({ '@type': 'HowToStep', position: n + 1, name: h, text: b })) };
 ---
 <Base title={`${L.seoTitle} · jigsawlab`} desc={L.seoDesc} lang={lang} alts={altsFor('/together/')} path={`${P}/together/`}>
@@ -45,10 +44,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
     </div>
   </section>
 
-  <section class="sec"><div class="wrap guide">
-    <nav class="toc" aria-label="guide">{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
-    <article class="seo body" set:html={body} />
-  </div></section>
+  <Guide html={BODY[lang].live} prefix="t" />
 
   <section class="sec"><div class="wrap end">
     <p>{T.catalog.all(WORKS.length)}</p>
@@ -90,37 +86,29 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
     .lv-cta { width: 100%; justify-content: center; }
     .xp-row { margin: 10px 0 0; text-align: center; } :global(html:not(.member)) .xp-row { display: none; }
 
-    .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-    .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; }
-    .toc a { color: var(--ink-2); font-size: .92rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; } .toc a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
-    .body :global(h2) { margin-top: 0; scroll-margin-top: calc(var(--top-h) + 20px); } .body :global(h2 + p) { margin-top: 8px; }
-    .body :global(h2:not(:first-of-type)) { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--line); }
-    .body :global(p) { max-width: 72ch; }
-    @media (max-width: 860px) { .guide { grid-template-columns: 1fr; } .toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } .toc a { background: var(--bg-2); } }
     .end { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; } .end p { margin: 0; color: var(--ink-2); }
   </style>
 
   <script>
     // 판 상태는 /api/live 에서 받는다 (서버가 방 정보에 그림 제목까지 얹어 준다). 못 받아도 카드와 CTA 는 그대로 두고 들여보낸다
     import { docLang, LI as LIDX } from '../i18n/ui';
+    import { fetchLive } from '../lib/live';
     const card = document.getElementById('lv-card')!;
     const $ = (id: string) => document.getElementById(id)!;
     const fill = (s: string, n: number) => s.replace('{n}', String(n));
     const LI = LIDX[docLang()];
-    fetch('/api/live', { cache: 'no-store', headers: { accept: 'application/json' } })
-      .then((r) => (r.ok ? r.json<any>() : null))
+    fetchLive()
       .then((d) => {
-        if (!d || !d.total) throw 0;
-        const pct = Math.min(100, Math.floor((d.locked / d.total) * 100));
-        const w = d.work;
+        if (!d) throw 0;
+        const pct = d.pct, w = d.work;
         if (w) { const im = $('lv-img') as HTMLImageElement; im.src = `/jigsaw/t-${w.key}.webp`; im.alt = w.title[LI]; im.addEventListener('load', () => im.classList.add('on'), { once: true }); if (im.complete) im.classList.add('on'); }
         $('lv-title').textContent = w ? w.title[LI] : '';
         $('lv-artist').textContent = w ? [w.artist[LI], w.year].filter(Boolean).join(' · ') : '';
-        $('lv-round').textContent = fill(card.dataset.tRound!, (d.round ?? 0) + 1);
+        $('lv-round').textContent = fill(card.dataset.tRound!, d.round);
         ($('lv-fill') as HTMLElement).style.width = `${pct}%`;
         $('lv-bar').setAttribute('aria-valuenow', String(pct));
         $('lv-pct').textContent = fill(card.dataset.tPct!, pct);
-        $('lv-left').textContent = fill(card.dataset.tLeft!, d.total - d.locked);
+        $('lv-left').textContent = fill(card.dataset.tLeft!, d.left);
         $('lv-online').textContent = d.players > 0 ? fill(card.dataset.tOnline!, d.players) : card.dataset.tAlone!;
         if (d.players > 0) card.dataset.live = '1';
         // 이미 진행 중인 판이면 '이어서 맞추기'

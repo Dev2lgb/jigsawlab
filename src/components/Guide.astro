@@ -1,0 +1,20 @@
+---
+// 가이드 본문 — 왼쪽 고정 목차 + 오른쪽 SEO 본문(HTML, i18n/body). /photo/·/together/·/about/ 공용.
+// h2 마다 `${prefix}${n}` id 를 붙여 목차가 건너뛴다. 섹션 간격은 홈의 .sec 리듬
+interface Props { html: string; prefix: string; heading?: string }
+const { html, prefix, heading } = Astro.props;
+const toc = [...html.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `${prefix}${i + 1}`, text: m[1] }));
+let i = 0; const body = html.replace(/<h2>/g, () => `<h2 id="${prefix}${++i}">`);
+---
+<section class="sec"><div class="wrap guide">
+  <nav class="toc" aria-label="guide">{heading && <p class="toc-h">{heading}</p>}{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
+  <article class="seo body" set:html={body} />
+</div></section>
+<style>
+  .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+  .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; } .toc-h { margin: 0 0 8px; font-size: 1.3rem; font-weight: 800; letter-spacing: -.03em; }
+  .toc a { color: var(--ink-2); font-size: .92rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; } .toc a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
+  .body :global(h2) { margin-top: 0; scroll-margin-top: calc(var(--top-h) + 20px); } .body :global(h2 + p), .body :global(h2 + ol) { margin-top: 8px; } .body :global(h2:not(:first-of-type)) { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--line); }
+  .body :global(p), .body :global(li) { max-width: 72ch; } .body :global(.lead) { max-width: 72ch; }
+  @media (max-width: 860px) { .guide { grid-template-columns: 1fr; } .toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } .toc-h { flex-basis: 100%; } .toc a { background: var(--bg-2); } }
+</style>

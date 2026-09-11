@@ -8,11 +8,10 @@ import { altsFor, UI, prefix, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORKS } from '../data/works';
 import { icon } from '../lib/icons';
+import Guide from './Guide.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), F = T.photo, J = JIGSAW[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000], DEFAULT_N = 100;
-const toc = [...BODY[lang].photo.matchAll(/<h2>(.*?)<\/h2>/g)].map((m, i) => ({ id: `p${i + 1}`, text: m[1] }));
-let i = 0; const body = BODY[lang].photo.replace(/<h2>/g, () => `<h2 id="p${++i}">`);
 const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitle, description: F.seoDesc, step: F.steps.map(([h, b], n) => ({ '@type': 'HowToStep', position: n + 1, name: h, text: b })) };
 ---
 <Base title={`${F.seoTitle} · jigsawlab`} desc={F.seoDesc} lang={lang} alts={altsFor('/photo/')} path={`${P}/photo/`}>
@@ -49,10 +48,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     </div>
   </section>
 
-  <section class="sec"><div class="wrap guide">
-    <nav class="toc" aria-label="guide">{toc.map((t) => <a href={`#${t.id}`}>{t.text}</a>)}</nav>
-    <article class="seo body" set:html={body} />
-  </div></section>
+  <Guide html={BODY[lang].photo} prefix="p" />
 
   <section class="sec"><div class="wrap end">
     <p>{T.catalog.all(WORKS.length)}</p>
@@ -92,13 +88,6 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     #ph-reset { margin-top: 12px; width: 100%; }
     @media (max-width: 460px) { .go { flex-direction: column; } }
 
-    .guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-    .toc { position: sticky; top: calc(var(--top-h) + 24px); display: flex; flex-direction: column; gap: 2px; }
-    .toc a { color: var(--ink-2); font-size: .92rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; } .toc a:hover { background: var(--bg-3); text-decoration: none; color: var(--ink); }
-    .body :global(h2) { margin-top: 0; scroll-margin-top: calc(var(--top-h) + 20px); } .body :global(h2 + p) { margin-top: 8px; }
-    .body :global(h2:not(:first-of-type)) { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--line); }
-    .body :global(p) { max-width: 72ch; }
-    @media (max-width: 860px) { .guide { grid-template-columns: 1fr; } .toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } .toc a { background: var(--bg-2); } }
     .end { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; } .end p { margin: 0; color: var(--ink-2); }
   </style>
 

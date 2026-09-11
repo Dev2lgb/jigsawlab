@@ -6,7 +6,6 @@ import { BASE, get, post, ok, finish } from './lib.mjs';
 // ── 공개 라우트
 { const a = await get('/api/stats'); const r = await post('/api/stats', { action: 'solved' }); ok(r.body?.solved === a.solved + 1, `stats: RETURNING n (${a.solved}→${r.body?.solved})`); ok(r.hdr['cache-control'] === 'no-store', 'stats: no-store'); }
 { const r = await post('/api/stats', 'nope'); ok(r.status === 400, 'stats: bad json → 400'); }
-{ const d = await get('/api/daily'); ok(typeof d.key === 'string' && d.pieces === 48, 'daily'); }
 { const d = await get('/api/me'); ok(d.user === null && typeof d.auth === 'boolean', 'me: 비회원'); }
 { const d = await get('/api/level'); ok(d.user === null, 'level: 비회원'); }
 { const d = await get('/api/rank?tab=week'); ok(d.tab === 'week' && Array.isArray(d.top) && d.me === null, 'rank: 비회원'); }

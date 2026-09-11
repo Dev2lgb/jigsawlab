@@ -1,0 +1,7 @@
+---
+import Photo from '../../components/Photo.astro';
+import { langPaths, type Lang } from '../../i18n/ui';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang };
+---
+<Photo lang={lang} />

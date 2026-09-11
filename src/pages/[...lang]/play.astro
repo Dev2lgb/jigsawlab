@@ -1,0 +1,7 @@
+---
+import Picker from '../../components/Picker.astro';
+import { langPaths, type Lang } from '../../i18n/ui';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang };
+---
+<Picker lang={lang} />

@@ -1,0 +1,11 @@
+---
+// /s/?k=…&n=… — 공유 카드(서버 렌더, 쿼리로 OG 결정). [...lang] 은 진짜 언어 접두어일 때만
+import ShareCard from '../../../components/ShareCard.astro';
+import { parseShare } from '../../../lib/shareParams';
+import { langFromParam, prefix } from '../../../i18n/ui';
+export const prerender = false;
+const lang = langFromParam(Astro.params.lang);
+if (!lang) return new Response(null, { status: 404 });
+if (!parseShare(Astro.url)) return Astro.redirect(`${prefix(lang)}/`, 302);
+---
+<ShareCard lang={lang} />

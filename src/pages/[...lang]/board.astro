@@ -1,0 +1,14 @@
+---
+// 판. noindex·사이트맵 제외(astro.config 의 filter) — 콘텐츠가 없는 앱 화면
+import Base from '../../layouts/Base.astro';
+import Jigsaw from '../../components/Jigsaw.astro';
+import PlayBoot from '../../components/PlayBoot.astro';
+import { JIGSAW } from '../../i18n/jigsaw';
+import { prefix, langPaths, type Lang } from '../../i18n/ui';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang }; const t = JIGSAW[lang];
+---
+<Base ads={false} noindex title={`${t.boardTitle} · jigsawlab`} desc={t.seoDesc} lang={lang} path={`${prefix(lang)}/board/`}>
+  <PlayBoot slot="head" />
+  <Jigsaw lang={lang} />
+</Base>

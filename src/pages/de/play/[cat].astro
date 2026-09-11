@@ -1,7 +1,0 @@
----
-// /de/play/<cat>/ — 카테고리 한 판. 검색 유입이 바로 착지하는 자리라 진열대마다 진짜 주소를 준다
-import Picker from '../../../components/Picker.astro';
-import { shelfIds } from '../../../lib/catalogView';
-export const getStaticPaths = () => shelfIds().map((cat) => ({ params: { cat } }));
----
-<Picker lang="de" cat={Astro.params.cat} />

@@ -1,12 +1,12 @@
 // 서버 전용 — 완성 기록을 받아 XP·누적 지표·업적·주간 랭킹에 반영한다. 규칙 자체는 lib/level.ts
 import { WORK_BY_KEY, WORKS } from '../data/works';
-import { EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, weekOf, xpFor, type Kind, type Solve, type Stats } from './level';
+import { EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, rateFor, weekOf, xpFor, type Kind, type Solve, type Stats } from './level';
 
 /** 카테고리(진열대)마다 그림이 몇 점인지 — '진열대 완주' 판정용 */
 const CAT_TOTAL: Record<string, number> = {};
 for (const w of WORKS) CAT_TOTAL[w.cat] = (CAT_TOTAL[w.cat] ?? 0) + 1;
 
-export interface AwardResult { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean }
+export interface AwardResult { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean; rate?: number }
 
 interface Row extends Stats { last_day: string | null; day_xp: number; day_key: string | null }
 const ZERO: Row = { ...EMPTY_STATS, last_day: null, day_xp: 0, day_key: null };
@@ -46,7 +46,7 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
   const dayXp = new Map<string, number>(); if (s.day_key) dayXp.set(s.day_key, s.day_xp);
   const weekXp = new Map<string, number>();
   const writeCleared = new Map<string, { cat: string; n: number; at: number }>();
-  const prevXp = s.xp, prevLevel = levelOf(prevXp);
+  const prevXp = s.xp;
   let gained = 0, lastDayKey = s.day_key, newWorks = false, capped = false;
 
   for (const sv of solves) {
@@ -64,7 +64,7 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
     const used = dayXp.get(day) ?? 0;
     if (xp > DAY_CAP - used) capped = true; // 하루 상한에 걸려 깎였다는 것만 알려 준다
     xp = Math.max(0, Math.min(xp, DAY_CAP - used));
-    if (xp > 0) { dayXp.set(day, used + xp); lastDayKey = day; gained += xp; s.xp += xp; weekXp.set(weekOf(day), (weekXp.get(weekOf(day)) ?? 0) + xp); }
+    if (xp > 0) { dayXp.set(day, used + xp); if (!lastDayKey || day > lastDayKey) lastDayKey = day; gained += xp; s.xp += xp; weekXp.set(weekOf(day), (weekXp.get(weekOf(day)) ?? 0) + xp); }
 
     // 누적 지표 — 사람 손으로 보기 어려운 기록은 여기에도 안 넣는다 (user_done 의 기록으로만 남는다)
     if (!clean) continue;
@@ -99,21 +99,44 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
   const fresh = earnedCodes(stats).filter((c) => !had.has(c));
   const now = Math.floor(Date.now() / 1000);
 
+  // XP 는 다른 칸과 갈라 따로 얹는다. 통째로 덮어쓰면(xp = excluded.xp) 이 판을 맞추는 동안 조각 단위
+  // 정산이 올린 XP 가 그대로 사라지고, 하루 상한도 읽은 값으로 계산해 쓰면 동시에 온 요청이 저마다
+  // 옛 day_xp 를 보고 상한을 몇 배로 넘긴다 — D1 은 문장 하나만 원자적이라 SELECT 와 UPDATE 사이가 빈다.
+  // 그래서 상한 검사를 WHERE 로 옮겼다: 들어가면 정확히 그만큼, 안 들어가면 행이 안 돌아온다
+  const dayGain = lastDayKey ? (dayXp.get(lastDayKey) ?? 0) - (lastDayKey === s.day_key ? s.day_xp : 0) : 0;
+  const past = Math.max(0, gained - dayGain); // 지난 날짜 몫(로그인 직후 합치기) — 오늘 상한과 무관하다
+  if (!srow) await DB.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').bind(uid).run();
+  let newXp = prevXp;
+  if (gained > 0 && lastDayKey) {
+    const r = await DB.prepare(`UPDATE user_stats SET xp = xp + ?, day_xp = (CASE WHEN day_key = ? THEN day_xp ELSE 0 END) + ?, day_key = ?, updated_at = unixepoch()
+        WHERE user_id = ? AND (CASE WHEN day_key = ? THEN day_xp ELSE 0 END) + ? <= ?
+        RETURNING xp`).bind(gained, lastDayKey, dayGain, lastDayKey, uid, lastDayKey, dayGain, DAY_CAP).first<{ xp: number }>();
+    if (r) newXp = r.xp;
+    else {
+      // 그 날 몫이 상한에 막혔다 — 지난 날짜 몫만 얹고 주간 XP 에서도 그 날 몫을 뺀다
+      capped = true; gained = past;
+      const wk = weekOf(lastDayKey), left = (weekXp.get(wk) ?? 0) - dayGain;
+      if (left > 0) weekXp.set(wk, left); else weekXp.delete(wk);
+      const r2 = past > 0 ? await DB.prepare('UPDATE user_stats SET xp = xp + ?, updated_at = unixepoch() WHERE user_id = ? RETURNING xp').bind(past, uid).first<{ xp: number }>() : null;
+      newXp = r2?.xp ?? prevXp;
+    }
+  }
+
   const w: D1PreparedStatement[] = [
-    DB.prepare(`INSERT INTO user_stats (user_id, xp, solved, pieces, best_n, works, shelves, daily_n, streak, streak_best, last_day, photo_n, room_n, live_n, night_n, fast_n, day_xp, day_key, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())
-      ON CONFLICT(user_id) DO UPDATE SET xp = excluded.xp, solved = excluded.solved, pieces = excluded.pieces, best_n = excluded.best_n, works = excluded.works, shelves = excluded.shelves,
+    DB.prepare(`INSERT INTO user_stats (user_id, solved, pieces, best_n, works, shelves, daily_n, streak, streak_best, last_day, photo_n, room_n, live_n, night_n, fast_n, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())
+      ON CONFLICT(user_id) DO UPDATE SET solved = excluded.solved, pieces = excluded.pieces, best_n = excluded.best_n, works = excluded.works, shelves = excluded.shelves,
         daily_n = excluded.daily_n, streak = excluded.streak, streak_best = excluded.streak_best, last_day = excluded.last_day, photo_n = excluded.photo_n, room_n = excluded.room_n,
-        live_n = excluded.live_n, night_n = excluded.night_n, fast_n = excluded.fast_n, day_xp = excluded.day_xp, day_key = excluded.day_key, updated_at = unixepoch()`)
-      .bind(uid, s.xp, s.solved, s.pieces, s.best_n, s.works, s.shelves, s.daily_n, s.streak, s.streak_best, s.last_day, s.photo_n, s.room_n, s.live_n, s.night_n, s.fast_n, lastDayKey ? dayXp.get(lastDayKey) ?? 0 : 0, lastDayKey),
+        live_n = excluded.live_n, night_n = excluded.night_n, fast_n = excluded.fast_n, updated_at = unixepoch()`)
+      .bind(uid, s.solved, s.pieces, s.best_n, s.works, s.shelves, s.daily_n, s.streak, s.streak_best, s.last_day, s.photo_n, s.room_n, s.live_n, s.night_n, s.fast_n),
   ];
   for (const [key, c] of writeCleared) w.push(DB.prepare('INSERT INTO user_cleared (user_id, key, cat, n, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET n = MAX(n, excluded.n)').bind(uid, key, c.cat, c.n, c.at));
   for (const [week, xp] of weekXp) w.push(DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, xp));
   for (const code of fresh) w.push(DB.prepare('INSERT OR IGNORE INTO user_badges (user_id, code, at) VALUES (?, ?, ?)').bind(uid, code, now));
   await DB.batch(w);
 
-  const level = levelOf(s.xp);
-  return { xp: s.xp, gained, level, prevLevel, levelUp: level > prevLevel, badges: fresh, stats, capped };
+  const level = levelOf(newXp), prevLv = levelOf(newXp - gained);
+  return { xp: newXp, gained, level, prevLevel: prevLv, levelUp: level > prevLv, badges: fresh, stats: { ...stats, xp: newXp }, capped };
 }
 
 /**
@@ -133,22 +156,25 @@ export async function awardPieces(DB: D1Database, uid: string, p: { kind: Kind; 
   const s: Row = { ...ZERO, ...(srow ?? {}) };
   const stats: Stats = { xp: s.xp, solved: s.solved, pieces: s.pieces, best_n: s.best_n, works: s.works, shelves: s.shelves, daily_n: s.daily_n, streak: s.streak, streak_best: s.streak_best, photo_n: s.photo_n, room_n: s.room_n, live_n: s.live_n, night_n: s.night_n, fast_n: s.fast_n };
   const prevLevel = levelOf(s.xp);
-  const flat = (gained: number, capped: boolean): AwardResult => ({ xp: s.xp + gained, gained, level: levelOf(s.xp + gained), prevLevel, levelUp: levelOf(s.xp + gained) > prevLevel, badges: [], stats: { ...stats, xp: s.xp + gained }, capped });
+  const flat = (gained: number, capped: boolean, rate?: number): AwardResult => ({ xp: s.xp + gained, gained, level: levelOf(s.xp + gained), prevLevel, levelUp: levelOf(s.xp + gained) > prevLevel, badges: [], stats: { ...stats, xp: s.xp + gained }, capped, rate });
 
   const work = p.kind === 'gallery' || p.kind === 'daily' ? WORK_BY_KEY[p.key] : undefined;
   const prevN = work ? (await DB.prepare('SELECT n FROM user_cleared WHERE user_id = ? AND key = ?').bind(uid, p.key).first<{ n: number }>())?.n ?? null : null;
   const day = kstDay(p.at), week = weekOf(day);
-  const used = s.day_key === day ? s.day_xp : 0;
   const want = xpFor({ kind: p.kind, key: p.key, n: p.n, sec: 0, mine: p.placed, at: p.at }, prevN);
-  const capped = want > DAY_CAP - used;
-  const xp = Math.max(0, Math.min(want, DAY_CAP - used));
-  if (xp <= 0) return flat(0, capped);
+  const rate = rateFor(p.kind, p.n, prevN); // 판 화면 HUD 가 쓸 실제 배율 (재도전 감산까지)
+  if (want <= 0) return flat(0, false, rate);
+  if (!srow) await DB.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').bind(uid).run();
 
-  // xp = xp + ? 로 더해야 다른 탭에서 동시에 올린 것을 덮어쓰지 않는다. 실제 합계는 RETURNING 으로 받아 레벨업을 판정
-  const row = await DB.prepare(`INSERT INTO user_stats (user_id, xp, day_xp, day_key, updated_at) VALUES (?, ?, ?, ?, unixepoch())
-      ON CONFLICT(user_id) DO UPDATE SET xp = user_stats.xp + ?, day_xp = ?, day_key = ?, updated_at = unixepoch()
-      RETURNING xp`).bind(uid, xp, used + xp, day, xp, used + xp, day).first<{ xp: number }>();
-  await DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, xp).run();
-  const total = row?.xp ?? s.xp + xp, level = levelOf(total);
-  return { xp: total, gained: xp, level, prevLevel: levelOf(total - xp), levelUp: level > levelOf(total - xp), badges: [], stats: { ...stats, xp: total }, capped };
+  // 하루 상한을 WHERE 로 건다. 읽고 나서 쓰면 동시에 날아온 요청들이 저마다 옛 day_xp 를 보고
+  // 상한을 몇 배로 넘겨 버린다 — D1 은 문장 하나만 원자적이고 트랜잭션이 없다.
+  // 통과하면 정확히 want 만큼, 못 하면 행이 안 돌아와 0. 상한에 닿는 그 한 묶음만 손해고 넘길 수는 없다
+  const row = await DB.prepare(`UPDATE user_stats SET xp = xp + ?, day_xp = (CASE WHEN day_key = ? THEN day_xp ELSE 0 END) + ?, day_key = ?, updated_at = unixepoch()
+      WHERE user_id = ? AND (CASE WHEN day_key = ? THEN day_xp ELSE 0 END) + ? <= ?
+      RETURNING xp`).bind(want, day, want, day, uid, day, want, DAY_CAP).first<{ xp: number }>();
+  if (!row) return flat(0, true, rate);
+
+  await DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, want).run();
+  const total = row.xp, level = levelOf(total), prevLv = levelOf(total - want);
+  return { xp: total, gained: want, level, prevLevel: prevLv, levelUp: level > prevLv, badges: [], stats: { ...stats, xp: total }, capped: false, rate };
 }

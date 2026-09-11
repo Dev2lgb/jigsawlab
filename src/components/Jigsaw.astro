@@ -294,7 +294,11 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
   // ── 조각 단위 XP. 조각을 놓을 때마다 쌓이고, 서버로는 모아서 보낸다 (조각마다 부르면 무료 티어가 못 버틴다)
   //  xpWait 아직 안 보낸 조각 · xpPaid 이 판에서 이미 보낸 조각(완성 정산에서 그만큼 뺀다, 이어하기에도 실려 간다) · xpBoard 화면에 보이는 이 판의 XP
   const XP_BATCH = 60, XP_MS = 90_000;
-  let xpWait = 0, xpPaid = 0, xpBoard = 0, xpFirm = 0, xpT = 0, xpBusy = false, xpCapped = false;
+  let xpWait = 0, xpPaid = 0, xpBoard = 0, xpFirm = 0, xpPrev = 0, xpCarry = 0, xpT = 0, xpCapped = false;
+  //  xpPrev 이어하기로 물려받은 조각 · xpCarry 그 몫의 XP(배율을 알게 되면 다시 잡는다) · xpFirm 이번 판에서 서버가 준 XP
+  let xpBusy: Promise<void> | null = null; // 보내는 중인 묶음. 완성 정산은 이게 끝난 뒤라야 paid 가 맞다
+  let xpRateSrv: number | null = null;     // 서버가 알려 준 실제 배율 (재도전 감산까지 반영)
+  const lockReq = new Set<string>();       // 방에서 서버에 청해 둔 잠그기 — 받아들여져야 내 조각으로 친다
   let myLocked = 0; // 공개 판에서 이번 회차에 내가 제자리에 놓은 조각 수 (여럿이 며칠에 걸쳐 맞추므로 시간·수순 대신 이걸 보여 준다)
   let dragging: Group | null = null, lifting: Group | null = null;
   const canvas = $('jg-board') as HTMLCanvasElement, ctx = canvas.getContext('2d')!, wrap = $('jg-boardwrap'), tray = $('jg-tray');
@@ -333,7 +337,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && hasIDB() && !room) { try { await saves.del(saveId()); } catch {} dropRemote(saveId()); }
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; tray.hidden = false; $('jg-hint').hidden = false; $('jg-edge').hidden = false; $('jg-full').hidden = false; closeFull();
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xpWait = 0; xpPaid = rs?.paid ?? 0; xpBoard = 0; xpCapped = false; xpT = performance.now(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xpWait = 0; xpPaid = rs?.paid ?? 0; xpPrev = xpPaid; xpCarry = 0; xpFirm = 0; xpBoard = 0; xpCapped = false; xpRateSrv = null; lockReq.clear(); xpT = performance.now(); piles = rs?.piles ?? [U.pileAll]; activePile = 0; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -352,7 +356,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const frag = document.createDocumentFragment();
     for (const p of order) { if (p.locked || p.g) continue; frag.appendChild(trayEl(p)); }
     tray.appendChild(frag);
-    xpFirm = Math.round(xpPaid * xpRate()); showXp();
+    xpCarry = Math.round(xpPrev * xpRate()); showXp();
     renderPiles(); applyEdgeFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
     if (!room && src.kind !== 'photo') me().then((u) => { if (u && running && !room && gen === myGen) $('jg-cloud').hidden = false; });
   }
@@ -406,22 +410,32 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
 
   // ── 조각 단위 XP (회원만). 조각을 놓는 즉시 화면 숫자가 오르고, 서버로는 60조각·90초마다 모아 보낸다.
   //  보낸 조각 수(xpPaid)는 저장에도 실려 이어하기로 판이 넘어가도 완성 정산에서 두 번 주지 않는다
-  const xpRate = () => (src?.kind === 'daily' ? DAILY_BONUS : 1);
-  function showXp() { const e = $('jg-xp-hud'); xpBoard = xpFirm + Math.round(xpWait * xpRate()); if (!xpBoard) { e.hidden = true; return; } e.textContent = V.gained(xpBoard); e.hidden = false; }
+  // 재도전 감산(×0.25)은 서버만 아는 값이라 첫 묶음을 보내고 나서야 맞는 배율을 안다.
+  // 그전까지는 오늘의 퍼즐 보너스만 보고 넉넉하게 그리다가, 배율이 오면 물려받은 몫까지 다시 잡는다
+  const xpRate = () => xpRateSrv ?? (src?.kind === 'daily' ? DAILY_BONUS : 1);
+  function showXp() { const e = $('jg-xp-hud'); xpBoard = xpCarry + xpFirm + Math.round(xpWait * xpRate()); if (!xpBoard) { e.hidden = true; return; } e.textContent = V.gained(xpBoard); e.hidden = false; }
   function gotPieces(k: number) { if (k <= 0) return; xpWait += k; showXp(); if (xpWait >= XP_BATCH || performance.now() - xpT > XP_MS) flushXp(); }
-  async function flushXp(force = false) {
-    if (xpBusy || !src || xpWait <= 0 || (!force && complete)) return;
-    if (!authAvailable() || !(await me())) { xpWait = 0; return; }
+  function flushXp(force = false): Promise<void> {
+    if (xpBusy || !src || xpWait <= 0 || (!force && complete)) return xpBusy ?? Promise.resolve();
+    if (!authAvailable()) { xpWait = 0; return Promise.resolve(); }
     const k = xpWait, kind = src.kind === 'photo' ? 'photo' : room?.live ? 'live' : src.kind, key = src.kind === 'photo' ? 'photo' : src.key;
     // 보내는 순간 준 것으로 친다 — 화면을 떠나며 부르면 응답을 못 기다리는데, 그때 저장에 들어갈 값이 맞아야 한다
-    xpWait = 0; xpPaid += k; xpBusy = true; xpT = performance.now();
-    const a = await syncPieces(kind, key, total, k).catch(() => null);
-    xpBusy = false;
-    if (!a) { xpWait += k; xpPaid -= k; return; } // 못 보냈으면 다음 기회에
-    xpFirm += a.gained; showXp(); scheduleSave();
-    // 맞추는 흐름을 끊지 않게 판 위에서는 토스트만. 업적·레벨업 다이얼로그는 완성 뒤 결과 화면에서
-    if (a.levelUp) toast(V.levelUp(a.level)); else if (a.capped && !xpCapped) { xpCapped = true; toast(V.capped); }
+    xpWait = 0; xpPaid += k; xpT = performance.now();
+    const run = async () => {
+      if (!(await me())) { xpPaid -= k; return; } // 비회원 — 쌓을 데가 없다
+      const a = await syncPieces(kind, key, total, k).catch(() => null);
+      if (!a) { xpWait += k; xpPaid -= k; return; } // 못 보냈으면 다음 기회에
+      if (typeof a.rate === 'number') xpRateSrv = a.rate;
+      xpCarry = Math.round(xpPrev * xpRate()); xpFirm += a.gained; showXp(); scheduleSave();
+      // 맞추는 흐름을 끊지 않게 판 위에서는 토스트만. 업적·레벨업 다이얼로그는 완성 뒤 결과 화면에서
+      if (a.levelUp) toast(V.levelUp(a.level)); else if (a.capped && !xpCapped) { xpCapped = true; toast(V.capped); }
+    };
+    const pr = run().finally(() => { if (xpBusy === pr) xpBusy = null; });
+    xpBusy = pr;
+    return pr;
   }
+  /** 보내는 중인 묶음이 끝날 때까지. 완성 정산이 먼저 닿으면 서버가 그 묶음을 못 보고 정산해 XP 가 샌다 */
+  const settleXp = () => xpBusy ?? Promise.resolve();
 
   // ── 진행 저장 (IndexedDB, 기기 안). 놓을 때마다 예약, 화면 이탈 시 즉시
   let saveT = 0;
@@ -486,7 +500,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
     // 방에서는 놓은 순간의 좌표를 같이 보낸다. mv 는 스로틀이 걸려 서버 좌표가 뒤처지는데, 그 좌표로 판정하면
     // 서버가 조용히 거절해 "나는 맞췄는데 상대에겐 남의 손에 잡힌 채로 굳는" 어긋남이 생겼다
-    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) { send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); myLocked += g.pieces.length; gotPieces(g.pieces.length); } snap(g, 0, 0, () => lockGroup(g)); return; }
+    if (Math.abs(g.dx) < tol && Math.abs(g.dy) < tol) { if (room && g.sid) { send({ t: 'lock', g: g.sid, dx: g.dx, dy: g.dy }); lockReq.add(g.sid); } snap(g, 0, 0, () => lockGroup(g)); return; }
     const other = findNeighbor(g, tol);
     if (other) { if (room && g.sid && other.sid) send({ t: 'merge', g: g.sid, into: other.sid, dx: g.dx, dy: g.dy }); snap(g, other.dx, other.dy, () => merge(g, other)); return; }
     // 화면 밖에 놓이면(HUD 위에서 놓거나 위로 튕겨 꺼낸 경우) 보이는 곳까지 밀어 넣는다 — 안 그러면 조각이 사라진 것처럼 보인다
@@ -515,7 +529,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
     const tol = Math.min(cut.pw, cut.ph) * 0.4;
-    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) { send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); myLocked += into.pieces.length; gotPieces(into.pieces.length); } snap(into, 0, 0, () => lockGroup(into)); return; }
+    if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { if (room && into.sid) { send({ t: 'lock', g: into.sid, dx: into.dx, dy: into.dy }); lockReq.add(into.sid); } snap(into, 0, 0, () => lockGroup(into)); return; }
     let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
     draw(); scheduleSave();
   }
@@ -793,11 +807,13 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
       case 'take': { const p = pieces[Number(m.g)]; if (!p) return; if (p.locked || p.g) { reqSync(); return; } p.el?.remove(); p.el = undefined; const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); renderPiles(); draw(); return; }
       case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; room.bySid.delete(m.g); room.holders.delete(m.g); toTray(p); applyEdgeFilter(); renderPiles(); draw(); return; }
       // 서버가 거절 — 예전엔 조각을 지우기만 해서 트레이에도 판에도 없이 사라졌다. 트레이로 되돌리고 상태를 다시 받는다
-      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; toTray(p); applyEdgeFilter(); room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } reqSync(); return; }
+      case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } if (lifting === g) lifting = null; if (g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; groups.splice(groups.indexOf(g), 1); p.g = null; toTray(p); applyEdgeFilter(); room.bySid.delete(m.g); } toast(U.heldBy('')); renderPiles(); draw(); } lockReq.delete(m.g); reqSync(); return; }
       case 'mv': { const g = room.bySid.get(m.g); if (g && g !== dragging) netGlide(g, m.dx, m.dy); return; }
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } tweens.delete(g); merge(g, into); } else draw(); return; }
-      case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
+      // 내가 청해 둔 잠그기가 받아들여졌을 때만 내 조각으로 친다 — 남과 같은 뭉치를 동시에 놓으면 서버가 거절한다(resync).
+      // myLocked 를 lockGroup 보다 먼저 올려야 이 조각이 마지막일 때 완성 정산이 제 수를 본다
+      case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) { dragging = null; canvas.classList.remove('drag'); } g.dx = 0; g.dy = 0; tweens.delete(g); const k = lockReq.delete(m.g) ? g.pieces.length : 0; if (k) { myLocked += k; gotPieces(k); } lockGroup(g); } return; }
       // 공개 판: 한 판이 끝나거나 너무 오래 멈춰 있으면 서버가 다음 그림으로 갈아 끼운다
       case 'next': {
         const st = m.state; const w = WORKS.find((x) => x.key === st.key); if (!w) { location.reload(); return; }
@@ -808,7 +824,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
         });
         return;
       }
-      case 'resync': reqSync(); return;
+      case 'resync': lockReq.clear(); reqSync(); return;
       // ── 내 사진 방: 사진을 가진 사람이 모두 나가면 아무도 사진을 받을 수 없다
       case 'hostaway': roomNote(U.hostAway); toast(U.hostAway); return;
       case 'hostgone': roomNote(U.hostGone); toast(U.hostGone); return;
@@ -838,7 +854,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
     xpWait = 0; // 남은 조각은 아래 완성 정산이 한 번에 친다 (서버가 paid 만큼 빼고 준다)
-    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); syncLive(src?.key ?? '', total, myLocked, xpPaid).then(liveAward); roomNote(L.doneNote(myLocked)); celebrateWait(); return; }
+    if (room?.live) { fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {}); settleXp().then(() => syncLive(src?.key ?? '', total, myLocked, xpPaid)).then(liveAward); roomNote(L.doneNote(myLocked)); celebrateWait(); return; }
     prepareResult(sec);
     celebrateWait(() => scenes.go('result'));
   }
@@ -848,7 +864,7 @@ const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
     if (src!.kind === 'daily') bumpStreak(src!.day!);
     fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
     // 방에서 맞춘 판은 내가 놓은 조각만큼만 XP 로 친다 (mine). 기록 자체는 늘 한 판으로 남는다
-    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xpPaid, ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); syncDone(entry).then(showAward); }
+    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xpPaid, ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); showAward(null); settleXp().then(() => syncDone({ ...entry, paid: xpPaid })).then(showAward); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmt(sec), pTitle) : T.shareTitle(total, fmt(sec)); sb.dataset.text = T.shareText;
     const Pfx = LANG === 'ko' ? '' : `/${LANG}`; sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${Pfx}/photo/` : `${location.origin}${Pfx}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;

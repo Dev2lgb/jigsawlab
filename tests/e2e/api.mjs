@@ -21,11 +21,13 @@ import { BASE, get, post, ok, finish } from './lib.mjs';
 { const d = await get('/api/rank?tab=all', true); ok(d.me?.rank === 1 && d.me.xp === 120 && d.top[0]?.xp === 120, 'rank(all)'); }
 // 재도전 감산: wave 는 100조각까지 깼으니 48조각 오늘의 퍼즐은 ×1.5×0.25
 { const r = await post('/api/sync', { action: 'pieces', kind: 'daily', key: 'wave', n: 48, placed: 48 }, true); const a = r.body?.award; ok(a?.rate === 0.375 && a.gained === 18 && a.xp === 138, 'pieces(daily 재도전): rate 0.375 → 18', JSON.stringify(r.body)); }
-// 하루 상한 5000: 4000 은 들어가고(4138) 다음 1000 은 통째로 거절
-{ const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 4000, placed: 4000 }, true); const a = r.body?.award; ok(a?.gained === 4000 && a.xp === 4138, 'pieces: 4000 → 4138', JSON.stringify(r.body)); }
-{ const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 4000, placed: 1000 }, true); const a = r.body?.award; ok(a?.gained === 0 && a.xp === 4138 && a.capped === true, 'pieces: 상한 → capped, 0', JSON.stringify(r.body)); }
-{ const r = await post('/api/sync', { action: 'done', entry: { kind: 'gallery', key: 'wave', name: 'wave', n: 4000, sec: 2000, moves: 4000, at: Date.now() + 1, mine: 4000, paid: 4000 } }, true); const a = r.body?.award; ok(a && a.gained === 0 && a.xp === 4138 && a.stats.solved === 2 && a.stats.best_n === 4000 && a.badges.includes('p2000'), 'done: 4000 조각 → best_n·p2000 업적', JSON.stringify(r.body)); }
-{ const d = await get('/api/sync', true); ok(d.done?.length === 2 && d.done[0].n === 4000, 'sync GET: done 2건'); }
+// 조각 수 가중치: 1000조각은 조각당 3. wave 는 100조각까지만 깼으니 더 큰 판은 재도전 감산이 없다
+{ const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 1000, placed: 100 }, true); const a = r.body?.award; ok(a?.rate === 3 && a.gained === 300 && a.xp === 438, 'pieces(1000조각): rate 3 → 300', JSON.stringify(r.body)); }
+// 하루 상한 10,000: 2000조각(조각당 4)은 8000 으로 들어가고(8438) 다음 1000조각(4000)은 통째로 거절
+{ const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 2000, placed: 2000 }, true); const a = r.body?.award; ok(a?.rate === 4 && a.gained === 8000 && a.xp === 8438, 'pieces(2000조각): rate 4 → 8000, xp 8438', JSON.stringify(r.body)); }
+{ const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 2000, placed: 1000 }, true); const a = r.body?.award; ok(a?.gained === 0 && a.xp === 8438 && a.capped === true, 'pieces: 상한 → capped, 0', JSON.stringify(r.body)); }
+{ const r = await post('/api/sync', { action: 'done', entry: { kind: 'gallery', key: 'wave', name: 'wave', n: 2000, sec: 2000, moves: 2000, at: Date.now() + 1, mine: 2000, paid: 2000 } }, true); const a = r.body?.award; ok(a && a.gained === 0 && a.xp === 8438 && a.stats.solved === 2 && a.stats.best_n === 2000 && a.badges.includes('p2000'), 'done: 2000 조각 → best_n·p2000 업적', JSON.stringify(r.body)); }
+{ const d = await get('/api/sync', true); ok(d.done?.length === 2 && d.done[0].n === 2000, 'sync GET: done 2건'); }
 { const r = await post('/api/me', { nick: 'tester2' }, true); ok(r.body?.user?.nick === 'tester2', 'me POST: 닉네임'); await post('/api/me', { nick: 'tester' }, true); }
 
 // ── 방 프로토콜 (DO)

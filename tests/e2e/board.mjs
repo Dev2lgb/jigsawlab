@@ -50,5 +50,9 @@ let N1 = 0;
   await ctx.close(); }
 // E. 오늘의 퍼즐·큰 판
 { const { ctx, page } = await newPage(br); await page.goto(`${BASE}/board/?daily=1`); await waitPlay(page); ok((await tray(page)) === 48 && (await page.$eval('#jg-hud-name', (e) => e.textContent)).length > 0, 'daily: 48조각으로 열림'); await ctx.close(); }
-{ const { ctx, page } = await newPage(br); await page.goto(`${BASE}/board/?k=wave&n=300`); await waitPlay(page); const l = await left(page); ok(Math.abs(l - 300) <= 30, `n=300 → 격자에 맞춘 ${l}조각`); await ctx.close(); }
+{ const { ctx, page } = await newPage(br, { member: true }); await page.goto(`${BASE}/board/?k=wave&n=300`); await waitPlay(page); const l = await left(page); ok(Math.abs(l - 300) <= 30, `n=300 → 격자에 맞춘 ${l}조각`);
+  // 조각 수 가중치: 200~300조각은 조각당 1.5 — 판의 HUD(localRate)도 서버 정산도 60조각에 90
+  const lv0 = await level(page); await demo(page, 60); await page.waitForTimeout(1500); ok((await hud(page))?.includes('90'), 'weight(294조각): 60개 → HUD +90', String(await hud(page)));
+  const lv1 = await level(page); ok(lv1.xp - lv0.xp === 90, 'weight(294조각): 서버 +90', JSON.stringify({ before: lv0.xp, after: lv1.xp }));
+  await ctx.close(); }
 await br.close(); finish();

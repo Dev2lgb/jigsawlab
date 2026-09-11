@@ -32,6 +32,7 @@
   - 레벨 곡선 `xpAtLevel(L) = 50·L·(L−1)`, 최고 99. 구간 이름 7개(`TIERS`/`TIER_NAMES`), 업적 24가지(`BADGES`)
   - `user_stats` 는 `user_done` 이 500건에서 잘려도 남는 누적 카운터. `user_cleared` 는 그림별 최고 조각 수(재도전 감산·'그림 N점'·'진열대 완주' 판정), `user_week` 는 주간 랭킹(월요일 시작, KST)
 - 서버 라우트(`export const prerender = false`): `/api/daily`(GET 만 — 오늘 그림), `/api/stats`, `/api/live`(공개 판 진행률 — DO 정보에 그림 제목 3개 국어를 얹어 준다. 홈·`/together/` 가 쓴다), `/api/rank`(랭킹 — 읽기는 누구나), `/api/level`(내 레벨·업적), `/s/`(공유 카드, 쿼리로 OG 결정). 나머지는 정적
+- 서버 라우트 공통은 `src/lib/api.ts`(`json` — 늘 no-store · `readJson` · `thisWeek`). 레벨·XP 의 D1 쪽은 `src/lib/award.ts` 에 모여 있다: `addXp`(하루 상한 검사와 증가가 한 문장인 그 UPDATE — **여기 한 벌뿐**, 완성 정산 `award` 와 조각 정산 `awardPieces` 가 같이 쓴다), `ensureStats`(행이 없으면 `award(DB, uid, [])` 로 백필을 돌린다 — 직접 INSERT 하지 말 것), `pickStats`, `rankOf`(내 순위). `env` 는 `cloudflare:workers` 의 것이 `env.d.ts` 의 `Cloudflare.Env` 로 타입이 잡혀 있어 `as any` 캐스트가 필요 없다(`DurableObject<Cloudflare.Env>` 도 마찬가지). 예외는 `caches.default` — DOM 의 `CacheStorage` 가 가려 좁은 캐스트로 쓴다
 - **API 응답에 캐시 가능한 `cache-control` 을 달지 말 것.** 달면 Cloudflare 가 브라우저용으로 존의 Browser Cache TTL(기본 4시간)로 바꿔 버려서, 강제 새로고침 전까지 옛 값이 보인다. 실제로 `/api/live` 가 `max-age=15` 를 달았다가 진행률이 4시간 묵었다. 엣지 캐시가 필요하면 `caches.default` 에 **넣는 사본에만** max-age 를 달고, 브라우저로 나가는 응답은 캐시 적중 경로까지 포함해 늘 `no-store` 로 다시 싼다(`api/live.ts` 의 `fresh()`)
 
 ## 명령어
@@ -57,6 +58,7 @@
 
 ## 구조
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`
+- 판(`Jigsaw.astro`)에서 떼어낸 것: `src/lib/xp.ts` 조각 단위 XP 정산(`createXp` — 모아 보내기·paid·settle·배율 보정이 전부 여기. 판은 `xp.got/flush/settle/paid` 만 부른다), `src/lib/board.ts` 순수 셈(재동기화 때 트레이 순서). 판 안의 공용 도우미: `endDrag`(끌던 것 놓기 — 남이 가져갔거나 거절되었을 때), `forgetSave`(이 판의 저장 지우기, 기기+서버), `leaveRoom`, `reqLock`(제자리 → 서버에 잠그기 청하고 스냅), `ungroup`/`netUntake`(한 조각짜리 뭉치를 판에서 떼기), `gallerySrc`/`workName`/`artUrl`/`thumbUrl`, `boardSnapshot`(저장·방 만들기 공용). `loadSource(src, { auto, quiet })` 는 옵션 객체다
 - `src/components/Home.astro` 랜딩(히어로·지난 오늘의 퍼즐·모두의 퍼즐 띠·레벨/업적/이번 주 랭킹·상자 진열대). 레벨 블록은 진열대(17개)보다 **앞**에 둔다 — 뒤에 두면 아무도 안 보고 지나간다, `Picker.astro` 고르는 화면(/play/), `Jigsaw.astro` 판(/board/: 플레이·완성·결과), `Photo.astro` 내 사진 랜딩(/photo/), `Together.astro` 공개 판 랜딩(/together/), `Rank.astro` 랭킹(/rank/: 주간·누적 두 탭 + XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인), `My.astro` 내 퍼즐(/my/: 레벨 카드·업적 그리드도 여기. 24가지를 다 펴면 하던 퍼즐이 밀려서 처음엔 첫 줄만 보이고 `.bdg-blk.open` 으로 펼친다), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
 - **언어는 5개(ko·en·ja·de·es).** 언어팩은 언어마다 파일 하나로 갈라 뒀다 — `src/i18n/ui/<lang>.ts` 사이트 공통(`UI[lang].lv` 가 레벨·랭킹), `src/i18n/jigsaw/<lang>.ts` 판·고르는 화면, `src/i18n/body/<lang>.ts` SEO 본문(HTML), `src/i18n/badges.ts` 업적·레벨 구간. 각 묶음의 `ko.ts` 가 기준 모양이고 나머지는 그 타입(`UIStrings`·`JigsawStrings`·`BodyText`)을 달고 있어 **키가 하나라도 빠지면 `astro check` 가 잡는다**
 - `src/i18n/langs.ts` — 언어 목록(`LANGS`·`LI`)과 작은 도우미(`prefix`·`langOf`·`stripLang`·`docLang`·`altsFor`·`OG_LOCALE`·`multi`)만. **문구는 여기 없다**: `works.ts` 같은 데이터 파일이 언어팩을 물면 5개 국어 문구가 통째로 클라이언트 번들에 딸려 들어간다
@@ -73,7 +75,7 @@
 - 카탈로그 확장 파이프라인 ① `scripts/met/`(AIC): `scan-aic.mjs`(시카고 미술관 API CC0 후보 수집 + 컨택트 시트) → 시트 보고 `select.mjs` 의 PICK 편집 → `build.mjs`(IIIF 1686px 다운로드·WebP 변환·aic.json). ② `scripts/extra/`(위키미디어 공용·NASA): `scan.mjs`(카테고리·검색·NASA API 로 후보 수집 → candidates.json + sheet-*.html) → `select.mjs`(고른 항목에 영문 제목·작가·연도·소장처 코드 지정 → selected.json) → `build.mjs`(1600px 썸네일 다운로드, 포토크롬은 스캔 테두리·색상띠 자동 크롭, WebP·썸네일·OG 생성 → extra.json) → 새 key 의 제목을 `titles.ts` 에, 소개를 `about/{ko,en,ja}.ts` 에, 새 작가를 `artists.ts` 에 추가하고 `counts.ts` 의 수를 올린다. Met API 는 403 스로틀이 심해 보류, 미국 의회도서관 사이트는 Cloudflare 차단이라 Commons 경유
 - 레벨업·새 업적은 다이얼로그로 알린다(`src/lib/levelup.ts` + 마크업은 `Base.astro` 의 `#aw-dlg`). 색종이는 판을 다 맞췄을 때와 같은 것을 쓰고(연출은 `src/lib/celebrate.ts` 로 빼 뒀다), 판에서는 색종이가 다 내린 뒤(`celebrateWait`)에 띄운다
 - 소리는 넷을 갈라 뒀다(`celebrate.ts`) — `click()` 조각 딸깍 / `fanfare()` 완성(느린 아르페지오 + 길게 깔리는 화음, 1.4초) / `levelUp()` 레벨업(빠른 5음 + 밑에서 솟는 톱니 스윕 + 종소리 꼬리) / `badge()` 업적(짧고 높은 딩, 여러 개면 230ms 간격). 완성 → 레벨업 → 업적이 이어서 울려도 서로 안 겹치게 음역·속도·길이를 떼 놓았다
-- `levelup.ts` 는 모든 페이지에 깔리는 `Base.astro` 에서 부르므로 모든 페이지에 깔리는 `Base.astro` 에서는 **동적 import** 로만 부른다 (이미 works 를 싣는 `/board/` 에서는 정적 import 여도 무방)
+- `levelup.ts` 는 모든 페이지에 깔리는 `Base.astro` 에서 **동적 import** 로만 부른다 — 레벨업 다이얼로그가 뜨는 순간에만 싣는다(`level.ts` 가 works 를 물던 때 세운 규칙인데, 지금은 `counts.ts` 만 물어 가볍지만 안 쓸 코드를 첫 화면에 안 싣는 편이 여전히 낫다) (이미 works 를 싣는 `/board/` 에서는 정적 import 여도 무방)
 - 조각 수를 고르는 자리마다 받을 XP 를 `.xp-tip` 알약으로 보여 준다(홈 히어로·`/puzzle/`·`/photo/`·판 설정·`/together/`). 재도전 감산(×¼)은 서버가 정하지만 이 기기의 완성 목록(`store.ts` 의 `bestDoneN`)으로 미리 짐작해 `/puzzle/`·판 설정 알약과 판 HUD 배율에 반영한다 — 안 하면 "+1000" 을 보고 시작했다가 첫 묶음 응답에 숫자가 ¼ 로 내려앉는다. XP 는 회원만 쌓이므로 알약도 회원에게만 — 화면마다 로그인 검사를 하지 않고 `Base.astro` 가 `html.member` 클래스를 붙이면 전역 CSS 가 켜 준다
 - Astro 의 `<style>` 은 스코프라 **스크립트가 만든 요소에는 스타일이 안 붙는다**(스코프 속성이 없어서). 랭킹 표·업적 카드·레벨 통계·완성 화면 XP 칩처럼 JS 로 그리는 것은 `.부모 :global(.자식)` 으로 쓴다
 - 헤더 나비는 다섯 항목이 한계다. 낱말 길이가 언어마다 달라(재 본 값: 나비·언어칸·로그인 버튼까지 한 줄에 세우는 데 ko 983 · en 1149 · ja 1194px) 여섯이면 글자가 두 줄로 접힌다. 그래서 `랭킹`·`소개` 는 `sheetOnly` 로 메뉴·바닥글에만 두고, 영어·일본어는 1024px 아래에서 햄버거로 넘긴다(`Base.astro` 미디어쿼리)
@@ -83,7 +85,7 @@
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 조각 되돌리기: 판 위 조각을 트레이(또는 더미 탭) 위에서 놓으면 트레이로 돌아간다(`returnToTray`). **한 조각짜리만** — 붙여 둔 뭉치가 손이 미끄러져 통째로 흩어지면 곤란하고, 방에서도 서버 `untake` 가 한 조각짜리만 받는다. 트레이에 세울 때는 `toTray()` 를 쓴다: `order`(저장되는 트레이 순서)에 다시 넣지 않으면 색상 정렬 뒤 되돌린 조각이 저장에서 빠져 이어하기 때 판에도 트레이에도 없이 사라진다
 - 원본 그림 보기(`#jg-full`, 밑그림 버튼 왼쪽): 조각을 뜬 그 `img` 를 화면 크기에 맞춰 캔버스에 그린다(사진·명화 공통). 창이 HUD 를 덮으므로 아무 데나 눌러도 닫힌다. **HUD 는 390px 폰에서 이미 꽉 차 있어**(`남은 조각`·그림 이름 칸이 0px 로 눌린 채다) 버튼을 더 늘릴 자리가 없다 — 조각 XP 표시를 트레이 바에 둔 것도 그래서다
-- 테스트 훅(개발 서버에서만, `import.meta.env.DEV`): `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`. 배포본에 두면 콘솔 한 줄로 조각 XP 를 캔다
+- 테스트 훅(개발 서버에서만, `import.meta.env.DEV`): `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`. 배포본에 두면 콘솔 한 줄로 조각 XP 를 캔다 빌드본으로 확인하려면 `NODE_ENV=development npx astro build --mode development` 로 만든 dist 를 `npx wrangler dev` 로 띄운다(훅이 살아 있다. 이 빌드는 배포하지 말 것). 회원 흐름(XP 전송)은 `authAvailable()` 이 `/api/me` 의 `auth` 를 보므로 로컬에 `.dev.vars`(더미 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`·`SESSION_SECRET`)가 있어야 하고, 세션 쿠키 `jl_s` 는 `SESSION_SECRET` 으로 HMAC 해 만들 수 있다. 훅이 놓는 속도는 사람보다 빨라 완성 정산이 `plausible`(조각당 0.25초)에 걸려 XP 0 이 나온다 — 완성 정산까지 볼 때는 조각 수×0.25초를 기다린 뒤 마지막 조각을 놓을 것. 100조각을 청하면 격자에 맞춰 99조각이 되는 것도 기대값에 반영
 
 ## 로드맵
 1. ✅ 뼈대·직소 이식·라이트 테마 → ✅ 리디자인(랜딩 홈·/play/·/puzzle/<key>/ 상세·상자 카탈로그·OG)

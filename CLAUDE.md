@@ -58,6 +58,7 @@
 
 ## 구조
 - `src/lib/jigsaw.ts` 엔진(격자·시드·톱니 곡선·조각 비트맵), `src/lib/store.ts` 저장/API 클라이언트, `src/lib/share.ts`, `src/lib/scene.ts`
+- 판(`Jigsaw.astro`)에서 떼어낸 것: `src/lib/xp.ts` 조각 단위 XP 정산(`createXp` — 모아 보내기·paid·settle·배율 보정이 전부 여기. 판은 `xp.got/flush/settle/paid` 만 부른다), `src/lib/board.ts` 순수 셈(재동기화 때 트레이 순서). 판 안의 공용 도우미: `endDrag`(끌던 것 놓기 — 남이 가져갔거나 거절되었을 때), `forgetSave`(이 판의 저장 지우기, 기기+서버), `leaveRoom`, `reqLock`(제자리 → 서버에 잠그기 청하고 스냅), `ungroup`/`netUntake`(한 조각짜리 뭉치를 판에서 떼기), `gallerySrc`/`workName`/`artUrl`/`thumbUrl`, `boardSnapshot`(저장·방 만들기 공용). `loadSource(src, { auto, quiet })` 는 옵션 객체다
 - `src/components/Home.astro` 랜딩(히어로·지난 오늘의 퍼즐·모두의 퍼즐 띠·레벨/업적/이번 주 랭킹·상자 진열대). 레벨 블록은 진열대(17개)보다 **앞**에 둔다 — 뒤에 두면 아무도 안 보고 지나간다, `Picker.astro` 고르는 화면(/play/), `Jigsaw.astro` 판(/board/: 플레이·완성·결과), `Photo.astro` 내 사진 랜딩(/photo/), `Together.astro` 공개 판 랜딩(/together/), `Rank.astro` 랭킹(/rank/: 주간·누적 두 탭 + XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인), `My.astro` 내 퍼즐(/my/: 레벨 카드·업적 그리드도 여기. 24가지를 다 펴면 하던 퍼즐이 밀려서 처음엔 첫 줄만 보이고 `.bdg-blk.open` 으로 펼친다), `PuzzleDetail.astro` 그림 상세, `Box.astro` 퍼즐 상자, `ShareCard.astro`, `Privacy.astro`
 - **언어는 5개(ko·en·ja·de·es).** 언어팩은 언어마다 파일 하나로 갈라 뒀다 — `src/i18n/ui/<lang>.ts` 사이트 공통(`UI[lang].lv` 가 레벨·랭킹), `src/i18n/jigsaw/<lang>.ts` 판·고르는 화면, `src/i18n/body/<lang>.ts` SEO 본문(HTML), `src/i18n/badges.ts` 업적·레벨 구간. 각 묶음의 `ko.ts` 가 기준 모양이고 나머지는 그 타입(`UIStrings`·`JigsawStrings`·`BodyText`)을 달고 있어 **키가 하나라도 빠지면 `astro check` 가 잡는다**
 - `src/i18n/langs.ts` — 언어 목록(`LANGS`·`LI`)과 작은 도우미(`prefix`·`langOf`·`stripLang`·`docLang`·`altsFor`·`OG_LOCALE`·`multi`)만. **문구는 여기 없다**: `works.ts` 같은 데이터 파일이 언어팩을 물면 5개 국어 문구가 통째로 클라이언트 번들에 딸려 들어간다
@@ -84,7 +85,7 @@
 - `public/jigsaw/` 명화 `<key>.jpg`(1200px) · `t-<key>.jpg`(썸네일) · `o-<key>.jpg`(OG 400²)
 - 조각 되돌리기: 판 위 조각을 트레이(또는 더미 탭) 위에서 놓으면 트레이로 돌아간다(`returnToTray`). **한 조각짜리만** — 붙여 둔 뭉치가 손이 미끄러져 통째로 흩어지면 곤란하고, 방에서도 서버 `untake` 가 한 조각짜리만 받는다. 트레이에 세울 때는 `toTray()` 를 쓴다: `order`(저장되는 트레이 순서)에 다시 넣지 않으면 색상 정렬 뒤 되돌린 조각이 저장에서 빠져 이어하기 때 판에도 트레이에도 없이 사라진다
 - 원본 그림 보기(`#jg-full`, 밑그림 버튼 왼쪽): 조각을 뜬 그 `img` 를 화면 크기에 맞춰 캔버스에 그린다(사진·명화 공통). 창이 HUD 를 덮으므로 아무 데나 눌러도 닫힌다. **HUD 는 390px 폰에서 이미 꽉 차 있어**(`남은 조각`·그림 이름 칸이 0px 로 눌린 채다) 버튼을 더 늘릴 자리가 없다 — 조각 XP 표시를 트레이 바에 둔 것도 그래서다
-- 테스트 훅(개발 서버에서만, `import.meta.env.DEV`): `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`. 배포본에 두면 콘솔 한 줄로 조각 XP 를 캔다
+- 테스트 훅(개발 서버에서만, `import.meta.env.DEV`): `window.__jigsaw.demo(n)`(앞 n조각 제자리), `window.__jigsaw.state()`. 배포본에 두면 콘솔 한 줄로 조각 XP 를 캔다 빌드본으로 확인하려면 `NODE_ENV=development npx astro build --mode development` 로 만든 dist 를 `npx wrangler dev` 로 띄운다(훅이 살아 있다. 이 빌드는 배포하지 말 것). 회원 흐름(XP 전송)은 `authAvailable()` 이 `/api/me` 의 `auth` 를 보므로 로컬에 `.dev.vars`(더미 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`·`SESSION_SECRET`)가 있어야 하고, 세션 쿠키 `jl_s` 는 `SESSION_SECRET` 으로 HMAC 해 만들 수 있다. 훅이 놓는 속도는 사람보다 빨라 완성 정산이 `plausible`(조각당 0.25초)에 걸려 XP 0 이 나온다 — 완성 정산까지 볼 때는 조각 수×0.25초를 기다린 뒤 마지막 조각을 놓을 것. 100조각을 청하면 격자에 맞춰 99조각이 되는 것도 기대값에 반영
 
 ## 로드맵
 1. ✅ 뼈대·직소 이식·라이트 테마 → ✅ 리디자인(랜딩 홈·/play/·/puzzle/<key>/ 상세·상자 카탈로그·OG)

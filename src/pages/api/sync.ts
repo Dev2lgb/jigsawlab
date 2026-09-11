@@ -1,11 +1,11 @@
 // 로그인 회원의 업적(완성 기록)·하던 퍼즐 동기화 + 레벨/XP 반영
-// GET → { done: [...], saves: [meta...] } / GET ?save=<id> → { data } / POST {action:'done'|'pieces'|'save'|'delsave'|'merge'|'live'}
+// GET → { done: [...], saves: [meta...] } / GET ?save=<id> → { data } / GET ?daily → { days, streak } / POST {action:'done'|'pieces'|'save'|'delsave'|'merge'|'live'}
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getUser } from '../../lib/auth';
 import { json, readJson } from '../../lib/api';
 import { award, awardPieces } from '../../lib/award';
-import type { Kind, Solve } from '../../lib/level';
+import { kstDay, prevDay, type Kind, type Solve } from '../../lib/level';
 export const prerender = false;
 const MAX_DONE = 500, MAX_SAVES = 30, MAX_SAVE_BYTES = 600_000;
 // room·mine 은 XP 계산에만 쓰고 저장하지 않는다 (방에서 맞춘 판은 내가 놓은 조각만큼만 XP)
@@ -17,6 +17,16 @@ const saveMeta = (d: any) => ({ id: String(d.id), kind: d.kind, key: String(d.ke
 export const GET: APIRoute = async ({ request }) => {
   const u = await getUser(request); if (!u) return json({ error: 'auth' }, 401); const DB = env.DB; const url = new URL(request.url); const sid = url.searchParams.get('save');
   if (sid) { const r = await DB.prepare('SELECT data FROM user_saves WHERE user_id = ? AND id = ?').bind(u.id, sid).first<{ data: string }>(); return r ? new Response(r.data, { headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }) : json({ error: 'none' }, 404); }
+  // 홈의 지난 7일 ✓·연속 — 이 기기 기록에 얹을 계정 몫(다른 기기에서 맞춘 판). days = 판의 날짜(하루 여유를 두고 8일),
+  // streak = 푼 날짜로 센 지금의 연속. user_stats 는 마지막으로 푼 날에 멈춰 있으니 오늘·어제가 아니면 끊긴 것이라 0
+  if (url.searchParams.has('daily')) {
+    const now = Date.now(), today = kstDay(now);
+    const [d, s] = await Promise.all([
+      DB.prepare("SELECT DISTINCT day FROM user_done WHERE user_id = ? AND kind = 'daily' AND day >= ?").bind(u.id, kstDay(now - 7 * 864e5)).all<{ day: string }>(),
+      DB.prepare('SELECT streak, last_day FROM user_stats WHERE user_id = ?').bind(u.id).first<{ streak: number; last_day: string | null }>(),
+    ]);
+    return json({ days: (d.results ?? []).map((r) => r.day), streak: s && (s.last_day === today || s.last_day === prevDay(today)) ? s.streak : 0 });
+  }
   const [done, saves] = await Promise.all([
     DB.prepare('SELECT at, key, kind, name, n, sec, moves, day FROM user_done WHERE user_id = ? ORDER BY at DESC LIMIT ?').bind(u.id, MAX_DONE).all<Omit<Done, 'room' | 'mine' | 'paid'>>(),
     DB.prepare('SELECT meta FROM user_saves WHERE user_id = ? ORDER BY saved_at DESC LIMIT ?').bind(u.id, MAX_SAVES).all<{ meta: string }>(),

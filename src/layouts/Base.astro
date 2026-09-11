@@ -21,7 +21,7 @@ const nav = [
 const CF_BEACON = '34fd6584be234e4b8b1e580413d95d1f';
 const langPath = stripLang(Astro.url.pathname);
 // 홈에만 구조화 데이터 — 한글 브랜드명(직소랩)을 alternateName 으로 알려 주고, 게임 앱이라는 것도 함께
-const isHome = path === '/' || path === '/en/' || path === '/ja/';
+const isHome = stripLang(path) === '/'; // 언어 코드를 손으로 나열하면 de·es 가 조용히 빠진다
 const brand = { name: 'jigsawlab', ...(T.altName ? { alternateName: T.altName } : {}) };
 const homeSchema = { '@context': 'https://schema.org', '@graph': [
   { '@type': 'WebSite', ...brand, url: site.toString(), inLanguage: lang, description: desc },

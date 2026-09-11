@@ -22,6 +22,10 @@ export interface Solve { kind: Kind; key: string; n: number; sec: number; mine?:
 /** 사람이 손으로 놓은 것으로 볼 수 있는 기록인지 */
 export const plausible = (s: Solve, mine: number) => s.kind === 'live' || !(s.sec > 0) || s.sec >= mine * MIN_SEC_PER_PIECE;
 
+/** 이 판에 걸리는 배율 — 오늘의 퍼즐 보너스와 재도전 감산. 판 화면이 HUD 에 쓸 배율도 여기서 나온다 */
+export const rateFor = (kind: Kind, n: number, prevN: number | null): number =>
+  (kind === 'daily' ? DAILY_BONUS : 1) * (prevN !== null && n <= prevN ? REPEAT_RATE : 1);
+
 /** 한 판이 주는 XP. prevN = 이 그림을 전에 깬 최대 조각 수(없으면 null) */
 export function xpFor(s: Solve, prevN: number | null): number {
   const n = Math.max(0, Math.min(4000, Math.round(s.n)));
@@ -29,10 +33,7 @@ export function xpFor(s: Solve, prevN: number | null): number {
   // 기준은 판 전체가 아니라 내가 놓은 조각 — 방에 늦게 들어와 몇 조각만 놓고 끝난 판도 정상이다
   if (!plausible(s, mine)) return 0;
   const paid = Math.max(0, Math.min(mine, Math.round(s.paid ?? 0)));
-  let xp = (mine - paid) * XP_PER_PIECE;
-  if (s.kind === 'daily') xp *= DAILY_BONUS;
-  if (prevN !== null && n <= prevN) xp *= REPEAT_RATE;
-  return Math.round(xp);
+  return Math.round((mine - paid) * XP_PER_PIECE * rateFor(s.kind, n, prevN));
 }
 
 /** 이 조각 수를 끝내면 받을 XP (처음 맞추는 그림 기준 — 재도전 감산·하루 상한은 뺀 값) */

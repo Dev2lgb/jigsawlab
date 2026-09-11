@@ -23,7 +23,7 @@ export async function setNickRemote(nick: string): Promise<boolean> {
 // keepalive 는 본문 64KB 제한이 있어 작은 요청에만 (큰 판 저장은 일반 요청)
 const post = (body: unknown) => { const s = JSON.stringify(body); return fetch('/api/sync', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: s, keepalive: s.length < 60_000 }).catch(() => null); };
 /** 서버가 매긴 XP·레벨·새 업적 (회원만) */
-export interface Award { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean }
+export interface Award { xp: number; gained: number; level: number; prevLevel: number; levelUp: boolean; badges: string[]; stats: Stats; capped: boolean; rate?: number }
 const awardOf = async (r: Response | null): Promise<Award | null> => { if (!r?.ok) return null; try { const d: any = await r.json(); return d?.award ?? null; } catch { return null; } };
 /** 로그인 상태면 완성 기록 1건 올림 → 받은 XP·레벨·새 업적 */
 export async function syncDone(entry: unknown): Promise<Award | null> { if (!(await me())) return null; return awardOf(await post({ action: 'done', entry })); }

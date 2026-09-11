@@ -4,14 +4,17 @@ import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, LIVE_ID, todayKST, dailyPick } from '../lib/jigsaw';
 import { DAILY_POOL, WORKS } from '../data/works';
+import { dailyWindow } from '../lib/daily';
 import { shelvesFor } from '../lib/catalogView';
 import { earnFor } from '../lib/level';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
 const day = todayKST(), daily = dailyPick(day, DAILY_POOL), shelves = shelvesFor(lang), total = WORKS.length;
 const all = shelves.flatMap((s) => s.items);
+const win = dailyWindow(DAILY_POOL, lang); // 브라우저가 오늘·지난 7일 그림을 works 없이 뽑게
 const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 ---
+<script is:inline type="application/json" id="daily-win" set:html={JSON.stringify(win)} />
 <section class="hero" id="hero" data-key={daily.painting.key}>
   <div class="glow" aria-hidden="true"><img id="glow-img" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" /></div>
   <div class="wrap hero-in">
@@ -177,20 +180,22 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 
 <script>
   import { drawPopped } from '../lib/hero';
-  import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
-  import { DAILY_POOL } from '../data/works';
+  import { DAILY_PIECES } from '../lib/jigsaw';
+  import { dailyLite, dayKST } from '../lib/daily';
   import { getStreak, getBest } from '../lib/store';
   import { initFavUI } from '../lib/fav';
   import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
   const LANG = docLang(), LI = LIDX[LANG], T = UI[LANG];
   initFavUI();
-  const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
   const P = prefix(LANG);
   { const st = getStreak(); if (st > 0) { const el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = T.play.streak(st); el.hidden = false; } }
-  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = new Date(Date.now() + 9 * 3600e3 - i * 86400e3).toISOString().slice(0, 10); const pk = dailyPick(d, DAILY_POOL); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.painting.title[LI]; a.innerHTML = `<img src="/jigsaw/t-${pk.painting.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
-  { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.painting.title[LI]); }
-  (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.painting.key}.webp`;
-  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.painting.key}.webp`, pick.seed, DAILY_PIECES, 5);
+  // 오늘·지난 7일 그림은 서버가 찍어 둔 창(#daily-win)에서 — 자정을 넘긴 탭·묵은 배포도 맞게. works 는 안 싣는다
+  (async () => { const pick = await dailyLite(dayKST(), LI);
+  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = dayKST(-i); const pk = await dailyLite(d, LI); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.title; a.innerHTML = `<img src="/jigsaw/t-${pk.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
+  { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.title); }
+  (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.key}.webp`;
+  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.key}.webp`, pick.seed, DAILY_PIECES, 5);
+  })();
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
   // 이번 주 랭킹 top 5 — 아직 아무도 없으면 안내 한 줄. 로그인했으면 내 순위를 머리에 얹는다

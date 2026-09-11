@@ -1,5 +1,5 @@
 // 레벨업·업적 달성 다이얼로그. 마크업은 Base.astro 에 있고 여기서 채워 연다.
-// 데이터(작품 목록)를 물고 있는 level.ts 를 쓰므로 부르는 쪽에서 동적 import 하는 게 좋다
+// 언어팩·업적 문구·소리까지 딸려 오므로, 모든 페이지에 깔리는 Base.astro 는 동적 import 로 필요한 순간에만 싣는다
 import { BADGE_BY_CODE, tierOf } from './level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
 import { UI, LI, docLang } from '../i18n/ui';

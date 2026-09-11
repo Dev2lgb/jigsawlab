@@ -2,6 +2,7 @@
 // 그림 상세 = 상자를 연 화면. 큰 상자 + 그림 이야기 + 조각 수 선택(→ /board/) + 같은 진열대의 다른 상자
 import Base from '../layouts/Base.astro';
 import Box from './Box.astro';
+import PieceLoader from './PieceLoader.astro';
 import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORK_BY_KEY, WORKS, DAILY_POOL } from '../data/works';
@@ -44,7 +45,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <p class="xp-row"><a class="xp-tip" id="xp-tip" href={`${P}/rank/`}></a></p>
         <div class="go"><a class="btn primary lg" id="go-solo" href={`${P}/board/?k=${key}&n=48`}>{T.detail.start}</a><button type="button" class="btn lg" id="together" data-key={key}><Fragment set:html={icon('users', 18)} /> {T.play.together}</button></div>
         <p class="muted together-sub">{T.play.togetherSub}</p>
-        <div class="fullload" id="fullload" role="status"><span class="spin"></span><p id="fullload-txt" data-creating={T.play.creating} data-opening={J.opening}>{J.opening}</p></div>
+        <div class="fullload" id="fullload" role="status"><PieceLoader /><p id="fullload-txt" data-creating={T.play.creating} data-opening={J.opening}>{J.opening}</p></div>
       </div>
     </div>
     {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="shelf-row">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
@@ -73,8 +74,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     .xp-row { margin: 8px 0 0; }
     :global(html:not(.member)) .xp-row { display: none; }
     .daily-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-    .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); } .fullload.on { display: flex; }
-    .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+    .fullload { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--ink); font-weight: 700; } .fullload.on { display: flex; }
     .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; } #together { display: inline-flex; align-items: center; gap: 6px; } .together-sub { margin: 10px 0 0; font-size: .88rem; }
     .more { margin-top: clamp(40px, 6vw, 80px); } .more .shelf-row { --w: 210px; --h: 190px; --d: 44px; }
   </style>

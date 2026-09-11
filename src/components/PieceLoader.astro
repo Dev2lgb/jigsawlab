@@ -1,0 +1,41 @@
+---
+// 로딩 표시 — 직소 조각 넷(2×2 바람개비)이 한 조각씩 시계 방향으로 들렸다가 제자리에 딱 들어간다. 들어가는 순간 판이 살짝 튄다(딸깍).
+// 첫 페인트 전 로딩 화면(html[data-boot])에 쓰이므로 JS 없이 CSS 애니메이션만. 조각 곡선은 엔진(lib/jigsaw.ts 의 tabSegs, T=0.1)과 같은 모양이라 판 위 조각과 한 식구로 보인다.
+// 조각마다 <svg> 하나 — 들린 조각이 이웃 위로 올라와야 해서(z-index) 한 svg 안에 넣지 않았다(svg 안에서는 문서 순서가 곧 쌓임 순서).
+const { size = 52 } = Astro.props as { size?: number };
+// 시계 방향 TL·TR·BR·BL. 바깥으로 들리는 방향(--dx·--dy)은 각 조각의 대각선
+const PIECES: [string, number, number][] = [
+  ['M0 0L50 0C50 10 45 25 55 20C65 15 65 35 55 30C45 25 50 40 50 50C40 50 25 55 30 45C35 35 15 35 20 45C25 55 10 50 0 50Z', -1, -1],
+  ['M50 0L100 0L100 50C90 50 75 45 80 55C85 65 65 65 70 55C75 45 60 50 50 50C50 40 45 25 55 30C65 35 65 15 55 20C45 25 50 10 50 0Z', 1, -1],
+  ['M50 50C60 50 75 45 70 55C65 65 85 65 80 55C75 45 90 50 100 50L100 100L50 100C50 90 55 75 45 80C35 85 35 65 45 70C55 75 50 60 50 50Z', 1, 1],
+  ['M0 50C10 50 25 55 20 45C15 35 35 35 30 45C25 55 40 50 50 50C50 60 55 75 45 70C35 65 35 85 45 80C55 75 50 90 50 100L0 100Z', -1, 1],
+];
+---
+<span class="pz" aria-hidden="true" style={`--s:${size}px`}>{PIECES.map(([d, dx, dy], i) => <svg viewBox="0 0 100 100" style={`--i:${i};--dx:${dx};--dy:${dy}`}><path d={d} /></svg>)}</span>
+<style>
+  /* 한 바퀴 4.8초 = 조각당 1.2초. 들림(0~7%) → 머뭇(~14%) → 떨어짐(~19%) → 쉼. 조각마다 --i × 1.2초 늦게 시작해 시계 방향으로 돈다 */
+  .pz { --pz-dur: 4.8s; position: relative; display: block; width: var(--s); height: var(--s); animation: pz-bump var(--pz-dur) linear infinite; }
+  .pz svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; animation: pz-top var(--pz-dur) linear calc(var(--i) * 1.2s) infinite; }
+  .pz path { fill: var(--ink, #0f1222); stroke: var(--bg, #fff); stroke-width: 3; stroke-linejoin: round; paint-order: stroke; transform-box: fill-box; transform-origin: center; animation: pz-lift var(--pz-dur) linear calc(var(--i) * 1.2s) infinite; }
+  @keyframes pz-lift {
+    0% { transform: translate(0, 0) rotate(0) scale(1); animation-timing-function: cubic-bezier(.2, .75, .15, 1); }
+    7% { transform: translate(calc(var(--dx) * 8px), calc(var(--dy) * 8px)) rotate(calc(var(--dx) * -5deg)) scale(1.1); animation-timing-function: ease-in-out; }
+    14% { transform: translate(calc(var(--dx) * 9.5px), calc(var(--dy) * 9.5px)) rotate(calc(var(--dx) * -2deg)) scale(1.12); animation-timing-function: cubic-bezier(.6, 0, .9, .45); }
+    19%, 100% { transform: translate(0, 0) rotate(0) scale(1); }
+  }
+  /* 들린 조각은 이웃 위로(z-index) + 그림자 — 그림자는 svg 요소에 두어 경로 밖으로 나가도 잘리지 않는다 */
+  @keyframes pz-top {
+    0% { filter: drop-shadow(0 0 0 rgba(15, 18, 34, 0)); z-index: 2; animation-timing-function: cubic-bezier(.2, .75, .15, 1); }
+    7% { filter: drop-shadow(0 5px 5px rgba(15, 18, 34, .3)); z-index: 2; animation-timing-function: ease-in-out; }
+    14% { filter: drop-shadow(0 7px 7px rgba(15, 18, 34, .26)); z-index: 2; animation-timing-function: cubic-bezier(.6, 0, .9, .45); }
+    19% { filter: drop-shadow(0 0 0 rgba(15, 18, 34, 0)); z-index: 2; }
+    19.5%, 100% { filter: drop-shadow(0 0 0 rgba(15, 18, 34, 0)); z-index: 1; }
+  }
+  /* 조각이 들어가는 순간(19·44·69·94%) 판 전체가 살짝 부풀었다 가라앉는다 */
+  @keyframes pz-bump {
+    0%, 19%, 23.5%, 44%, 48.5%, 69%, 73.5%, 94%, 98.5%, 100% { transform: scale(1); animation-timing-function: ease-out; }
+    20.5%, 45.5%, 70.5%, 95.5% { transform: scale(1.05); animation-timing-function: ease-in-out; }
+  }
+  /* 움직임 줄이기 — 맞춰진 채로 가만히(Base 의 전역 규칙이 duration 을 .01ms 로 줄여 버려 깜빡이므로 아예 끈다) */
+  @media (prefers-reduced-motion: reduce) { .pz, .pz svg, .pz path { animation: none !important; } }
+</style>

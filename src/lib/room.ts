@@ -5,8 +5,8 @@ import { WORK_BY_KEY, DAILY_POOL } from '../data/works';
 
 // by = 지금 이 뭉치를 잡고 있는 사람. 상태에 같이 저장한다(절전으로 메모리가 날아가도 유지). 끊긴 사람의 점유는 holder() 가 자동으로 푼다
 export interface RoomGroup { dx: number; dy: number; idx: number[]; by?: string; t?: number }
-export interface RoomState { id: string; key: string; n: number; cols: number; rows: number; total: number; W: number; H: number; seed: number; groups: Record<string, RoomGroup>; locked: number[]; createdAt: number; doneAt?: number; lang: string; hostLeftAt?: number; dead?: boolean; live?: boolean; round?: number; lastAt?: number }
-interface Player { id: string; nick: string; color: string; x?: number; y?: number }
+export interface RoomState { id: string; key: string; n: number; cols: number; rows: number; total: number; W: number; H: number; seed: number; groups: Record<string, RoomGroup>; locked: number[]; createdAt: number; doneAt?: number; hostLeftAt?: number; dead?: boolean; live?: boolean; round?: number; lastAt?: number }
+interface Player { id: string; nick: string; color: string }
 type Att = { id: string; nick: string; color: string; photo?: boolean };
 const COLORS = ['#e0245e', '#f0a71b', '#2f9e6b', '#3b5bff', '#a54cff', '#ff6a3d', '#0aa3b5', '#c2b31c'];
 const MAX_PLAYERS = 8;
@@ -20,7 +20,8 @@ const rand32 = () => (Math.random() * 2 ** 32) >>> 0;
 // 좌표는 정수로 반올림해 저장한다. 판 좌표가 이미지 픽셀 단위라 0.5px 차이는 보이지 않고,
 // 1000조각 판은 뭉치가 많아 소수점을 그대로 두면 저장하는 상태가 몇 배로 불어난다
 const num = (v: unknown, fb: number) => (Number.isFinite(+(v as number)) ? Math.round(+(v as number)) : fb);
-const r0 = (v: unknown) => Math.round(+(v as number)) || 0;
+/** 뭉치 점유 풀기 */
+const release = (gr: RoomGroup) => { gr.by = undefined; gr.t = undefined; };
 /** 회차별 그림 — 후보를 한 바퀴 단위로 섞어 돌린다. 한 바퀴 안에서는 같은 그림이 두 번 나오지 않는다 */
 function liveWork(round: number) {
   const n = DAILY_POOL.length, cycle = Math.floor(round / n), rnd = seeded((0x9e3779b9 ^ cycle) >>> 0);
@@ -29,7 +30,7 @@ function liveWork(round: number) {
   return DAILY_POOL[idx[round % n]];
 }
 
-export class Room extends DurableObject {
+export class Room extends DurableObject<Cloudflare.Env> {
   state: RoomState | null = null; saveT: ReturnType<typeof setTimeout> | null = null;
   async load() { if (!this.state) this.state = (await this.ctx.storage.get<RoomState>('state')) ?? null; return this.state; }
   scheduleSave() { if (this.saveT) return; this.saveT = setTimeout(() => { this.saveT = null; if (this.state) this.ctx.storage.put('state', this.state); }, 800); }
@@ -49,9 +50,9 @@ export class Room extends DurableObject {
       const seed = st0 ? (st0.seed >>> 0) : rand32(); const total = g.cols * g.rows;
       let groups: Record<string, RoomGroup> = {}; let locked: number[] = [];
       if (st0) { const placed = new Set<number>(); locked = (st0.locked as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < total); locked.forEach((i) => placed.add(i)); const gs: Record<string, RoomGroup> = {};
-        for (const sg of (st0.groups as { dx: number; dy: number; idx: number[] }[]) ?? []) { const idx = sg.idx.filter((i) => Number.isInteger(i) && i >= 0 && i < total && !placed.has(i)); if (!idx.length) continue; idx.forEach((i) => placed.add(i)); gs[String(idx[0])] = { dx: r0(sg.dx), dy: r0(sg.dy), idx }; }
+        for (const sg of (st0.groups as { dx: number; dy: number; idx: number[] }[]) ?? []) { const idx = sg.idx.filter((i) => Number.isInteger(i) && i >= 0 && i < total && !placed.has(i)); if (!idx.length) continue; idx.forEach((i) => placed.add(i)); gs[String(idx[0])] = { dx: num(sg.dx, 0), dy: num(sg.dy, 0), idx }; }
         groups = gs; }
-      this.state = { id: rid, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0), lang: String(b.lang || 'ko').slice(0, 2) };
+      this.state = { id: rid, key: w.key, n, cols: g.cols, rows: g.rows, total, W: w.w, H: w.h, seed, groups, locked, createdAt: Date.now() - (st0 && Number.isFinite(st0.elapsed) ? Math.max(0, Math.min(st0.elapsed, 86400e3 * 7)) : 0) };
       await this.ctx.storage.put('state', this.state); await this.ctx.storage.setAlarm(Date.now() + 48 * 3600e3);
       return Response.json({ id: this.state.id });
     }
@@ -65,7 +66,7 @@ export class Room extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     // hasPhoto: 지금 방 안에 사진을 가진 사람이 있는지(내 사진 방에서만 의미 있음). 없으면 새로 들어와도 사진을 받을 수 없다
-    return Response.json({ id: st.id, key: st.key, photo: st.key === 'photo', hasPhoto: this.photoHere(), dead: !!st.dead, w: st.W, h: st.H, n: st.n, cols: st.cols, rows: st.rows, total: st.total, seed: st.seed, locked: st.locked.length, players: this.players().length, done: !!st.doneAt, createdAt: st.createdAt, lang: st.lang, live: !!st.live, round: st.round ?? 0 });
+    return Response.json({ id: st.id, key: st.key, photo: st.key === 'photo', hasPhoto: this.photoHere(), dead: !!st.dead, w: st.W, h: st.H, n: st.n, cols: st.cols, rows: st.rows, total: st.total, seed: st.seed, locked: st.locked.length, players: this.players().length, done: !!st.doneAt, createdAt: st.createdAt, live: !!st.live, round: st.round ?? 0 });
   }
   players(): Player[] { return this.ctx.getWebSockets().map((ws) => { const a = ws.deserializeAttachment() as Att; return { id: a.id, nick: a.nick, color: a.color }; }); }
   broadcast(msg: unknown, except?: WebSocket) { const s = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) if (ws !== except) { try { ws.send(s); } catch {} } }
@@ -73,7 +74,9 @@ export class Room extends DurableObject {
   live(id?: string) { return !!id && this.ctx.getWebSockets().some((w) => (w.deserializeAttachment() as Att)?.id === id); }
   /** 이 뭉치를 잡고 있는 사람. 나갔거나 잡은 채 오래 가만히 있으면 점유를 푼다 —
    *  나간 사람의 점유가 남아 조각이 영영 안 움직이던 문제를 막고, 공개방에서 조각 하나를 붙들고 버티는 것도 저절로 풀린다 */
-  holder(gr?: RoomGroup, g?: string) { if (!gr?.by) return undefined; const stale = !!gr.t && Date.now() - gr.t > HOLD_MAX; if (this.live(gr.by) && !stale) return gr.by; gr.by = undefined; gr.t = undefined; if (stale && g) this.broadcast({ t: 'release', g }); return undefined; }
+  holder(gr?: RoomGroup, g?: string) { if (!gr?.by) return undefined; const stale = !!gr.t && Date.now() - gr.t > HOLD_MAX; if (this.live(gr.by) && !stale) return gr.by; release(gr); if (stale && g) this.broadcast({ t: 'release', g }); return undefined; }
+  /** m.g 가 가리키는 뭉치. mine = 아무도 안 잡았거나 이 사람이 잡은 것 (남이 잡은 뭉치면 false — 거절·resync 는 case 마다 다르게) */
+  claim(st: RoomState, m: { g?: unknown }, att: Att) { const g = String(m.g); const gr = st.groups[g]; if (!gr) return null; const h = this.holder(gr, g); return { g, gr, mine: !h || h === att.id }; }
   holderMap() { const o: Record<string, string> = {}; const st = this.state; if (!st) return o; for (const [g, gr] of Object.entries(st.groups)) { const h = this.holder(gr, g); if (h) o[g] = h; } return o; }
   photoHere(except?: WebSocket) { return this.ctx.getWebSockets().some((w) => w !== except && !!(w.deserializeAttachment() as Att)?.photo); }
   /** 서버와 판이 어긋났을 때: 이 사람만 전체 상태를 다시 받아 가게 한다 (조용히 무시하면 영영 어긋난 채로 남는다) */
@@ -85,20 +88,20 @@ export class Room extends DurableObject {
     switch (m.t) {
       case 'nick': { const n = String(m.nick || '').trim().slice(0, 12); if (!n) return; att.nick = n; ws.serializeAttachment(att); this.broadcast({ t: 'nick', id: att.id, nick: n }); return; }
       case 'hello': { att.nick = String(m.nick || '').slice(0, 12) || `#${att.id.slice(0, 3)}`; att.photo = !!m.photo; ws.serializeAttachment(att); ws.send(this.initMsg(st, att)); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color } }, ws); if (att.photo) this.photoBack(ws); return; }
-      case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { ws.send(JSON.stringify({ t: 'deny', g: String(i) })); return; } const g = String(i); st.groups[g] = { dx: r0(m.dx), dy: r0(m.dy), idx: [i], by: att.id, t: Date.now() }; this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
-      case 'untake': { const g = String(m.g); const gr = st.groups[g]; if (!gr || gr.idx.length !== 1) return; const h = this.holder(gr, g); if (h && h !== att.id) return this.resync(ws); delete st.groups[g]; this.broadcast({ t: 'untake', g }, ws); this.scheduleSave(); return; }
-      case 'cur': this.broadcast({ t: 'cur', id: att.id, x: m.x, y: m.y }, ws); return;
-      case 'grab': { const g = String(m.g); const gr = st.groups[g]; if (!gr) return; const h = this.holder(gr, g); if (h && h !== att.id) { ws.send(JSON.stringify({ t: 'deny', g })); return; } gr.by = att.id; gr.t = Date.now(); this.broadcast({ t: 'grab', id: att.id, g }, ws); return; }
-      case 'mv': { const g = String(m.g); const gr = st.groups[g]; if (!gr) return; const h = this.holder(gr, g); if (h && h !== att.id) return; gr.by = att.id; gr.t = Date.now(); gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); this.broadcast({ t: 'mv', g, dx: gr.dx, dy: gr.dy }, ws); return; }
-      case 'drop': { const g = String(m.g); const gr = st.groups[g]; if (!gr) return; const h = this.holder(gr, g); if (h && h !== att.id) return this.resync(ws); gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); gr.by = undefined; gr.t = undefined; this.broadcast({ t: 'drop', g, dx: gr.dx, dy: gr.dy }, ws); this.scheduleSave(); return; }
+      case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { ws.send(JSON.stringify({ t: 'deny', g: String(i) })); return; } const g = String(i); st.groups[g] = { dx: num(m.dx, 0), dy: num(m.dy, 0), idx: [i], by: att.id, t: Date.now() }; this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
+      case 'untake': { const c = this.claim(st, m, att); if (!c || c.gr.idx.length !== 1) return; if (!c.mine) return this.resync(ws); delete st.groups[c.g]; this.broadcast({ t: 'untake', g: c.g }, ws); this.scheduleSave(); return; }
+      case 'cur': this.broadcast({ t: 'cur', id: att.id, x: num(m.x, 0), y: num(m.y, 0) }, ws); return;
+      case 'grab': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) { ws.send(JSON.stringify({ t: 'deny', g: c.g })); return; } c.gr.by = att.id; c.gr.t = Date.now(); this.broadcast({ t: 'grab', id: att.id, g: c.g }, ws); return; }
+      case 'mv': { const c = this.claim(st, m, att); if (!c || !c.mine) return; const { g, gr } = c; gr.by = att.id; gr.t = Date.now(); gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); this.broadcast({ t: 'mv', g, dx: gr.dx, dy: gr.dy }, ws); return; }
+      case 'drop': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.resync(ws); const { g, gr } = c; gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); release(gr); this.broadcast({ t: 'drop', g, dx: gr.dx, dy: gr.dy }, ws); this.scheduleSave(); return; }
       // 붙이기·잠그기는 놓은 순간의 좌표를 같이 받는다. mv 는 40ms 마다라 서버 좌표가 조금 뒤처지는데,
       // 예전엔 그 뒤처진 좌표로 판정하다 조용히 거절되어 "한쪽은 맞춰졌는데 다른 쪽은 남의 손에 잡힌 채 굳는" 어긋남이 생겼다
-      case 'merge': { const g = String(m.g), into = String(m.into); const A = st.groups[g], B = st.groups[into]; if (!A || !B || g === into) return; // 다른 사람이 이미 붙인 뒤 도착한 중복 요청
-        const hA = this.holder(A, g); if (hA && hA !== att.id) return this.resync(ws);
+      case 'merge': { const c = this.claim(st, m, att); const into = String(m.into); const B = st.groups[into]; if (!c || !B || c.g === into) return; // 다른 사람이 이미 붙인 뒤 도착한 중복 요청
+        if (!c.mine) return this.resync(ws); const { g, gr: A } = c;
         const ax = num(m.dx, A.dx), ay = num(m.dy, A.dy);
         if (Math.abs(ax - B.dx) > tol * 1.5 || Math.abs(ay - B.dy) > tol * 1.5) return this.resync(ws);
-        B.idx.push(...A.idx); B.by = undefined; B.t = undefined; delete st.groups[g]; this.broadcast({ t: 'merge', g, into, dx: B.dx, dy: B.dy }); this.scheduleSave(); return; }
-      case 'lock': { const g = String(m.g); const A = st.groups[g]; if (!A) return; const h = this.holder(A, g); if (h && h !== att.id) return this.resync(ws);
+        B.idx.push(...A.idx); release(B); delete st.groups[g]; this.broadcast({ t: 'merge', g, into, dx: B.dx, dy: B.dy }); this.scheduleSave(); return; }
+      case 'lock': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.resync(ws); const { g, gr: A } = c;
         const ax = num(m.dx, A.dx), ay = num(m.dy, A.dy);
         if (Math.abs(ax) > tol * 1.5 || Math.abs(ay) > tol * 1.5) return this.resync(ws);
         st.locked.push(...A.idx); delete st.groups[g]; st.lastAt = Date.now(); this.broadcast({ t: 'lock', g, idx: A.idx });
@@ -115,13 +118,13 @@ export class Room extends DurableObject {
     }
   }
   /** 사이트 전체 완성 판 수 +1 (홈의 숫자). 판이 끝나는 곳은 여기 하나라 한 번만 — 전에는 접속자마다 /api/stats 를 올려 인원수만큼 부풀었다 */
-  async countSolved() { const DB = (this.env as { DB?: D1Database }).DB; if (!DB) return; await DB.prepare("INSERT INTO stats (key, n) VALUES ('solved', 1) ON CONFLICT(key) DO UPDATE SET n = n + 1").run().catch(() => {}); }
+  async countSolved() { const DB = this.env.DB; if (!DB) return; await DB.prepare("INSERT INTO stats (key, n) VALUES ('solved', 1) ON CONFLICT(key) DO UPDATE SET n = n + 1").run().catch(() => {}); }
   /** 사진 가진 사람이 (다시) 들어옴 — 끝난 것으로 표시했던 방을 되살린다 */
   photoBack(except?: WebSocket) { const st = this.state; if (!st || st.key !== 'photo') return; if (!st.hostLeftAt && !st.dead) return; st.hostLeftAt = 0; st.dead = false; this.ctx.storage.put('state', st); this.broadcast({ t: 'hostback' }, except); }
   /** 공개 판 한 회차 깔기 — 그림은 회차로 정해지고, 조각 수는 늘 1000 */
   async startLive(round: number) {
     const w = liveWork(round); const g = gridFor(LIVE_PIECES, w.w / w.h); const now = Date.now();
-    const st: RoomState = { id: LIVE_ID, key: w.key, n: LIVE_PIECES, cols: g.cols, rows: g.rows, total: g.cols * g.rows, W: w.w, H: w.h, seed: rand32(), groups: {}, locked: [], createdAt: now, lang: 'ko', live: true, round, lastAt: now };
+    const st: RoomState = { id: LIVE_ID, key: w.key, n: LIVE_PIECES, cols: g.cols, rows: g.rows, total: g.cols * g.rows, W: w.w, H: w.h, seed: rand32(), groups: {}, locked: [], createdAt: now, live: true, round, lastAt: now };
     this.state = st; if (this.saveT) { clearTimeout(this.saveT); this.saveT = null; }
     await this.ctx.storage.put('state', st); await this.ctx.storage.setAlarm(now + 6 * 3600e3);
     return st;
@@ -135,7 +138,7 @@ export class Room extends DurableObject {
   async webSocketError(ws: WebSocket) { await this.dropPlayer(ws); }
   async dropPlayer(ws: WebSocket) {
     const att = ws.deserializeAttachment() as Att | null; if (!att) return; const st = await this.load();
-    if (st) for (const [g, gr] of Object.entries(st.groups)) if (gr.by === att.id) { gr.by = undefined; gr.t = undefined; this.broadcast({ t: 'release', g }); }
+    if (st) for (const [g, gr] of Object.entries(st.groups)) if (gr.by === att.id) { release(gr); this.broadcast({ t: 'release', g }); }
     this.broadcast({ t: 'leave', id: att.id });
     // 내 사진 방: 사진 가진 사람이 모두 나가면 아무도 사진을 받을 수 없다 → 남은 사람에게 바로 알리고, 잠깐 기다렸다 방을 끝낸다
     if (st && st.key === 'photo' && att.photo && !st.dead && !this.photoHere(ws)) { st.hostLeftAt = Date.now(); this.broadcast({ t: 'hostaway' }); await this.ctx.storage.put('state', st); await this.ctx.storage.setAlarm(Date.now() + HOST_GRACE); }

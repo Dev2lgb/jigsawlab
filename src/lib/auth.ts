@@ -1,13 +1,12 @@
 // 서버 인증 유틸 — 구글 OIDC 로그인(scope: openid 만), 서명 쿠키 세션. 저장하는 개인정보는 가명 ID(HMAC(sub))와 닉네임뿐
 import { env } from 'cloudflare:workers';
-const E = () => env as unknown as { DB: D1Database; GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string; SESSION_SECRET?: string };
 const enc = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
-export async function hmac(msg: string, secret = E().SESSION_SECRET ?? ''): Promise<string> {
+export async function hmac(msg: string, secret = env.SESSION_SECRET ?? ''): Promise<string> {
   const k = await crypto.subtle.importKey('raw', enc.encode(secret || 'dev-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return hex(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
 }
-export const configured = () => !!(E().GOOGLE_CLIENT_ID && E().GOOGLE_CLIENT_SECRET && E().SESSION_SECRET);
+export const configured = () => !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.SESSION_SECRET);
 export const userIdFromSub = async (sub: string) => (await hmac(`uid:${sub}`)).slice(0, 32);
 
 const COOKIE = 'jl_s', DAYS = 180;
@@ -26,7 +25,6 @@ export interface User { id: string; nick: string }
 /** 쿠키 → 유저 (DB 조회, 없으면 null) */
 export async function getUser(req: Request): Promise<User | null> {
   const uid = await sessionUid(req); if (!uid) return null;
-  const r = await E().DB.prepare('SELECT id, nick FROM users WHERE id = ?').bind(uid).first<User>().catch(() => null); return r ?? null;
+  const r = await env.DB.prepare('SELECT id, nick FROM users WHERE id = ?').bind(uid).first<User>().catch(() => null); return r ?? null;
 }
-export const json = (d: unknown, s = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers } });
 export const cleanNick = (n: unknown) => String(n ?? '').trim().replace(/\s+/g, ' ').slice(0, 12);

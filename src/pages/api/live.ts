@@ -14,13 +14,13 @@ const JSON_HDR = { 'content-type': 'application/json' };
 /** 브라우저로 나가는 응답 — 진행률이 늘 최신이어야 하므로 절대 캐시하지 않는다 */
 const fresh = (body: BodyInit | null, status: number) => new Response(body, { status, headers: { ...JSON_HDR, 'cache-control': 'no-store' } });
 export const GET: APIRoute = async ({ locals }) => {
-  const cache = (caches as any).default as Cache | undefined;
+  const cache = (caches as unknown as { default?: Cache }).default; // DOM 의 CacheStorage 가 workers 타입을 가려 default 가 안 보인다
   const ck = new Request(KEY);
   const hit = await cache?.match(ck);
   if (hit) return fresh(hit.body, hit.status); // 캐시본은 max-age 를 달고 있으니 몸통만 꺼내 다시 싼다
-  const stub = (env as any).ROOMS.get((env as any).ROOMS.idFromName(LIVE_ID));
+  const stub = env.ROOMS.get(env.ROOMS.idFromName(LIVE_ID));
   const r = await stub.fetch(new Request(`https://room/api/room/${LIVE_ID}`));
-  const d: any = await r.json(); // stub.fetch 는 타입이 없어 json<any>() 를 못 쓴다
+  const d = await r.json<{ key?: string; work?: unknown } & Record<string, unknown>>();
   // 제목은 여기서 얹는다 — 랜딩이 작품 목록을 통째로 내려받지 않게. 다섯 언어를 다 담아 캐시는 하나로
   const w = d && d.key ? WORK_BY_KEY[d.key] : null;
   if (w) d.work = { key: w.key, title: w.title, artist: w.artist, year: w.year };
@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (cache && r.status === 200) {
     // 워커 캐시에 넣는 사본만 max-age 를 갖는다. 이 헤더는 브라우저까지 안 간다
     const put = cache.put(ck, new Response(body, { status: r.status, headers: { ...JSON_HDR, 'cache-control': 'public, max-age=15' } }));
-    const cf = (locals as any).cfContext; // Astro v6: locals.runtime.ctx 는 없어졌다
+    const cf = locals.cfContext; // Astro v6: locals.runtime.ctx 는 없어졌다
     if (typeof cf?.waitUntil === 'function') cf.waitUntil(put); else await put;
   }
   return fresh(body, r.status);

@@ -1,15 +1,17 @@
 // 랭킹 — GET ?tab=week|all → 상위 50명 + (로그인했으면) 내 순위. 읽기는 누구나, 등재는 로그인 회원만
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getUser, json } from '../../lib/auth';
-import { kstDay, levelOf, weekOf } from '../../lib/level';
+import { getUser } from '../../lib/auth';
+import { json, thisWeek } from '../../lib/api';
+import { rankOf } from '../../lib/award';
+import { levelOf } from '../../lib/level';
 export const prerender = false;
 const TOP = 50;
 
 export const GET: APIRoute = async ({ request }) => {
   const DB = env.DB; const url = new URL(request.url);
   const tab = url.searchParams.get('tab') === 'all' ? 'all' : 'week';
-  const week = weekOf(kstDay(Date.now()));
+  const week = thisWeek();
   const u = await getUser(request).catch(() => null);
 
   const top = tab === 'week'
@@ -29,13 +31,7 @@ export const GET: APIRoute = async ({ request }) => {
       DB.prepare('SELECT xp FROM user_week WHERE user_id = ? AND week = ?').bind(u.id, week).first<{ xp: number }>(),
     ]);
     const total = s?.xp ?? 0, mine = tab === 'week' ? w?.xp ?? 0 : total;
-    let rank: number | null = null;
-    if (mine > 0) {
-      const c = tab === 'week'
-        ? await DB.prepare('SELECT COUNT(*) AS c FROM user_week w JOIN users u2 ON u2.id = w.user_id WHERE w.week = ? AND u2.nick <> \'\' AND w.xp > ?').bind(week, mine).first<{ c: number }>()
-        : await DB.prepare('SELECT COUNT(*) AS c FROM user_stats s JOIN users u2 ON u2.id = s.user_id WHERE u2.nick <> \'\' AND s.xp > ?').bind(mine).first<{ c: number }>();
-      rank = (c?.c ?? 0) + 1;
-    }
+    const rank = await rankOf(DB, tab, week, mine);
     me = { nick: u.nick, xp: mine, level: levelOf(total), rank, listed: !!rank && rank <= TOP };
   }
   return json({ tab, week, top: rows, me });

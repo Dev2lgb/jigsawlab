@@ -32,6 +32,7 @@
   - 레벨 곡선 `xpAtLevel(L) = 50·L·(L−1)`, 최고 99. 구간 이름 7개(`TIERS`/`TIER_NAMES`), 업적 24가지(`BADGES`)
   - `user_stats` 는 `user_done` 이 500건에서 잘려도 남는 누적 카운터. `user_cleared` 는 그림별 최고 조각 수(재도전 감산·'그림 N점'·'진열대 완주' 판정), `user_week` 는 주간 랭킹(월요일 시작, KST)
 - 서버 라우트(`export const prerender = false`): `/api/daily`(GET 만 — 오늘 그림), `/api/stats`, `/api/live`(공개 판 진행률 — DO 정보에 그림 제목 3개 국어를 얹어 준다. 홈·`/together/` 가 쓴다), `/api/rank`(랭킹 — 읽기는 누구나), `/api/level`(내 레벨·업적), `/s/`(공유 카드, 쿼리로 OG 결정). 나머지는 정적
+- 서버 라우트 공통은 `src/lib/api.ts`(`json` — 늘 no-store · `readJson` · `thisWeek`). 레벨·XP 의 D1 쪽은 `src/lib/award.ts` 에 모여 있다: `addXp`(하루 상한 검사와 증가가 한 문장인 그 UPDATE — **여기 한 벌뿐**, 완성 정산 `award` 와 조각 정산 `awardPieces` 가 같이 쓴다), `ensureStats`(행이 없으면 `award(DB, uid, [])` 로 백필을 돌린다 — 직접 INSERT 하지 말 것), `pickStats`, `rankOf`(내 순위). `env` 는 `cloudflare:workers` 의 것이 `env.d.ts` 의 `Cloudflare.Env` 로 타입이 잡혀 있어 `as any` 캐스트가 필요 없다(`DurableObject<Cloudflare.Env>` 도 마찬가지). 예외는 `caches.default` — DOM 의 `CacheStorage` 가 가려 좁은 캐스트로 쓴다
 - **API 응답에 캐시 가능한 `cache-control` 을 달지 말 것.** 달면 Cloudflare 가 브라우저용으로 존의 Browser Cache TTL(기본 4시간)로 바꿔 버려서, 강제 새로고침 전까지 옛 값이 보인다. 실제로 `/api/live` 가 `max-age=15` 를 달았다가 진행률이 4시간 묵었다. 엣지 캐시가 필요하면 `caches.default` 에 **넣는 사본에만** max-age 를 달고, 브라우저로 나가는 응답은 캐시 적중 경로까지 포함해 늘 `no-store` 로 다시 싼다(`api/live.ts` 의 `fresh()`)
 
 ## 명령어

@@ -223,7 +223,8 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     --bg: #ffffff; --bg-2: #f5f6f8; --bg-3: #eceef2; --board: #e6e8ee; --ink: #0f1222; --ink-2: #3a3f55; --muted: #6b7188; --line: #e3e6ec; --line-2: #d2d6df; --line-soft: #eaedf2;
     --accent: #14172a; --accent-deep: #000000; --accent-soft: #eceef2; --accent-glow: rgba(15,18,34,.35); --gold: #f0a71b; --gold-soft: #fff4dc;
     --box: #f7f2e7; --box-2: #eee6d3; --box-3: #d9cfb5; --box-frame: #b08d55;
-    --hd: 64px; --hd-gap: 12px; --top-h: calc(var(--hd) + var(--hd-gap)); --r: 24px; --r-sm: 14px; --max: 1440px; --gutter: clamp(20px, 4vw, 64px);
+    --hd: 64px; --hd-gap: 12px; --top-h: calc(var(--hd) + var(--hd-gap)); --r: 24px; --r-sm: 14px; --max: 1440px; --gutter: max(clamp(20px, 4vw, 64px), env(safe-area-inset-left), env(safe-area-inset-right));
+    /* --gutter: 가로로 눕힌 아이폰은 노치가 한쪽 옆에 온다. 양쪽 중 큰 값으로 좌우를 같이 비워 가운데 정렬을 지킨다 */
     --font: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
     --head: 'BM HANNA Pro', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
     --brand: 'Syne', var(--font);
@@ -354,7 +355,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .85rem; font-weight: 600; white-space: nowrap; }
   .input { width: 100%; min-height: 46px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 16px; } .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
   .muted { color: var(--muted); }
-  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: .92rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); z-index: 50; box-shadow: 0 16px 40px -12px rgba(15,18,34,.5); } .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: .92rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); z-index: 50; box-shadow: 0 16px 40px -12px rgba(15,18,34,.5); } .toast.show { opacity: 1; transform: translate(-50%, 0); }
   /* XP 안내 알약 — 조각 수를 고르는 자리마다 받을 XP 를 보여 준다 (여러 컴포넌트가 쓰므로 전역) */
   .xp-tip { display: none; }
   html.member .xp-tip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--gold-soft); color: #8a5f00; font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; text-decoration: none; }

@@ -45,7 +45,7 @@ let N1 = 0;
 { const { ctx, page } = await newPage(br);
   await page.goto(`${BASE}/board/?k=wave&n=48`); await waitPlay(page);
   await demo(page, 3); await page.waitForTimeout(200); ok((await left(page)) === 45, 'restart: 3개 놓음');
-  await page.click('#jg-restart'); await page.waitForFunction(() => Number(document.getElementById('jg-left').textContent.replace(/\D/g, '')) === 48, null, { timeout: 15000 }); await page.waitForTimeout(300);
+  await page.click('#jg-restart'); await page.waitForFunction(() => Number(document.getElementById('jg-left-n').textContent) === 48, null, { timeout: 15000 }); await page.waitForTimeout(300);
   ok((await tray(page)) === 48, 'restart: 트레이 48 로 복구');
   await ctx.close(); }
 // E. 오늘의 퍼즐·큰 판

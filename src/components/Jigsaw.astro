@@ -287,6 +287,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 탭마다 고정된 접속 id — 재접속하면 서버가 같은 pid 의 옛 소켓을 닫아 목록에 내가 여럿으로 남지 않는다. 탭이 다르면 다른 사람(같은 브라우저 두 탭은 둘)
   const PID = (() => { const fresh = () => Math.random().toString(36).slice(2, 10); try { let p = sessionStorage.getItem('jl:pid'); if (!p) { p = fresh(); sessionStorage.setItem('jl:pid', p); } return p; } catch { return fresh(); } })();
   let outline = false, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선
+  // 윤곽선·밑그림을 켜고 끈 것은 기기에 기억한다 — 판을 열 때마다 다시 눌러야 했다. null = 한 번도 안 건드림(윤곽선은 작은 판만 켠 채로)
+  const pref = (k: 'outline' | 'hint') => { try { const v = localStorage.getItem(`board:${k}`); return v === null ? null : v === '1'; } catch { return null; } };
+  const setPref = (k: 'outline' | 'hint', on: boolean) => { try { localStorage.setItem(`board:${k}`, on ? '1' : '0'); } catch {} };
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, peek = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
   let complete = false, completeAlpha = 0, gid = 0;
@@ -338,7 +341,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = total <= 150; $('jg-outline').setAttribute('aria-pressed', String(outline));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -378,7 +381,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
 
   // ── 판 위 조각 윤곽선 (켜면 한 번 그려 캐시)
   function outlineCanvas() { if (outlineLayer) return outlineLayer; if (pieces.length < total) { const e = document.createElement('canvas'); e.width = e.height = 1; return e; } const cv = document.createElement('canvas'); const k = Math.min(1, 1600 / Math.max(cut.W, cut.H)); cv.width = Math.ceil(cut.W * k); cv.height = Math.ceil(cut.H * k); const c = cv.getContext('2d')!; c.scale(k, k); c.lineWidth = Math.max(1.5, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.28)'; for (const p of pieces) c.stroke(piecePath(cut, p.r, p.c)); outlineLayer = cv; return cv; }
-  $('jg-outline').addEventListener('click', () => { outline = !outline; $('jg-outline').setAttribute('aria-pressed', String(outline)); draw(); });
+  $('jg-outline').addEventListener('click', () => { outline = !outline; setPref('outline', outline); $('jg-outline').setAttribute('aria-pressed', String(outline)); draw(); });
 
   // ── 더미(트레이 탭)
   // ── 방 이모지: 트레이 바의 버튼 → 고르기 팝오버 → 서버 중계(emo). 판 한가운데 잠깐 떠올랐다 사라진다. 방에서만 보인다
@@ -601,7 +604,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
   canvas.addEventListener('dblclick', (e) => { const b = toBoard(e.clientX, e.clientY); if (!hit(b.x, b.y)) fit(); });
-  $('jg-hint').addEventListener('click', () => { showHint = !showHint; $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
+  $('jg-hint').addEventListener('click', () => { showHint = !showHint; setPref('hint', showHint); $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); });
   // ── 원본 그림 보기: 누르고 있는 동안만 밑그림을 선명하게(alpha 1). 포인터를 잡아 두어 버튼 밖에서 손을 떼도 풀리고, 탭이 가려지거나 초점을 잃어도 풀린다.
   //  터치 길게 누르기의 문맥 메뉴·글자 선택은 CSS(touch-action·user-select·touch-callout)와 contextmenu 막기로 잠재운다. 키보드는 스페이스·엔터를 누르고 있는 동안
   const fullBtn = $('jg-full');

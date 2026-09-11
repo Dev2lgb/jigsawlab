@@ -2,7 +2,8 @@
 // GET → { done: [...], saves: [meta...] } / GET ?save=<id> → { data } / POST {action:'done'|'pieces'|'save'|'delsave'|'merge'|'live'}
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getUser, json } from '../../lib/auth';
+import { getUser } from '../../lib/auth';
+import { json, readJson } from '../../lib/api';
 import { award, awardPieces } from '../../lib/award';
 import type { Kind, Solve } from '../../lib/level';
 export const prerender = false;
@@ -17,7 +18,7 @@ export const GET: APIRoute = async ({ request }) => {
   const u = await getUser(request); if (!u) return json({ error: 'auth' }, 401); const DB = env.DB; const url = new URL(request.url); const sid = url.searchParams.get('save');
   if (sid) { const r = await DB.prepare('SELECT data FROM user_saves WHERE user_id = ? AND id = ?').bind(u.id, sid).first<{ data: string }>(); return r ? new Response(r.data, { headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }) : json({ error: 'none' }, 404); }
   const [done, saves] = await Promise.all([
-    DB.prepare('SELECT at, key, kind, name, n, sec, moves, day FROM user_done WHERE user_id = ? ORDER BY at DESC LIMIT ?').bind(u.id, MAX_DONE).all(),
+    DB.prepare('SELECT at, key, kind, name, n, sec, moves, day FROM user_done WHERE user_id = ? ORDER BY at DESC LIMIT ?').bind(u.id, MAX_DONE).all<Omit<Done, 'room' | 'mine' | 'paid'>>(),
     DB.prepare('SELECT meta FROM user_saves WHERE user_id = ? ORDER BY saved_at DESC LIMIT ?').bind(u.id, MAX_SAVES).all<{ meta: string }>(),
   ]);
   return json({ done: done.results, saves: saves.results.map((r) => { try { return JSON.parse(r.meta); } catch { return null; } }).filter(Boolean) });
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ request }) => {
 
 export const POST: APIRoute = async ({ request }) => {
   const u = await getUser(request); if (!u) return json({ error: 'auth' }, 401); const DB = env.DB;
-  let b: any; try { b = await request.json(); } catch { return json({ error: 'bad json' }, 400); }
+  const b = await readJson(request); if (!b) return json({ error: 'bad json' }, 400);
   const a = String(b.action);
   if (a === 'done' || a === 'merge') {
     // merge: 로그인 직후 이 기기의 localStorage 기록을 한 번에 올림 (같은 at 이면 무시)

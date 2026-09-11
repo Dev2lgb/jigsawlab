@@ -12,14 +12,15 @@ export function saveBest(key: string, score: number, order: Order): boolean {
 }
 export const getNick = () => ls.get('nick') ?? '';
 export const setNick = (n: string) => ls.set('nick', n.trim().slice(0, 12));
+const dayBefore = (day: string) => { const y = new Date(day + 'T00:00:00'); y.setDate(y.getDate() - 1); return `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`; };
 /** 오늘 완료 처리 → 연속 일수 */
 export function bumpStreak(day: string): number {
   let s: { last: string; n: number } = { last: '', n: 0 }; try { s = JSON.parse(ls.get('daily:streak') ?? '') || s; } catch {}
   if (s.last === day) return s.n;
-  const y = new Date(day + 'T00:00:00'); y.setDate(y.getDate() - 1); const yd = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
-  s = { last: day, n: s.last === yd ? s.n + 1 : 1 }; ls.set('daily:streak', JSON.stringify(s)); return s.n;
+  s = { last: day, n: s.last === dayBefore(day) ? s.n + 1 : 1 }; ls.set('daily:streak', JSON.stringify(s)); return s.n;
 }
-export const getStreak = () => { try { return (JSON.parse(ls.get('daily:streak') ?? '{}') as { n?: number }).n ?? 0; } catch { return 0; } };
+/** 지금 이어지는 연속 일수 — 마지막으로 푼 날이 오늘·어제가 아니면 이미 끊겼으니 0 (전에는 끊긴 뒤에도 옛 숫자를 계속 보였다) */
+export const getStreak = (today: string) => { try { const s = JSON.parse(ls.get('daily:streak') ?? '{}') as { last?: string; n?: number }; return s.last === today || s.last === dayBefore(today) ? s.n ?? 0 : 0; } catch { return 0; } };
 
 
 /** 완성한 퍼즐 목록 (최근 200개) */

@@ -64,6 +64,8 @@ export async function fetchLevel(): Promise<LevelInfo | null> { const r = await 
 export async function fetchRank(tab: 'week' | 'all'): Promise<RankInfo | null> { const r = await fetch(`/api/rank?tab=${tab}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json().catch(() => null) as Promise<RankInfo | null>; }
 export type SaveMeta = Pick<SaveData, 'id' | 'kind' | 'key' | 'name' | 'day' | 'total' | 'done' | 'elapsed' | 'savedAt' | 'thumb'>;
 export async function fetchSync(): Promise<{ done: any[]; saves: SaveMeta[] } | null> { if (!(await me())) return null; const r = await fetch('/api/sync', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
+/** 계정에 남은 오늘의 퍼즐 — 지난 7일 중 완성한 판의 날짜와 지금 이어지는 연속 일수. 홈이 이 기기 기록에 얹는다. 로그인 안 했으면 null */
+export async function fetchDaily(): Promise<{ days: string[]; streak: number } | null> { if (!(await me())) return null; const r = await fetch('/api/sync?daily=1', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json().catch(() => null) as Promise<{ days: string[]; streak: number } | null>; }
 export async function fetchSave(id: string): Promise<SaveData | null> { const r = await fetch(`/api/sync?save=${encodeURIComponent(id)}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
 /** 하던 퍼즐 업로드. 주기 저장은 안 하고, 저장 버튼·나가기·화면 이탈 때만 (무료 티어 요청 수 절약). 기기 안 IndexedDB 저장은 별도로 계속 됨 */
 export async function syncSave(data: SaveData): Promise<boolean> {

@@ -1,7 +1,7 @@
 // API 라우트 + 방(Durable Object) 웹소켓 프로토콜. 배포 빌드 기준 (개발 모드 빌드에서는 없는 라우트에 POST 하면 wrangler 프록시가 죽는다)
 // 검사하는 불변식: 조각·완성 정산과 paid, 하루 상한(한 묶음 통째 거절), 재도전 감산, 내 순위, 방 id 는 경로에서만,
 // take/mv/grab→deny/drop/untake/lock/merge/resync/release/emo, 같은 pid 재접속의 옛 소켓 정리와 나간 사람의 점유 풀기
-import { BASE, get, post, ok, finish } from './lib.mjs';
+import { BASE, get, post, ok, finish, dayKST } from './lib.mjs';
 
 // ── 공개 라우트
 { const a = await get('/api/stats'); const r = await post('/api/stats', { action: 'solved' }); ok(r.body?.solved === a.solved + 1, `stats: RETURNING n (${a.solved}→${r.body?.solved})`); ok(r.hdr['cache-control'] === 'no-store', 'stats: no-store'); }
@@ -29,6 +29,9 @@ import { BASE, get, post, ok, finish } from './lib.mjs';
 { const r = await post('/api/sync', { action: 'done', entry: { kind: 'gallery', key: 'wave', name: 'wave', n: 2000, sec: 2000, moves: 2000, at: Date.now() + 1, mine: 2000, paid: 2000 } }, true); const a = r.body?.award; ok(a && a.gained === 0 && a.xp === 8438 && a.stats.solved === 2 && a.stats.best_n === 2000 && a.badges.includes('p2000'), 'done: 2000 조각 → best_n·p2000 업적', JSON.stringify(r.body)); }
 { const d = await get('/api/sync', true); ok(d.done?.length === 2 && d.done[0].n === 2000, 'sync GET: done 2건'); }
 { const r = await post('/api/me', { nick: 'tester2' }, true); ok(r.body?.user?.nick === 'tester2', 'me POST: 닉네임'); await post('/api/me', { nick: 'tester' }, true); }
+// 계정의 오늘의 퍼즐(홈의 지난 7일 ✓·연속) — ✓ 는 판의 날짜(어제 판), 연속은 푼 날짜(오늘)로 센다
+{ const r = await fetch(BASE + '/api/sync?daily=1'); ok(r.status === 401, 'sync GET daily: 비회원 401'); await r.text(); }
+{ const y = dayKST(-1); await post('/api/sync', { action: 'done', entry: { kind: 'daily', key: 'wave', name: 'wave', n: 48, sec: 60, moves: 48, day: y, at: Date.now() + 2 } }, true); const d = await get('/api/sync?daily=1', true); ok(d.days?.length === 1 && d.days[0] === y && d.streak === 1, 'sync GET daily: 어제 판 → days, 연속 1', JSON.stringify(d)); }
 
 // ── 방 프로토콜 (DO)
 const room = await post('/api/room', { key: 'wave', n: 48 }); ok(typeof room.body?.id === 'string' && room.body.id.length === 6, 'room: 만들기', JSON.stringify(room));

@@ -188,10 +188,15 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   const LANG = docLang(), LI = LIDX[LANG], T = UI[LANG];
   initFavUI();
   const P = prefix(LANG);
-  { const st = getStreak(); if (st > 0) { const el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = T.play.streak(st); el.hidden = false; } }
+  // 연속·지난 7일 완성은 이 기기 기록에 계정 기록을 얹는다 — 이 기기만 보면 다른 기기에서 맞춘 판이 '아직'으로 보였다 (계정 몫은 회원만)
+  const acct = { days: new Set<string>(), streak: 0 };
+  const paintStreak = () => { const st = Math.max(getStreak(dayKST()), acct.streak), el = document.getElementById('hero-streak')!; el.querySelector('span')!.textContent = st > 0 ? T.play.streak(st) : ''; el.hidden = !(st > 0); };
+  const paintPast = () => document.querySelectorAll<HTMLElement>('#past-row .pd').forEach((a) => { const d = a.dataset.day!, done = acct.days.has(d) || getBest(`daily:${d}`) !== null, s = a.querySelector('.pd-st')!; s.className = 'pd-st ' + (done ? 'ok' : 'no'); s.textContent = done ? '✓ ' + T.play.done : T.play.notYet; });
+  paintStreak();
+  import('../lib/account').then(({ fetchDaily }) => fetchDaily()).then((r) => { if (!r) return; for (const d of r.days) acct.days.add(d); acct.streak = r.streak; paintStreak(); paintPast(); }).catch(() => {});
   // 오늘·지난 7일 그림은 서버가 찍어 둔 창(#daily-win)에서 — 자정을 넘긴 탭·묵은 배포도 맞게. works 는 안 싣는다
   (async () => { const pick = await dailyLite(dayKST(), LI);
-  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = dayKST(-i); const pk = await dailyLite(d, LI); const done = getBest(`daily:${d}`) !== null; const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.title; a.innerHTML = `<img src="/jigsaw/t-${pk.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="${done ? 'ok' : 'no'}">${done ? '✓ ' + T.play.done : T.play.notYet}</span></span>`; row.appendChild(a); } }
+  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = dayKST(-i); const pk = await dailyLite(d, LI); const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.dataset.day = d; a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.title; a.innerHTML = `<img src="/jigsaw/t-${pk.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="pd-st"></span></span>`; row.appendChild(a); } paintPast(); }
   { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.title); }
   (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.key}.webp`;
   drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.key}.webp`, pick.seed, DAILY_PIECES, 5);

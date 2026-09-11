@@ -324,6 +324,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .lb { list-style: none; margin: 0; padding: 0; } .lb li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); } .lb li:first-child { border-top: 0; } .lb li.empty { color: var(--muted); padding: 6px 0; }
   .lb .rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-3); color: var(--ink-2); font-weight: 800; font-size: .85rem; font-variant-numeric: tabular-nums; flex: none; } .lb li:nth-child(1) .rank { background: var(--gold); color: #fff; } .lb li:nth-child(2) .rank { background: #c9ced9; color: #fff; } .lb li:nth-child(3) .rank { background: #d8a880; color: #fff; }
   .lb .nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .lb .score { font-weight: 800; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 500; }
+  .lv-chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft, var(--bg-3)); color: var(--accent); font-size: .74rem; font-weight: 800; letter-spacing: .01em; flex: none; } /* 레벨 칩 — 홈 랭킹·/rank/ 공용 (JS 가 만드는 요소라 전역) */
 
   /* 3D 퍼즐 상자 — --w/--h/--d 로 크기. 앞면·왼쪽 옆면·윗면 세 면을 가진 큐브, 호버하면 정면으로 돌아옴 */
   /* 크기는 바깥 진열대가 --w/--h/--d 로 정한다. 여기서 직접 --w 를 선언하면 상속을 덮어써

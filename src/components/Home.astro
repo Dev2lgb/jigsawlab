@@ -171,7 +171,6 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   .lvl-bb { display: inline-flex; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .74rem; font-weight: 800; }
   .lvl-bh small { margin-left: auto; color: var(--accent); font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; }
   .lvl-board .lb :global(li) { padding: 10px 0; } .lvl-board .lb :global(li.empty) { color: var(--muted); font-size: .9rem; line-height: 1.5; }
-  .lvl-board :global(.lv-chip) { display: inline-flex; padding: 3px 9px; border-radius: 999px; background: var(--bg-3); color: var(--ink-2); font-size: .74rem; font-weight: 800; flex: none; }
   .lvl-all { display: inline-block; margin-top: 12px; font-size: .86rem; font-weight: 700; }
   @media (max-width: 860px) { .lvl-in { grid-template-columns: 1fr; } }
 
@@ -182,6 +181,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import { drawPopped } from '../lib/hero';
   import { DAILY_PIECES } from '../lib/jigsaw';
   import { dailyLite, dayKST } from '../lib/daily';
+  import { fetchLive } from '../lib/live';
   import { getStreak, getBest } from '../lib/store';
   import { initFavUI } from '../lib/fav';
   import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
@@ -213,16 +213,15 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   })();
   fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
   // 상설 공개 판 — 지금 어떤 그림을 몇 %까지 맞췄는지. 못 받으면 띠를 숨긴 채로 둔다
-  fetch('/api/live', { cache: 'no-store', headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json<any>() : null)).then((d) => {
-    if (!d || !d.total || !d.work) return;
-    const g = (id: string) => document.getElementById(id)!;
-    const pct = Math.min(100, Math.floor((d.locked / d.total) * 100));
+  fetchLive().then((d) => {
+    if (!d || !d.work) return;
+    const g = (id: string) => document.getElementById(id)!; const pct = d.pct;
     const im = g('live-img') as HTMLImageElement; im.src = `/jigsaw/t-${d.work.key}.webp`; im.alt = d.work.title[LI];
     g('live-title').textContent = d.work.title[LI];
-    g('live-round').textContent = T.live.round((d.round ?? 0) + 1);
+    g('live-round').textContent = T.live.round(d.round);
     g('live-online').textContent = d.players > 0 ? T.live.online(d.players) : T.live.alone;
     g('live-pct').textContent = T.live.pct(pct);
     g('live-strip').hidden = false;
     requestAnimationFrame(() => { (g('live-fill') as HTMLElement).style.width = `${pct}%`; });
-  }).catch(() => {});
+  });
 </script>

@@ -131,8 +131,9 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
   </style>
 
   <script>
-    import { saves, images, hasIDB, type SaveData } from '../lib/db';
-    import { fetchSync, syncDelSave, me, type SaveMeta } from '../lib/account';
+    import { hasIDB } from '../lib/db';
+    import { fetchSync, me, type SaveMeta } from '../lib/account';
+    import { allSaves, deleteSave } from '../lib/saves';
     import { initFavUI, initSearch } from '../lib/fav';
     import { toast } from '../lib/share';
     import { DAILY_PIECES } from '../lib/jigsaw';
@@ -178,10 +179,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     const remoteReady = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
     async function listSaves() {
       const box = $('pk-resume-list'), sec = $('pk-resume'); if (!box || !sec || !hasIDB()) return;
-      let list: (SaveData | (SaveMeta & { remote: true }))[] = []; try { list = await saves.all(); } catch {}
-      await remoteReady; const have = new Set(list.map((x) => x.id));
-      for (const m of remoteSaves) if (!have.has(m.id)) list.push({ ...m, remote: true });
-      list.sort((a, b) => b.savedAt - a.savedAt);
+      await remoteReady; const list = await allSaves(remoteSaves);
       box.innerHTML = ''; sec.hidden = !list.length;
       for (const sv of list.slice(0, 12)) {
         const wrap = document.createElement('div'); wrap.className = 'rs-wrap';
@@ -190,10 +188,10 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
         const ti = document.createElement('div'); ti.className = 'rs-t'; ti.textContent = sv.name;
         const st = document.createElement('div'); st.className = 'rs-s'; st.textContent = U.play.resumeHint(Math.round((sv.done / sv.total) * 100), `${sv.total} · ${fmtSec(sv.elapsed / 1000)}`);
         const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(sv.done / sv.total) * 100}%"></i>`;
-        if ('remote' in sv) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.play.cloud; a.appendChild(c); }
+        if (!sv.local) { const c = document.createElement('span'); c.className = 'rs-cloud'; c.textContent = U.play.cloud; a.appendChild(c); }
         for (const n of [im, bar, ti, st]) a.appendChild(n);
         const del = document.createElement('button'); del.type = 'button'; del.className = 'rs-del'; del.textContent = '✕';
-        del.addEventListener('click', async (e) => { e.preventDefault(); e.stopPropagation(); try { await saves.del(sv.id); if (sv.kind === 'photo') await images.del(sv.key); } catch {} remoteSaves = remoteSaves.filter((m) => m.id !== sv.id); syncDelSave(sv.id); listSaves(); });
+        del.addEventListener('click', async (e) => { e.preventDefault(); e.stopPropagation(); await deleteSave(sv); remoteSaves = remoteSaves.filter((m) => m.id !== sv.id); listSaves(); });
         wrap.appendChild(a); wrap.appendChild(del); box.appendChild(wrap);
       }
     }

@@ -35,6 +35,17 @@ const rid = room.body.id;
 { const r = await fetch(`${BASE}/api/room/${rid}/create`, { method: 'POST', body: '{}' }); ok(r.status >= 400 && r.status !== 400, `room: /create 는 밖에서 안 열림 — DO 가 아니라 Astro 가 막는다 (${r.status})`); }
 { const d = await get(`/api/room/${rid}`); ok(d.id === rid && d.total === 48 && !('lang' in d) && d.players === 0, 'room: 정보 (lang 없음)', JSON.stringify(d)); }
 { const r = await post('/api/room', { key: 'nope', n: 48 }); ok(r.status === 400, 'room: 없는 그림 → 400'); }
+// ── 서버 렌더 페이지 — [...lang] 은 진짜 언어 접두어일 때만 (공유 카드 /s/, 초대 /i/)
+const head = async (p) => { const r = await fetch(BASE + p, { redirect: 'manual' }); return { status: r.status, loc: r.headers.get('location'), html: r.status === 200 ? await r.text() : '' }; };
+{ const r = await head('/s/?k=wave&n=48&t=100&m=50'); ok(r.status === 200 && r.html.includes('<html lang="ko"'), `s: 공유 카드 ko (${r.status})`); }
+{ const r = await head('/en/s/?k=wave&n=48&t=100&m=50'); ok(r.status === 200 && r.html.includes('<html lang="en"'), `s: 공유 카드 en (${r.status})`); }
+{ const r = await head('/s/'); ok(r.status === 302 && r.loc === '/', `s: 쿼리 없으면 홈으로 (${r.status} ${r.loc})`); }
+{ const r = await head('/de/s/'); ok(r.status === 302 && r.loc === '/de/', `s: 쿼리 없으면 /de/ 로 (${r.status} ${r.loc})`); }
+{ const r = await head('/xx/s/?k=wave&n=48'); ok(r.status === 404, `s: 모르는 접두어 → 404 (${r.status})`); }
+{ const r = await head('/ko/s/?k=wave&n=48'); ok(r.status === 404, `s: /ko/ 접두어는 없다 → 404 (${r.status})`); }
+{ const r = await head(`/i/?room=${rid}`); ok(r.status === 200 && r.html.includes('<html lang="ko"'), `i: 초대 랜딩 (${r.status})`); }
+{ const r = await head(`/ja/i/?room=${rid}`); ok(r.status === 200 && r.html.includes('<html lang="ja"'), `i: 초대 랜딩 ja (${r.status})`); }
+{ const r = await head('/a/b/i/'); ok(r.status === 404, `i: 여러 단 접두어 → 404 (${r.status})`); }
 const WS = BASE.replace(/^http/, 'ws');
 const open = (id) => new Promise((res, rej) => { const ws = new WebSocket(`${WS}/api/room/${id}/ws`); ws.inbox = []; ws.onmessage = (e) => ws.inbox.push(JSON.parse(e.data)); ws.onopen = () => res(ws); ws.onerror = rej; });
 const next = (ws, t, ms = 1500) => new Promise((res, rej) => { const t0 = Date.now(); const tick = () => { const i = ws.inbox.findIndex((m) => m.t === t); if (i >= 0) return res(ws.inbox.splice(i, 1)[0]); if (Date.now() - t0 > ms) return rej(new Error(`timeout waiting ${t}; inbox=${JSON.stringify(ws.inbox).slice(0, 200)}`)); setTimeout(tick, 20); }; tick(); });

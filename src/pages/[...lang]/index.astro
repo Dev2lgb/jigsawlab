@@ -1,0 +1,12 @@
+---
+// 홈. 언어마다 한 장 — 접두어 없는 ko 와 /en/·/ja/·/de/·/es/ (getStaticPaths 는 i18n/langs 의 langPaths)
+import Base from '../../layouts/Base.astro';
+import Home from '../../components/Home.astro';
+import { altsFor, UI, prefix, langPaths, type Lang } from '../../i18n/ui';
+import { WORKS } from '../../data/works';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang }; const T = UI[lang];
+---
+<Base title={T.seoTitle} desc={T.seoDesc(WORKS.length)} lang={lang} alts={altsFor('/')} path={`${prefix(lang)}/`}>
+  <Home lang={lang} />
+</Base>

@@ -1,0 +1,9 @@
+---
+// 그림 상세 — 작품마다, 언어마다 한 장
+import PuzzleDetail from '../../../components/PuzzleDetail.astro';
+import { WORKS } from '../../../data/works';
+import { langPathsWith, type Lang } from '../../../i18n/ui';
+export function getStaticPaths() { return langPathsWith('key', WORKS.map((p) => p.key)); }
+const { lang } = Astro.props as { lang: Lang };
+---
+<PuzzleDetail lang={lang} key={Astro.params.key!} />

@@ -1,0 +1,7 @@
+---
+import Terms from '../../components/Terms.astro';
+import { langPaths, type Lang } from '../../i18n/ui';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang };
+---
+<Terms lang={lang} />

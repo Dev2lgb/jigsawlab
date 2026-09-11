@@ -24,3 +24,11 @@ export const OG_LOCALE: Record<Lang, string> = { ko: 'ko_KR', en: 'en_US', ja: '
 export type Penta = [string, string, string, string, string];
 /** 작품 제목·소장처처럼 번역이 없으면 영어를 그대로 쓰는 자리. [ko, en, ja] 를 받아 de·es 를 영어로 채운다 */
 export const multi = (t: readonly [string, string, string]): Penta => [t[0], t[1], t[2], t[1], t[1]];
+
+// ── 언어별 라우트 (src/pages/[...lang]/*.astro). ko 는 접두어 없이(params.lang = undefined), 나머지는 /en/·/ja/·… 한 벌씩
+/** getStaticPaths — 언어마다 한 경로. props.lang 으로 언어가 넘어온다 */
+export const langPaths = () => LANGS.map((l) => ({ params: { lang: l === 'ko' ? undefined : l }, props: { lang: l } }));
+/** 언어 × 다른 파라미터(작품 key·카테고리) 조합 */
+export const langPathsWith = <K extends string>(name: K, values: string[]) => LANGS.flatMap((l) => values.map((v) => ({ params: { lang: l === 'ko' ? undefined : l, [name]: v } as Record<K | 'lang', string | undefined>, props: { lang: l } })));
+/** 서버 라우트(prerender=false)에서 [...lang] 이 진짜 언어 접두어인지 — 아니면 null (404 로). /ko/ 는 접두어가 없으므로 null */
+export const langFromParam = (p: string | undefined): Lang | null => (p === undefined ? 'ko' : p !== 'ko' && (LANGS as string[]).includes(p) ? (p as Lang) : null);

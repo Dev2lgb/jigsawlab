@@ -55,4 +55,10 @@ let N1 = 0;
   const lv0 = await level(page); await demo(page, 60); await page.waitForTimeout(1500); ok((await hud(page))?.includes('90'), 'weight(294조각): 60개 → HUD +90', String(await hud(page)));
   const lv1 = await level(page); ok(lv1.xp - lv0.xp === 90, 'weight(294조각): 서버 +90', JSON.stringify({ before: lv0.xp, after: lv1.xp }));
   await ctx.close(); }
+// F. 윤곽선·밑그림 켜고 끈 것은 기기에 남는다 — 48조각(윤곽선 기본 켜짐)에서 윤곽선 끄고 밑그림 켠 뒤 다른 판을 열어도 그대로
+{ const { ctx, page } = await newPage(br); const st = () => page.evaluate(() => ['jg-outline', 'jg-hint'].map((id) => document.getElementById(id).getAttribute('aria-pressed')).join(','));
+  await page.goto(`${BASE}/board/?k=wave&n=48`); await waitPlay(page); const s0 = await st(); ok(s0 === 'true,false', `prefs: 처음엔 기본값 — 윤곽선 켜짐·밑그림 꺼짐 (${s0})`);
+  await page.click('#jg-outline'); await page.click('#jg-hint');
+  await page.goto(`${BASE}/board/?k=arnolfini&n=48`); await waitPlay(page); const s1 = await st(); ok(s1 === 'false,true', `prefs: 다른 판에서도 윤곽선 꺼짐·밑그림 켜짐 (${s1})`);
+  await ctx.close(); }
 await br.close(); finish();

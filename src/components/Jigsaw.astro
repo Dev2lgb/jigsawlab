@@ -44,7 +44,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <button type="button" class="tb" id="jg-tosolo-invite" hidden><Fragment set:html={icon('users', 15)} /><span>{U.play.together}</span></button>
       <span class="roombar" id="jg-roombar" hidden><button type="button" class="tb" id="jg-players-btn" title={U.play.players}><Fragment set:html={icon('user', 15)} /><b id="jg-pcount">1</b></button><button type="button" class="tb" id="jg-invite"><Fragment set:html={icon('user-plus', 15)} /><span>{U.play.invite}</span></button></span>
       <span class="sp"></span>
-      <button type="button" class="ib" id="jg-full" title={t.original} aria-label={t.original} aria-pressed="false"><Fragment set:html={icon('image', 18)} /></button>
       <button type="button" class="ib" id="jg-hint" title={t.hint} aria-pressed="false"><Fragment set:html={icon('eye', 18)} /></button>
       <button type="button" class="ib" id="jg-edge" title={t.edgeOnly} aria-pressed="false"><Fragment set:html={icon('edge', 18)} /></button>
       <button type="button" class="ib" id="jg-outline" title={U.play.outline} aria-pressed="false"><Fragment set:html={icon('grid', 18)} /></button>
@@ -59,7 +58,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <canvas class="fx" id="jg-fx"></canvas>
       <div class="emofx" id="jg-emofx" aria-hidden="true"></div>
     </div>
-    <div class="tray-bar" id="jg-traybar"><button type="button" class="tb" id="jg-emo" hidden title={U.play.emoji}><Fragment set:html={icon('smile', 15)} /><span>{U.play.emoji}</span></button><div class="pal" id="jg-pal" hidden role="group" aria-label={U.play.sortColor}></div><span class="sp"></span><span class="xpc" id="jg-xp-hud" hidden></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button></div>
+    <div class="tray-bar" id="jg-traybar"><button type="button" class="tb" id="jg-emo" hidden title={U.play.emoji}><Fragment set:html={icon('smile', 15)} /><span>{U.play.emoji}</span></button><div class="pal" id="jg-pal" hidden role="group" aria-label={U.play.sortColor}></div><span class="sp"></span><span class="xpc" id="jg-xp-hud" hidden></span><button type="button" class="tb" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 15)} /><span>{U.play.sortColor}</span></button><button type="button" class="tb" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 15)} /></button><button type="button" class="tb" id="jg-full" title={t.original} aria-label={t.original} aria-pressed="false"><Fragment set:html={icon('image', 15)} /></button></div>
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
     <div class="tray-drop" id="jg-traydrop" hidden><b>{U.play.dropHere}</b></div>
     <div class="emopick" id="jg-emopick" hidden role="dialog" aria-label={U.play.emoji}><div class="ep-list" id="jg-emopick-list"></div></div>
@@ -126,7 +125,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
   .roombar { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
   #jg-players-btn, #jg-invite, #jg-tosolo-invite { display: inline-flex; align-items: center; gap: 5px; } #jg-players-btn b { font-variant-numeric: tabular-nums; }
-  :global(.ico) { flex: none; display: block; } .hud .chip { display: inline-flex; align-items: center; gap: 4px; } #jg-emo, #jg-sort, #jg-shuffle { display: inline-flex; align-items: center; gap: 5px; } #jg-emo[hidden] { display: none; }
+  :global(.ico) { flex: none; display: block; } .hud .chip { display: inline-flex; align-items: center; gap: 4px; } #jg-emo, #jg-sort, #jg-shuffle, #jg-full { display: inline-flex; align-items: center; gap: 5px; } #jg-emo[hidden], #jg-full[hidden] { display: none; }
   .gate .gate-k { margin: 0 0 10px; font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
   .gate .chosen { margin-bottom: 18px; } .gate .gate-login { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; } .gate .gate-sub { margin: 8px 0 0; font-size: .8rem; line-height: 1.5; }
   .gate .gate-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: .8rem; } .gate .gate-or::before, .gate .gate-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
@@ -182,8 +181,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
   .tray :global(.tp.lift) { visibility: hidden; }
-  /* 원본 그림 보기 */
+  /* 원본 그림 보기 — 트레이 바의 섞기 오른쪽. 누르고 있는 동안만 켜지므로 눌림 표시를 알약에도 준다 */
   #jg-full { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tb[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
   /* 판 위 조각을 여기로 끌어오면 트레이로 되돌아간다 */
   .tray.over { background: var(--gold-soft); box-shadow: inset 0 0 0 2px var(--gold); }
   .tray-drop { position: fixed; z-index: 11; display: grid; place-items: center; pointer-events: none; }

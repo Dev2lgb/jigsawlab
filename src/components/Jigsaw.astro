@@ -121,6 +121,10 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
      아이폰 핸들·노치 — Base 의 viewport-fit=cover 로 화면이 그 밑까지 그려진다. HUD·트레이는 배경만 끝까지 깔고
      조각·버튼은 env(safe-area-inset-*) 만큼 안쪽으로 들인다(핸들·노치 없는 기기와 PC 는 0 이라 원래 여백 그대로) */
   .play-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  /* 판에서는 글자가 안 잡히게 — 조각을 끌거나 버튼을 오래 누르다 보면 HUD·트레이 바 글자에 선택이 걸려
+     파란 블록과 '복사' 팝업이 떴다. 상속되므로 스크립트가 만든 조각·참가자 목록까지 함께 걸린다 (입력칸은 예외) */
+  .scene.play { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .scene.play :global(input), .scene.play :global(textarea) { -webkit-user-select: text; user-select: text; }
   .hud { display: flex; align-items: center; gap: 6px; padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left)); flex: none; background: var(--bg-2); border-bottom: 1px solid var(--line-soft); } .sp { flex: 1; }
   .hud .chip { white-space: nowrap; } .hud .chip b { font-variant-numeric: tabular-nums; }
   .roombar { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
@@ -149,7 +153,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .left-n { position: absolute; z-index: 2; top: 7px; right: max(8px, env(safe-area-inset-right)); pointer-events: none; display: inline-flex; align-items: baseline; gap: 1px; padding: 2px 9px; border-radius: 999px; background: rgba(255,255,255,.74); color: var(--muted); font-size: .72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .left-n b { color: var(--ink); font-size: .84rem; font-weight: 800; }
   .boardwrap { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
-  .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .boardwrap canvas.drag { cursor: grabbing; }
+  .boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; } .boardwrap canvas.drag { cursor: grabbing; }
   .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; pointer-events: none; }
   .tray-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); background: var(--bg-2); border-top: 1px solid var(--line); }
   .pal { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 3px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
@@ -178,11 +182,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   :global(html:not(.member)) .xpc { display: none; }
   /* 맨 아래 줄 — 핸들 위에서 가로로 쓸면 앱 전환, 위로 쓸면 홈이라 조각이 거기 걸리면 안 된다. 아래 여백 8px 은 핸들 여백에 흡수(max) */
   .tray { flex: none; height: calc(96px + max(8px, env(safe-area-inset-bottom))); display: flex; gap: 8px; align-items: center; padding: 8px max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); overflow-x: auto; overflow-y: hidden; background: var(--bg-2); touch-action: pan-x; scrollbar-width: thin; }
-  .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tray :global(.tp) { flex: none; width: 80px; height: 80px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line-soft); display: grid; place-items: center; cursor: grab; touch-action: pan-x; }
   .tray :global(.tp canvas) { max-width: 72px; max-height: 72px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(23,26,36,.3)); }
   .tray :global(.tp.lift) { visibility: hidden; }
   /* 원본 그림 보기 — 트레이 바의 섞기 오른쪽. 누르고 있는 동안만 켜지므로 눌림 표시를 알약에도 준다 */
-  #jg-full { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #jg-full { touch-action: none; }
   .tb[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
   /* 판 위 조각을 여기로 끌어오면 트레이로 되돌아간다 */
   .tray.over { background: var(--gold-soft); box-shadow: inset 0 0 0 2px var(--gold); }

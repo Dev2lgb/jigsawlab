@@ -4,12 +4,9 @@
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
-import { CATEGORIES } from '../data/catalog';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
-// 넷째 칸 cat 은 통계의 진열대별 진도용 — works 를 클라이언트에 안 싣고도 그림 → 진열대를 안다
-const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year, w.cat]])));
-const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filter((w) => w.cat === c.id).length]).filter((c) => (c[2] as number) > 0));
+const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
 ---
 <Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={altsFor('/my/')} path={`${P}/my/`} noindex>
   <div class="wrap my">
@@ -31,20 +28,16 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
       <div class="lvl-stats" id="lvl-stats"></div>
     </section>
     <section class="blk bdg-blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div><button type="button" class="shelf-all bdg-more" id="bdg-more"></button></section>
-    <!-- 통계 — 이 기기의 완성 목록(+회원이면 서버 기록)으로 브라우저에서 셈한다. 시간은 개인 기록으로만 보여 주고 랭킹에는 안 쓴다 -->
+    <!-- 통계 — 이 기기의 완성 목록(+회원이면 서버 기록)으로 브라우저에서 셈한다. 시간은 개인 기록으로만 보여 주고 랭킹에는 안 쓴다. 타일만 — 잔디 달력·진열대별 진도는 두었다가 뺐다 -->
     <section class="blk stats-blk" id="blk-stats"><h2>{M.stats}</h2>
       <div class="st-tiles" id="st-tiles"></div>
       <p class="empty muted" id="e-stats" hidden>{M.emptyStats}</p>
-      <div class="st-grid" id="st-grid" hidden>
-        <div class="st-card"><h3>{M.calendar}</h3><div class="cal-wrap"><div class="cal" id="st-cal"></div></div><p class="cal-legend muted" id="st-cal-legend"></p></div>
-        <div class="st-card"><h3>{M.byShelf}</h3><ul class="catbars" id="st-cats"></ul></div>
-      </div>
     </section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
   </div>
-  <script is:inline define:vars={{ meta, cats }}>window.__meta = JSON.parse(meta); window.__cats = JSON.parse(cats);</script>
+  <script is:inline define:vars={{ meta }}>window.__meta = JSON.parse(meta);</script>
   <style>
     .my { padding-top: clamp(24px, 4vw, 48px); } .my-head { margin-bottom: 8px; } .my-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; } .my-head p { margin: 6px 0 0; }
     .acct-box { margin-top: 18px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); } .acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .acct-btns { display: flex; gap: 8px; flex-wrap: wrap; } .acct-btns :global(.btn) { font-size: .85rem; } .acct-why { margin: 10px 0 0; font-size: .82rem; line-height: 1.55; }
@@ -79,20 +72,9 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     .bdgs :global(.bd-i) { font-size: 1.45rem; line-height: 1.2; flex: none; }
     .bdgs :global(.bd b) { display: block; font-size: .92rem; } .bdgs :global(.bd small) { display: block; color: var(--muted); font-size: .78rem; line-height: 1.5; margin-top: 2px; }
     .bdgs :global(.bd-p) { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
-    /* 통계 — 타일은 레벨 카드의 것과 같은 꼴. 달력·진열대 진도는 스크립트가 만드므로 :global */
+    /* 통계 — 타일은 레벨 카드의 것과 같은 꼴. 스크립트가 만드므로 :global */
     .st-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
     .st-tiles :global(div) { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--bg-2); } .st-tiles :global(b) { font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .st-tiles :global(small) { color: var(--muted); font-size: .76rem; font-weight: 600; }
-    .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; } @media (max-width: 860px) { .st-grid { grid-template-columns: 1fr; } }
-    .st-card { padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); min-width: 0; } .st-card h3 { font-family: var(--font); font-size: .95rem; font-weight: 700; margin: 0 0 12px; }
-    .cal-wrap { overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
-    .cal { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); grid-auto-columns: 13px; gap: 3px; width: max-content; }
-    .cal :global(.d) { width: 13px; height: 13px; border-radius: 3px; background: var(--bg-3); } .cal :global(.d.c1) { background: #ffe1a3; } .cal :global(.d.c2) { background: var(--gold); } .cal :global(.d.c3) { background: #d98b06; } .cal :global(.d.c4) { background: #a86400; } .cal :global(.d.today) { box-shadow: inset 0 0 0 1.5px var(--ink); }
-    .cal-legend { margin: 10px 0 0; font-size: .76rem; }
-    .catbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-    .catbars :global(li) { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: .84rem; }
-    .catbars :global(.cb-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink-2); }
-    .catbars :global(.cb-bar) { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; } .catbars :global(.cb-bar i) { display: block; height: 100%; border-radius: 999px; background: var(--accent); } .catbars :global(li.all .cb-bar i) { background: var(--gold); }
-    .catbars :global(b) { font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--muted); white-space: nowrap; } .catbars :global(li.all b) { color: #8a5f00; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -110,13 +92,13 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     import { getDone, fmtSec, type DoneEntry } from '../lib/store';
     import { openLogin, askNick } from '../lib/authui';
     import { me, logout, deleteAccount, setNickRemote, fetchSync, authAvailable, fetchLevel, type SaveMeta } from '../lib/account';
-    import { BADGES, levelProgress, tierOf, kstDay } from '../lib/level';
+    import { BADGES, levelProgress, tierOf } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
     import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
     const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = prefix(LANG);
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
-    const meta = (window as any).__meta as Record<string, string[]>, cats = (window as any).__cats as [string, string, number][];
+    const meta = (window as any).__meta as Record<string, string[]>;
     const $ = (id: string) => document.getElementById(id)!;
     const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
       const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
@@ -141,25 +123,13 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     /** 통계 — 이 기기 기록과 서버 기록을 at 으로 합쳐 셈한다. 방에서 맞춘 판은 내가 놓은 조각(mine)만 조각 수에 넣고 시간은 안 넣는다(방의 시간은 판이 열린 뒤 흐른 시간이라 내 것이 아니다) */
     function renderStats() {
       const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))];
-      const tiles = $('st-tiles'), grid = $('st-grid'), empty = $('e-stats'); tiles.innerHTML = '';
-      if (!list.length) { empty.hidden = false; grid.hidden = true; return; } empty.hidden = true; grid.hidden = false;
+      const tiles = $('st-tiles'), empty = $('e-stats'); tiles.innerHTML = '';
+      if (!list.length) { empty.hidden = false; return; } empty.hidden = true;
       let pieces = 0, secs = 0, soloPieces = 0, biggest = 0, daily = 0; const works = new Set<string>();
       for (const d of list) { const mine = d.room && d.mine !== undefined ? d.mine : d.n; pieces += mine; if (!d.room) { secs += d.sec; soloPieces += d.n; } if (d.n > biggest) biggest = d.n; if (d.kind === 'daily') daily++; if (d.kind !== 'photo') works.add(d.key); }
       const ppm = secs > 0 ? (soloPieces * 60) / secs : 0;
       const rows: [string, string][] = [[V.statSolved, String(list.length)], [V.statPieces, pieces.toLocaleString()], [M.statTime, M.hm(Math.floor(secs / 3600), Math.floor((secs % 3600) / 60))], [M.statPpm, ppm >= 10 ? String(Math.round(ppm)) : ppm.toFixed(1)], [M.statBiggest, biggest.toLocaleString()], [M.statDaily, String(daily)], [V.statWorks, String(works.size)]];
       for (const [k, v] of rows) { const w = document.createElement('div'); const b = document.createElement('b'); b.textContent = v; const s = document.createElement('small'); s.textContent = k; w.appendChild(b); w.appendChild(s); tiles.appendChild(w); }
-      // 잔디 달력 — 최근 20주, 월요일 시작 열. 날짜는 KST(사이트 전체가 KST 로 하루를 센다)
-      const per = new Map<string, number>(); for (const d of list) { const k = kstDay(d.at); per.set(k, (per.get(k) ?? 0) + 1); }
-      const today = kstDay(Date.now()); const t = new Date(today + 'T00:00:00Z'); const dow = (t.getUTCDay() + 6) % 7; // 월=0
-      const start = new Date(t); start.setUTCDate(t.getUTCDate() - dow - 7 * 19);
-      const cal = $('st-cal'); cal.innerHTML = ''; let most = 0;
-      for (let i = 0; i < 20 * 7; i++) { const d = new Date(start); d.setUTCDate(start.getUTCDate() + i); const key = d.toISOString().slice(0, 10); if (key > today) break; const n = per.get(key) ?? 0; if (n > most) most = n; const c = document.createElement('i'); c.className = 'd' + (n ? ' c' + Math.min(4, n >= 5 ? 4 : n >= 3 ? 3 : n) : '') + (key === today ? ' today' : ''); c.title = `${key} · ${M.calN(n)}`; cal.appendChild(c); }
-      { const from = start.toISOString().slice(0, 10); let inWin = 0; for (const [k, n] of per) if (k >= from) inWin += n; $('st-cal-legend').textContent = M.calN(inWin); }
-      // 진열대별 진도 — 그림(키)이 서로 다른 것만 센다
-      const byCat = new Map<string, Set<string>>(); for (const k of works) { const c = meta[k]?.[3]; if (!c) continue; if (!byCat.has(c)) byCat.set(c, new Set()); byCat.get(c)!.add(k); }
-      const ul = $('st-cats'); ul.innerHTML = '';
-      for (const [id, name, total] of cats) { const n = byCat.get(id)?.size ?? 0; const li = document.createElement('li'); if (n >= total) li.className = 'all'; const nm = document.createElement('span'); nm.className = 'cb-n'; nm.textContent = name; const bar = document.createElement('span'); bar.className = 'cb-bar'; bar.innerHTML = `<i style="width:${(n / total) * 100}%"></i>`; const b = document.createElement('b'); b.textContent = `${n} / ${total}`; li.appendChild(nm); li.appendChild(bar); li.appendChild(b); ul.appendChild(li); }
-      requestAnimationFrame(() => cal.querySelector<HTMLElement>('.today')?.scrollIntoView({ block: 'nearest', inline: 'end' }));
     }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);

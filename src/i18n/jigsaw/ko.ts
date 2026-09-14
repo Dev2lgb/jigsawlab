@@ -10,7 +10,7 @@ export const KO = {
   done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '한 번 더', another: '다른 퍼즐', toTitle: '처음으로',
   share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '너도 해봐 🧩', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
   bg: '판 배경', bgNames: ['밝음', '회색', '어두움', '세피아'] as [string, string, string, string], fullscreen: '전체 화면', keyHint: (k: string) => `단축키 ${k}`,
-  tools: '트레이 도구',
+  tools: '트레이 도구', find: '조각 찾기', findNone: '판 위에 따로 떨어진 조각이 없어요',
   imgFail: '이 사진은 못 열었어요. 다른 사진으로 해볼까요?', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
 };
 

@@ -9,6 +9,6 @@ export const ES: JigsawStrings = {
   done: '¡Completo!', resTime: 'Tiempo', resPieces: 'Piezas', resMoves: 'Colocaciones', best: (s: string) => `Tu mejor marca: ${s}`, newBest: '¡Récord nuevo!', retry: 'La misma foto otra vez', another: 'Otro rompecabezas', toTitle: 'Volver al inicio',
   share: 'Compartir resultado', shareTitle: (n: number, t: string) => `¡He armado un rompecabezas de ${n} piezas en ${t}! 🧩`, shareText: 'Te toca 🧩', shareDaily: (n: number, t: string, title: string) => `El reto de hoy, «${title}»: ${n} piezas en ${t}. 🧩 ¿Lo mejoras?`,
   bg: 'Color del tablero', bgNames: ['Claro', 'Gris', 'Oscuro', 'Sepia'], fullscreen: 'Pantalla completa', keyHint: (k: string) => `Atajo ${k}`,
-  tools: 'Herramientas de la bandeja',
+  tools: 'Herramientas de la bandeja', find: 'Buscar piezas', findNone: 'No hay piezas sueltas en el tablero',
   imgFail: 'No se pudo abrir esa imagen. Usa una foto JPG, PNG o HEIC', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
 };

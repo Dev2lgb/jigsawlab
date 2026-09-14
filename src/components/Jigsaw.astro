@@ -58,11 +58,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <div class="left-n" id="jg-left"><b id="jg-left-n">0</b><span id="jg-left-tot"></span></div>
       <canvas class="fx" id="jg-fx"></canvas>
       <div class="emofx" id="jg-emofx" aria-hidden="true"></div>
-      <!-- 트레이 도구 — 판 오른쪽 아래의 둥근 FAB 하나. 누르면 위로 둥근 버튼 넷이 차례로 튀어나온다(가까운 것부터). 트레이 바에 늘어놓으면 폰에서 자리가 안 났다.
+      <!-- 트레이 도구 — 판 오른쪽 아래의 둥근 FAB 하나. 누르면 위로 둥근 버튼 다섯이 차례로 튀어나온다(가까운 것부터). 트레이 정렬 셋 → 판 위 조각 찾기 → 판 배경. 트레이 바에 늘어놓으면 폰에서 자리가 안 났다.
            -->
       <div class="dial" id="jg-dial">
         <div class="dial-items" id="jg-dial-items">
-          <div class="di" style="--i: 3"><span class="di-l">{t.bg}</span><button type="button" class="db" id="jg-bg" title={t.bg}><Fragment set:html={icon('drop', 18)} /></button></div>
+          <div class="di" style="--i: 4"><span class="di-l">{t.bg}</span><button type="button" class="db" id="jg-bg" title={t.bg}><Fragment set:html={icon('drop', 18)} /></button></div>
+          <div class="di" style="--i: 3"><span class="di-l">{t.find}</span><button type="button" class="db" id="jg-find" title={t.find}><Fragment set:html={icon('sparkles', 18)} /></button></div>
           <div class="di" style="--i: 2"><span class="di-l">{U.play.sortShape}</span><button type="button" class="db" id="jg-shape" title={U.play.sortShape}><Fragment set:html={icon('shapes', 18)} /></button></div>
           <div class="di" style="--i: 1"><span class="di-l">{U.play.shuffle}</span><button type="button" class="db" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
           <div class="di" style="--i: 0"><span class="di-l">{U.play.sortColor}</span><button type="button" class="db" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 18)} /></button></div>
@@ -193,11 +194,14 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .fab-i { grid-area: 1 / 1; display: grid; place-items: center; transition: transform .28s var(--ease), opacity .18s; }
   .fab-close { opacity: 0; transform: rotate(-90deg) scale(.5); } .fab[aria-expanded="true"] .fab-open { opacity: 0; transform: rotate(90deg) scale(.5); } .fab[aria-expanded="true"] .fab-close { opacity: 1; transform: none; }
   .dial-items { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-  .di { display: flex; align-items: center; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(14px) scale(.5); transform-origin: right center; transition: opacity .16s, transform .3s var(--ease), visibility 0s .3s; transition-delay: calc((3 - var(--i)) * 35ms), calc((3 - var(--i)) * 35ms), .3s; }
+  .di { display: flex; align-items: center; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(14px) scale(.5); transform-origin: right center; transition: opacity .16s, transform .3s var(--ease), visibility 0s .3s; transition-delay: calc((4 - var(--i)) * 35ms), calc((4 - var(--i)) * 35ms), .3s; }
   .dial.open .di { opacity: 1; visibility: visible; transform: none; transition: opacity .16s, transform .32s var(--ease), visibility 0s; transition-delay: calc(var(--i) * 40ms), calc(var(--i) * 40ms), 0s; }
   .di-l { padding: 5px 11px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: .8rem; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 16px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); }
   .db { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; display: grid; place-items: center; box-shadow: 0 8px 18px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); transition: transform .15s var(--ease), background .15s; }
   .db:hover { transform: scale(1.08); } .db:active { transform: scale(.94); }
+  /* 판이 낮으면(가로 폰 — 판이 200px 남짓) 위로 다섯을 세울 자리가 없어 위쪽 항목이 화면 밖으로 나갔다. 이름 알약을 접고 FAB 왼쪽으로 가로로 편다(openDial 이 판 높이를 재서 .row) */
+  .dial.row { flex-direction: row; align-items: center; } .dial.row .dial-items { flex-direction: row; }
+  .dial.row .di-l { display: none; } .dial.row .di { transform: translateX(14px) scale(.5); transform-origin: center; } .dial.row.open .di { transform: none; }
   @media (prefers-reduced-motion: reduce) { .di, .dial.open .di, .fab, .fab-i { transition: none; } }
   .emopick { position: fixed; z-index: 12; left: 50%; transform: translateX(-50%); padding: 8px; border-radius: 18px; background: var(--bg); box-shadow: 0 24px 60px -20px rgba(15,18,34,.55), 0 0 0 1px var(--line); animation: pp .18s var(--ease); } @keyframes pp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
   /* 판 배경 고르기 — 네 개 견본 */
@@ -274,6 +278,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { BADGES, pieceRate, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { createDust, outerEdges } from '../lib/dust';
+  import { createSparkle, type Lone } from '../lib/sparkle';
   import { renderRelief } from '../lib/relief';
   import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
@@ -396,7 +401,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -468,7 +473,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const dialOpen = () => dial.classList.contains('open');
   function closeDial() { if (!dialOpen()) return; dial.classList.remove('open'); fab.setAttribute('aria-expanded', 'false'); }
   const outsideDial = (e: Event) => { if ((e.target as HTMLElement).closest('#jg-dial')) { document.addEventListener('pointerdown', outsideDial, { once: true }); return; } closeDial(); };
-  function openDial() { if (dialOpen()) return closeDial(); dial.classList.add('open'); fab.setAttribute('aria-expanded', 'true'); setTimeout(() => document.addEventListener('pointerdown', outsideDial, { once: true }), 0); }
+  function openDial() { if (dialOpen()) return closeDial(); dial.classList.toggle('row', wrap.clientHeight < 370); dial.classList.add('open'); fab.setAttribute('aria-expanded', 'true'); setTimeout(() => document.addEventListener('pointerdown', outsideDial, { once: true }), 0); }
   fab.addEventListener('click', openDial);
 
   // ── 판 배경 — 밤 풍경·우주 같은 어두운 그림은 밝은 판에서 조각 경계가 안 보인다. 네 가지에서 고르고 기기에 남긴다(board:bg).
@@ -573,7 +578,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const to = tray.scrollLeft + p.el.getBoundingClientRect().left - tray.getBoundingClientRect().left - 8;
     tray.scrollTo({ left: Math.max(0, to), behavior: 'smooth' });
   }
-  $('jg-sort').addEventListener('click', () => { sortTray('color'); closeDial(); }); $('jg-shuffle').addEventListener('click', () => { sortTray('shuffle'); closeDial(); }); $('jg-shape').addEventListener('click', () => { sortTray('shape'); closeDial(); });
+  $('jg-sort').addEventListener('click', () => { sortTray('color'); closeDial(); }); $('jg-shuffle').addEventListener('click', () => { sortTray('shuffle'); closeDial(); }); $('jg-shape').addEventListener('click', () => { sortTray('shape'); closeDial(); }); $('jg-find').addEventListener('click', findLone);
 
   // ── 조각 단위 XP (회원만) — 셈과 불변식은 lib/xp.ts. 재도전 감산(×¼)은 서버가 정하지만 이 기기의 완성 기록으로 미리 짐작해 둔다(bestDoneN) —
   // 안 그러면 첫 묶음 응답에 HUD 숫자가 갑자기 ¼ 로 내려앉는다. 화면의 숫자는 여기(HUD)와 판 설정 알약(updateGrid)에만
@@ -632,11 +637,16 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const tweens = new Map<Group, Tween>();
   const dust = createDust(); // 조각이 자리에 들어갈 때 가장자리에서 피어오르는 먼지 (lib/dust.ts). 잠그기·붙이기에서 심고 drawNow 가 그린다
   const pieceSide = () => Math.min(cut.pw, cut.ph);
+  const sparkle = createSparkle(); // 판 위 조각 찾기의 반짝임 (lib/sparkle.ts). findLone 이 켜고 drawNow 가 5초 동안 그린다
+  /** 시야를 부드럽게 옮기는 중(찾기가 화면 밖 조각까지 보이게 물러날 때). 그사이 누가 view 를 건드리면(끌기·핀치·휠·리사이즈) 거기서 손을 뗀다 */
+  type ViewAt = { s: number; tx: number; ty: number };
+  let viewTw: { from: ViewAt; to: ViewAt; t0: number; last: ViewAt } | null = null;
   let drawQueued = false, restShadow = false; // restShadow: 판 위 느슨한 조각에 옅은 그림자 (조각이 적을 때만)
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
   function drawNow() {
     if (!cut) return; const now = performance.now(); const finished: Group[] = [];
+    if (viewTw) { const w = viewTw; if (view.s !== w.last.s || view.tx !== w.last.tx || view.ty !== w.last.ty) viewTw = null; else { const e = easeOut(Math.min(1, (now - w.t0) / 450)); view.s = w.from.s + (w.to.s - w.from.s) * e; view.tx = w.from.tx + (w.to.tx - w.from.tx) * e; view.ty = w.from.ty + (w.to.ty - w.from.ty) * e; w.last = { ...view }; if (e >= 1) viewTw = null; } }
     for (const [g, tw] of tweens) { const t = Math.min(1, (now - tw.t0) / tw.dur), e = tw.lin ? t : easeOut(t); g.dx = tw.x0 + (tw.x1 - tw.x0) * e; g.dy = tw.y0 + (tw.y1 - tw.y0) * e; if (t >= 1) finished.push(g); }
     const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
@@ -648,18 +658,50 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     // 화면 밖 조각은 건너뜀. 판 위 느슨한 조각이 적을 때는 옅은 그림자를 깔아 다 맞춰진 그림 위에 얹혀도 눈에 띄게
     const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); let looseN = 0; for (const g of groups) looseN += g.pieces.length; restShadow = looseN <= 48;
+    const lone = sparkle.on ? loneItems(vx0, vy0, vx1, vy1) : []; sparkle.back(ctx, now, lone, view.s); // 반짝임의 금빛 번짐은 조각 밑에, 테·빛줄기·별은 위에(뭉치에 깔린 조각도 드러나게)
     for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
+    const sparkly = sparkle.front(ctx, now, lone, view.s);
     const dusty = dust.render(ctx, now);
     if (room) { for (const g of groups) { const h = g.sid && room.holders.get(g.sid); if (!h || h === room.me?.id) continue; const pl = room.players.get(h); const p0 = g.pieces[0]; ctx.save(); ctx.strokeStyle = pl?.color ?? '#888'; ctx.lineWidth = 3 / view.s; ctx.setLineDash([6 / view.s, 4 / view.s]); ctx.strokeRect(px(p0) - cut.padX, py(p0) - cut.padY, cut.pw + cut.padX * 2, cut.ph + cut.padY * 2); ctx.restore(); }
       for (const pl of room.players.values()) { if (pl.x === undefined || pl.id === room.me?.id) continue; ctx.save(); ctx.translate(pl.x, pl.y!); ctx.scale(1 / view.s, 1 / view.s); ctx.fillStyle = pl.color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 18); ctx.lineTo(5, 13); ctx.lineTo(12, 13); ctx.closePath(); ctx.fill(); ctx.font = '700 12px "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif'; const w = ctx.measureText(pl.nick).width + 12; ctx.fillStyle = pl.color; ctx.beginPath(); ctx.roundRect(14, 4, w, 20, 10); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, 20, 18); ctx.restore(); } }
     for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
-    if (tweens.size || dusty) draw();
+    if (tweens.size || dusty || sparkly || viewTw) draw();
   }
   function drawGroup(g: Group, lifted: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
     const shadow = g.pieces.length <= 40 && (lifted || restShadow);
     if (shadow) { ctx.save(); ctx.shadowColor = lifted ? 'rgba(15,18,34,.45)' : 'rgba(15,18,34,.4)'; ctx.shadowBlur = (lifted ? 16 : 6) / view.s; ctx.shadowOffsetY = (lifted ? 6 : 2) / view.s; }
     for (const p of g.pieces) { const b = p.bmp, x = px(p) + b.ox, y = py(p) + b.oy; if (x + b.w < vx0 || y + b.h < vy0 || x > vx1 || y > vy1) continue; ctx.drawImage(b.canvas, x, y, b.w, b.h); }
     if (shadow) ctx.restore();
+  }
+  // ── 판 위 조각 찾기 — 아직 아무 데도 안 붙은 한 조각짜리를 5초 동안 반짝인다(뭉치는 이미 자리를 잡아 가는 중이라 뺀다).
+  //  목록은 프레임마다 다시 뽑는다 — 그사이 붙거나 잠긴 조각은 바로 꺼지고, 끌면 반짝임이 따라온다
+  const lonePath = new WeakMap<Piece, Path2D>();
+  function loneItems(vx0: number, vy0: number, vx1: number, vy1: number): Lone[] {
+    const out: Lone[] = [], mx = cut.padX + 48 / view.s, my = cut.padY + 48 / view.s; // 번짐·별이 조각 밖으로 나가는 만큼 넉넉히
+    for (const g of groups) {
+      if (g.pieces.length !== 1) continue; const p = g.pieces[0], x = px(p), y = py(p);
+      if (x + cut.pw + mx < vx0 || y + cut.ph + my < vy0 || x - mx > vx1 || y - my > vy1) continue;
+      let path = lonePath.get(p); if (!path) lonePath.set(p, (path = piecePath(cut, p.r, p.c)));
+      out.push({ id: p, path, dx: g.dx, dy: g.dy, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph });
+    }
+    return out;
+  }
+  /** 화면 밖(판 옆으로 밀어 둔 것 포함)에 있는 게 있으면 판과 그 조각들이 다 보이게 물러난다. 더 확대하지는 않는다 */
+  function findLone() {
+    closeDial(); if (!cut || complete) return;
+    const lone = groups.filter((g) => g.pieces.length === 1); if (!lone.length) { toast(T.findNone); return; }
+    const v = viewRect(); let x0 = 0, y0 = 0, x1 = cut.W, y1 = cut.H, out = false;
+    for (const g of lone) {
+      const p = g.pieces[0], x = px(p), y = py(p);
+      x0 = Math.min(x0, x - cut.padX); y0 = Math.min(y0, y - cut.padY); x1 = Math.max(x1, x + cut.pw + cut.padX); y1 = Math.max(y1, y + cut.ph + cut.padY);
+      if (x < v.x0 || y < v.y0 || x + cut.pw > v.x1 || y + cut.ph > v.y1) out = true;
+    }
+    if (out) {
+      const r = wrap.getBoundingClientRect(), s = Math.max(minS(), Math.min(view.s, r.width / ((x1 - x0) * 1.08), r.height / ((y1 - y0) * 1.08)));
+      const to = { s, tx: r.width / 2 - ((x0 + x1) / 2) * s, ty: r.height / 2 - ((y0 + y1) / 2) * s };
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) Object.assign(view, to); else viewTw = { from: { ...view }, to, t0: performance.now(), last: { ...view } };
+    }
+    sparkle.start(); draw();
   }
   function hit(bx: number, by: number): Group | null {
     for (let i = groups.length - 1; i >= 0; i--) for (const p of groups[i].pieces) { const x = px(p), y = py(p); if (bx >= x && bx <= x + cut.pw && by >= y && by <= y + cut.ph) return groups[i]; }
@@ -1122,7 +1164,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

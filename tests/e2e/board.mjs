@@ -93,6 +93,18 @@ let N1 = 0;
   { const wr = await (await page.$('#jg-boardwrap')).boundingBox(); const v0 = await page.evaluate(() => window.__jigsaw.state().view);
     await page.mouse.move(wr.x + wr.width - 40, wr.y + wr.height - 150); await page.mouse.down(); await page.mouse.move(wr.x + wr.width - 220, wr.y + wr.height - 320, { steps: 8 }); await page.mouse.up();
     const v1 = await page.evaluate(() => window.__jigsaw.state().view); ok(Math.abs(v1.tx - v0.tx) > 50 && Math.abs(v1.ty - v0.ty) > 50, 'dial: FAB 위 빈 자리에서 끌어도 판이 움직인다', JSON.stringify({ v0, v1 })); }
+  // 판 위 조각 찾기: 판에 외톨이가 없으면 알림만. 꺼내 둔 조각이 화면 밖에 있으면 다 보이게 물러나며 5초 동안 반짝인다
+  { const finding = () => page.evaluate(() => window.__jigsaw.state().finding);
+    await tool('#jg-find'); await page.waitForTimeout(150);
+    ok((await page.$eval('.toast', (e) => e.textContent)) === '판 위에 따로 떨어진 조각이 없어요' && !(await finding()), 'find: 판에 조각이 없으면 알림만');
+    const wr = await (await page.$('#jg-boardwrap')).boundingBox(); const bb = await (await page.$('#jg-tray .tp:not([hidden])')).boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await page.mouse.down(); await page.mouse.move(bb.x + bb.width / 2, bb.y - 30, { steps: 4 }); await page.mouse.move(wr.x + wr.width / 2, wr.y + wr.height / 2, { steps: 12 }); await page.mouse.up();
+    await page.mouse.move(wr.x + wr.width - 60, wr.y + 60); await page.mouse.down(); await page.mouse.move(wr.x + 60, wr.y + 60, { steps: 10 }); await page.mouse.up(); // 판을 왼쪽으로 끌어 조각을 화면 밖으로
+    const onScreen = () => page.evaluate(() => { const s = window.__jigsaw.state(), p = s.loose[0], r = document.getElementById('jg-boardwrap').getBoundingClientRect(); const x = p.x * s.view.s + s.view.tx, y = p.y * s.view.s + s.view.ty; return x >= 0 && y >= 0 && x + s.pw * s.view.s <= r.width && y + s.ph * s.view.s <= r.height; });
+    const lo = await page.evaluate(() => window.__jigsaw.state().loose.length); ok(lo === 1 && !(await onScreen()), 'find: 꺼낸 조각을 화면 밖으로 밀어 둠', String(lo));
+    await tool('#jg-find'); await page.waitForTimeout(700);
+    ok((await finding()) && (await onScreen()), 'find: 화면 밖 조각이 보이게 물러나고 반짝임 켜짐');
+    await page.waitForTimeout(4700); ok(!(await finding()), 'find: 5초 뒤 꺼짐'); }
   ok(await page.$eval('#jg-fs', (e) => !e.hidden), 'fs: 데스크톱에 전체 화면 버튼');
   ok((await page.$eval('#jg-hint', (e) => e.title)).includes('H'), 'keys: 마우스 기기 버튼 설명에 단축키');
   await ctx.close(); }

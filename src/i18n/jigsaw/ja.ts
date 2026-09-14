@@ -9,6 +9,6 @@ export const JA: JigsawStrings = {
   done: '完成！', resTime: 'タイム', resPieces: 'ピース', resMoves: '置いた回数', best: (s: string) => `自己ベスト ${s}`, newBest: '新記録！', retry: '同じ写真でもう一度', another: '別のパズル', toTitle: 'はじめに戻る',
   share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '次はあなたの番 🧩', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
   bg: '盤の色', bgNames: ['明るい', 'グレー', '暗い', 'セピア'], fullscreen: '全画面', keyHint: (k: string) => `ショートカット ${k}`,
-  tools: 'トレイのツール',
+  tools: 'トレイのツール', find: 'ピースを探す', findNone: '盤面にばらばらのピースはありません',
   imgFail: '画像を開けませんでした。JPG・PNG・HEICの写真か確認してください', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}、${y}`,
 };

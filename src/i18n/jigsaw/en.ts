@@ -9,6 +9,6 @@ export const EN: JigsawStrings = {
   done: 'Complete!', resTime: 'Time', resPieces: 'Pieces', resMoves: 'Placements', best: (s: string) => `Your best: ${s}`, newBest: 'New record!', retry: 'Same photo again', another: 'Another puzzle', toTitle: 'Back to start',
   share: 'Share result', shareTitle: (n: number, t: string) => `Finished a ${n}-piece jigsaw in ${t}! 🧩`, shareText: 'Your turn 🧩', shareDaily: (n: number, t: string, title: string) => `Today's puzzle "${title}", ${n} pieces in ${t}! 🧩 Can you beat it?`,
   bg: 'Board colour', bgNames: ['Light', 'Grey', 'Dark', 'Sepia'], fullscreen: 'Full screen', keyHint: (k: string) => `Shortcut ${k}`,
-  tools: 'Tray tools',
+  tools: 'Tray tools', find: 'Find pieces', findNone: 'No loose pieces on the board',
   imgFail: "Couldn't open that image. Please use a JPG, PNG or HEIC photo", paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
 };

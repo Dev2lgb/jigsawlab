@@ -9,6 +9,6 @@ export const DE: JigsawStrings = {
   done: 'Fertig!', resTime: 'Zeit', resPieces: 'Teile', resMoves: 'Züge', best: (s: string) => `Deine Bestzeit: ${s}`, newBest: 'Neuer Rekord!', retry: 'Dasselbe Foto noch einmal', another: 'Anderes Puzzle', toTitle: 'Zurück zum Anfang',
   share: 'Ergebnis teilen', shareTitle: (n: number, t: string) => `${n}-Teile-Puzzle in ${t} gelöst! 🧩`, shareText: 'Du bist dran 🧩', shareDaily: (n: number, t: string, title: string) => `Tagespuzzle „${title}“, ${n} Teile in ${t}! 🧩 Schaffst du das schneller?`,
   bg: 'Brettfarbe', bgNames: ['Hell', 'Grau', 'Dunkel', 'Sepia'], fullscreen: 'Vollbild', keyHint: (k: string) => `Tastenkürzel ${k}`,
-  tools: 'Ablage-Werkzeuge',
+  tools: 'Ablage-Werkzeuge', find: 'Teile finden', findNone: 'Keine einzelnen Teile auf dem Brett',
   imgFail: 'Dieses Bild ließ sich nicht öffnen. Bitte nimm ein JPG-, PNG- oder HEIC-Foto', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
 };

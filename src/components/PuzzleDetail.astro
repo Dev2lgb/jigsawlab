@@ -5,7 +5,7 @@ import Box from './Box.astro';
 import PieceLoader from './PieceLoader.astro';
 import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
-import { WORK_BY_KEY, WORKS, DAILY_POOL } from '../data/works';
+import { WORK_BY_KEY, WORKS, dailyPool } from '../data/works';
 import { dailyWindow } from '../lib/daily';
 import { ABOUT_TEXT } from '../data/about';
 import { CATEGORIES } from '../data/catalog';
@@ -19,7 +19,7 @@ const p = WORK_BY_KEY[key]!, a = p, cat = CATEGORIES.find((c) => c.id === p.cat)
 const about = ABOUT_TEXT[lang][key] ?? p.title[li];
 const title = p.title[li], artist = p.artist[li];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
-const win = dailyWindow(DAILY_POOL, lang, key); // 이 작품이 오늘의 퍼즐인 날만 — 브라우저가 works 없이 판단
+const win = dailyWindow(dailyPool, lang, key); // 이 작품이 오늘의 퍼즐인 날만 — 브라우저가 works 없이 판단
 const srcName = /artic\.edu/.test(p.source ?? '') ? T.detail.sources.aic : /wikimedia\.org/.test(p.source ?? '') ? T.detail.sources.commons : /nasa\.gov/.test(p.source ?? '') ? T.detail.sources.nasa : a.museum[li];
 const sib = WORKS.filter((w) => w.cat === p.cat && w.key !== key); const i0 = Math.max(0, WORKS.filter((w) => w.cat === p.cat).findIndex((w) => w.key === key) - 3); const others = sib.slice(i0, i0 + 8).map((w) => paintingFor(w.key, lang)!);
 const alts = altsFor(`/puzzle/${key}/`);

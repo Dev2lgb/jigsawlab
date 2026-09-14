@@ -12,10 +12,11 @@ type Win = { from: string; to: string; days: Record<string, { k: string; t: stri
 /** KST 날짜. offset 일만큼 앞뒤 (-1 = 어제) */
 export const dayKST = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 86400e3).toISOString().slice(0, 10);
 
-/** 서버(프런트매터) — 오늘 앞뒤 창의 뽑기 결과. only 를 주면 그 작품이 뽑히는 날만 남긴다(상세 페이지 2,600장에 창을 통째로 박지 않게) */
-export function dailyWindow(pool: Painting[], lang: Lang, only?: string, back = 7, ahead = 60): Win {
+/** 서버(프런트매터) — 오늘 앞뒤 창의 뽑기 결과. only 를 주면 그 작품이 뽑히는 날만 남긴다(상세 페이지 2,600장에 창을 통째로 박지 않게).
+ *  후보는 날짜마다 works 의 dailyPool(day) — 후보가 바뀐 날 앞뒤로 목록이 다르다 */
+export function dailyWindow(poolFor: (day: string) => Painting[], lang: Lang, only?: string, back = 7, ahead = 60): Win {
   const li = LI[lang]; const days: Win['days'] = {};
-  for (let i = -back; i <= ahead; i++) { const d = dayKST(i); const p = dailyPick(d, pool).painting; if (!only || p.key === only) days[d] = { k: p.key, t: p.title[li] }; }
+  for (let i = -back; i <= ahead; i++) { const d = dayKST(i); const p = dailyPick(d, poolFor(d)).painting; if (!only || p.key === only) days[d] = { k: p.key, t: p.title[li] }; }
   return { from: dayKST(-back), to: dayKST(ahead), days };
 }
 
@@ -27,7 +28,7 @@ const inWin = (w: Win, d: string) => d >= w.from && d <= w.to;
 export async function dailyLite(day: string, li: number): Promise<DailyLite> {
   const w = readWin(); const e = w && inWin(w, day) ? w.days[day] : undefined;
   if (e) return { key: e.k, title: e.t, seed: hashStr('jigsaw:' + day) };
-  const { DAILY_POOL } = await import('../data/works'); const p = dailyPick(day, DAILY_POOL);
+  const { dailyPool } = await import('../data/works'); const p = dailyPick(day, dailyPool(day));
   return { key: p.painting.key, title: p.painting.title[li], seed: p.seed };
 }
 /** 브라우저 — 이 작품이 오늘의 그림인지 (상세 페이지의 창에는 이 작품이 뽑히는 날만 들어 있다) */

@@ -61,6 +61,13 @@ let N1 = 0;
 // E. 오늘의 퍼즐·큰 판
 // 오늘의 퍼즐은 48조각을 청하지만 그날 그림의 비율에 따라 격자가 45~50 으로 맞춰진다(2026-09-14 코토팍시는 45) — 정확히 48 을 기대하면 날짜 따라 깨진다
 { const { ctx, page } = await newPage(br); await page.goto(`${BASE}/board/?daily=1`); await waitPlay(page); const n = await tray(page); ok(Math.abs(n - 48) <= 6 && (await page.$eval('#jg-hud-name', (e) => e.textContent)).length > 0, `daily: 48조각 근처로 열림 (${n})`); await ctx.close(); }
+// 오늘의 퍼즐 후보는 시기별로 얼린다(works.ts dailyPool) — 무하 102점이 후보 중간에 끼며 지난 날짜가 통째로 바뀌었던 것. 2026-09-14 까지는 옛 목록이라 그날은 코토팍시 풍경.
+// 저장은 날짜로 찾으므로(daily:<날짜>) 그림이 다른 저장이 걸려 있으면 이어하지 않고 새 판
+{ const { ctx, page } = await newPage(br); await page.goto(`${BASE}/board/?daily=2026-09-14`); await waitPlay(page);
+  const name = await page.$eval('#jg-hud-name', (e) => e.textContent); ok(name.includes('코토팍시 풍경'), 'daily era: 2026-09-14 는 코토팍시 풍경', name); const n = await tray(page);
+  await page.evaluate(() => new Promise((res) => { const r = indexedDB.open('jigsawlab'); r.onsuccess = () => { const tx = r.result.transaction('saves', 'readwrite'); tx.objectStore('saves').put({ id: 'daily:2026-09-14', v: 1, kind: 'daily', key: 'adam-three-kittens', name: 'x', day: '2026-09-14', seed: 1, cols: 8, rows: 6, total: 48, imgW: 1600, imgH: 1200, locked: [0, 1, 2, 3, 4], groups: [], tray: [], elapsed: 0, moves: 5, savedAt: Date.now(), thumb: '', done: 5 }); tx.oncomplete = res; }; }));
+  await page.goto(`${BASE}/board/?daily=2026-09-14`); await waitPlay(page); const l = await left(page); ok(l === n && (await tray(page)) === n && (await page.$eval('#jg-hud-name', (e) => e.textContent)).includes('코토팍시 풍경'), 'daily era: 날짜로 찾은 저장이 딴 그림이면 이어하지 않고 새 판', `${l}/${n}`);
+  await ctx.close(); }
 { const { ctx, page } = await newPage(br, { member: true }); await page.goto(`${BASE}/board/?k=wave&n=300`); await waitPlay(page); const l = await left(page); ok(Math.abs(l - 300) <= 30, `n=300 → 격자에 맞춘 ${l}조각`);
   // 조각 수 가중치: 200~300조각은 조각당 1.5 — 판의 HUD(localRate)도 서버 정산도 60조각에 90
   const lv0 = await level(page); await demo(page, 60); await page.waitForTimeout(1500); ok((await hud(page))?.includes('90'), 'weight(294조각): 60개 → HUD +90', String(await hud(page)));

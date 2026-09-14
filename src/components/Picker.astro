@@ -8,19 +8,19 @@ import Base from '../layouts/Base.astro';
 import { JIGSAW } from '../i18n/jigsaw';
 import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
-import { DAILY_POOL, WORKS } from '../data/works';
+import { dailyPool, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
 import { dailyWindow } from '../lib/daily';
 import Box from './Box.astro';
 const { lang = 'ko', cat } = Astro.props as { lang?: Lang; cat?: string };
 const t = JIGSAW[lang], li = LI[lang], P = prefix(lang), U = UI[lang];
-const day = todayKST(), daily = dailyPick(day, DAILY_POOL);
+const day = todayKST(), daily = dailyPick(day, dailyPool(day));
 const all = shelvesFor(lang), total = WORKS.length;
 const here = cat ? all.find((s) => s.id === cat) : null;
 if (cat && !here) throw new Error(`Picker: 카테고리 '${cat}' 에 작품이 없습니다`);
 const shelves = here ? [here] : all;
 const rel = here ? `/play/${here.id}/` : '/play/';
-const win = here ? null : dailyWindow(DAILY_POOL, lang); // 오늘의 퍼즐 칸은 /play/ 에만 있다
+const win = here ? null : dailyWindow(dailyPool, lang); // 오늘의 퍼즐 칸은 /play/ 에만 있다
 const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle(WORKS.length)} · jigsawlab`;
 const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(WORKS.length);
 ---

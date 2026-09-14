@@ -265,7 +265,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
 <script>
   import { JIGSAW } from '../i18n/jigsaw';
   import { gridFor, seeded, makeCut, renderPiece, piecePath, DAILY_PIECES, LIVE_ID, todayKST, dailyPick, type Cut, type PieceBitmap } from '../lib/jigsaw';
-  import { DAILY_POOL, WORKS } from '../data/works';
+  import { dailyPool, WORKS } from '../data/works';
   import { initScenes } from '../lib/scene';
   import { getBest, saveBest, getNick, setNick, bumpStreak, addDone, getDone, bestDoneN, fmtSec } from '../lib/store';
   import { share, toast } from '../lib/share';
@@ -297,7 +297,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const workName = (w: Work) => T.paintingBy(w.title[LI], w.artist[LI], w.year);
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)
-  const day = todayKST(), pick = dailyPick(day, DAILY_POOL);
+  const day = todayKST(), pick = dailyPick(day, dailyPool(day));
 
   // ── 소스 선택 (내 사진 / 오늘의 퍼즐 / 명화)
   type Source = { kind: 'photo' | 'daily' | 'gallery'; key: string; name: string; url?: string; file?: File; blob?: Blob; seed?: number; day?: string; fixedN?: number; photoId?: string };
@@ -332,7 +332,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 로그인했으면 서버에 있는 하던 퍼즐 목록(메타)을 한 번 받아 두고, 로컬에 없을 때 대신 씀
   let remoteSaves: SaveMeta[] = []; let remoteReady: Promise<void> = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
   const dropRemote = (id: string) => { remoteSaves = remoteSaves.filter((m) => m.id !== id); syncDelSave(id); };
-  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } } }
+  async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } }
+    // 오늘의 퍼즐 저장은 날짜로 찾으므로(daily:<날짜>) 후보가 바뀌어 그날 그림이 달라지면 딴 그림의 진행이 걸린다 — 그림이 다르면 이어하지 않는다
+    if (pendingSave && pendingSave.key !== src.key) pendingSave = null; }
   const bestKey = (n: number) => src?.kind === 'daily' ? `daily:${src.day}` : `${src?.key}:${n}`;
   document.querySelectorAll<HTMLButtonElement>('.pieces button').forEach((b) => b.addEventListener('click', () => { wantN = Number(b.dataset.n); markPreset(wantN); ($('jg-custom') as HTMLInputElement).value = ''; updateGrid(); }));
   $('jg-custom').addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 6 && v <= 2000) { wantN = v; markPreset(null); updateGrid(); } });
@@ -1202,7 +1204,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       location.replace(`${PFX}/photo/`); return; // 사진 고르기는 /photo/ 가 맡는다
     }
     if (q.get('daily') || (pt && q.get('d') === '1')) {
-      const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, DAILY_POOL);
+      const dq = q.get('daily') ?? '1'; const dd = /^\d{4}-\d{2}-\d{2}$/.test(dq) && dq <= day ? dq : day; const pk = dd === day ? pick : dailyPick(dd, dailyPool(dd));
       const name = `${T.daily} ${dd === day ? '' : dd.replace(/-/g, '.')} · ${pk.painting.title[LI]}`.replace('  ', ' ');
       clean(); fullLoad(true, T.opening, { img: thumbUrl(pk.painting.key), name });
       await loadSource({ kind: 'daily', key: pk.painting.key, name, url: artUrl(pk.painting.key), seed: pk.seed, day: dd, fixedN: DAILY_PIECES }, { auto: true }); if (!img) bailOut(); return;

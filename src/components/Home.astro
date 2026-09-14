@@ -3,15 +3,15 @@
 import Box from './Box.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, LIVE_ID, todayKST, dailyPick } from '../lib/jigsaw';
-import { DAILY_POOL, WORKS } from '../data/works';
+import { dailyPool, WORKS } from '../data/works';
 import { dailyWindow } from '../lib/daily';
 import { shelvesFor } from '../lib/catalogView';
 import { earnFor } from '../lib/level';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
-const day = todayKST(), daily = dailyPick(day, DAILY_POOL), shelves = shelvesFor(lang), total = WORKS.length;
+const day = todayKST(), daily = dailyPick(day, dailyPool(day)), shelves = shelvesFor(lang), total = WORKS.length;
 const all = shelves.flatMap((s) => s.items);
-const win = dailyWindow(DAILY_POOL, lang); // 브라우저가 오늘·지난 7일 그림을 works 없이 뽑게
+const win = dailyWindow(dailyPool, lang); // 브라우저가 오늘·지난 7일 그림을 works 없이 뽑게
 const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 ---
 <script is:inline type="application/json" id="daily-win" set:html={JSON.stringify(win)} />

@@ -68,10 +68,8 @@ for (const [o, show] of [[-1, true], [-3, false]]) { const { ctx, page } = await
   // 홈·상세에도 리본
   await page.goto(BASE + '/', { waitUntil: 'networkidle' }); await page.waitForTimeout(300); ok((await page.$$eval('.boxw.done', (els) => els.length)) >= 1, 'progress(home): 리본');
   await page.goto(BASE + '/puzzle/wave/', { waitUntil: 'networkidle' }); await page.waitForTimeout(300); ok(await page.$eval('.stage .boxw', (e) => e.classList.contains('done') && e.dataset.done === '300'), 'progress(detail): 큰 상자에 리본');
-  // /my/ 통계
+  // /my/ — 완성 카드가 완성 보기 페이지로
   await page.goto(BASE + '/my/', { waitUntil: 'networkidle' }); await page.waitForTimeout(300);
-  const tiles = await page.$$eval('#st-tiles > div', (els) => els.map((e) => e.querySelector('b').textContent));
-  ok(tiles.length === 7 && tiles[0] === '3' && tiles[1] === '448' && tiles[4] === '300' && tiles[5] === '1' && tiles[6] === '2', 'my stats: 타일(완성 3·조각 448·최대 300·오늘의 퍼즐 1·그림 2)', JSON.stringify(tiles));
   // 완성 카드 → 완성 보기 페이지. 순서 기록이 없는 기록(다른 기기·옛 것)은 완성본만, 타임랩스 버튼 없음. 없는 기록은 안내
   await page.click('#l-done .mc'); await page.waitForFunction(() => document.getElementById('dv')?.dataset.ready === '1', null, { timeout: 30000 });
   ok(/\/done\/\?at=\d+/.test(page.url()) && (await page.$eval('#dv-play', (b) => b.hidden)) && (await page.$eval('#dv-msg', (e) => e.hidden)), 'done page: 완성본만, 타임랩스 버튼 없음', page.url());

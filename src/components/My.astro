@@ -28,11 +28,6 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       <div class="lvl-stats" id="lvl-stats"></div>
     </section>
     <section class="blk bdg-blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div><button type="button" class="shelf-all bdg-more" id="bdg-more"></button></section>
-    <!-- 통계 — 이 기기의 완성 목록(+회원이면 서버 기록)으로 브라우저에서 셈한다. 시간은 개인 기록으로만 보여 주고 랭킹에는 안 쓴다. 타일만 — 잔디 달력·진열대별 진도는 두었다가 뺐다 -->
-    <section class="blk stats-blk" id="blk-stats"><h2>{M.stats}</h2>
-      <div class="st-tiles" id="st-tiles"></div>
-      <p class="empty muted" id="e-stats" hidden>{M.emptyStats}</p>
-    </section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
@@ -72,9 +67,6 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     .bdgs :global(.bd-i) { font-size: 1.45rem; line-height: 1.2; flex: none; }
     .bdgs :global(.bd b) { display: block; font-size: .92rem; } .bdgs :global(.bd small) { display: block; color: var(--muted); font-size: .78rem; line-height: 1.5; margin-top: 2px; }
     .bdgs :global(.bd-p) { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
-    /* 통계 — 타일은 레벨 카드의 것과 같은 꼴. 스크립트가 만드므로 :global */
-    .st-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
-    .st-tiles :global(div) { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--bg-2); } .st-tiles :global(b) { font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .st-tiles :global(small) { color: var(--muted); font-size: .76rem; font-weight: 600; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -120,17 +112,6 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       // 카드를 누르면 다시 맞추기가 아니라 완성 보기 페이지(/done/?at=) — 맞춘 그림을 조각 모양째 구경하고 순서를 되돌려 본다. 다시 맞추기는 그 페이지 안에
       for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
-    /** 통계 — 이 기기 기록과 서버 기록을 at 으로 합쳐 셈한다. 방에서 맞춘 판은 내가 놓은 조각(mine)만 조각 수에 넣고 시간은 안 넣는다(방의 시간은 판이 열린 뒤 흐른 시간이라 내 것이 아니다) */
-    function renderStats() {
-      const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))];
-      const tiles = $('st-tiles'), empty = $('e-stats'); tiles.innerHTML = '';
-      if (!list.length) { empty.hidden = false; return; } empty.hidden = true;
-      let pieces = 0, secs = 0, soloPieces = 0, biggest = 0, daily = 0; const works = new Set<string>();
-      for (const d of list) { const mine = d.room && d.mine !== undefined ? d.mine : d.n; pieces += mine; if (!d.room) { secs += d.sec; soloPieces += d.n; } if (d.n > biggest) biggest = d.n; if (d.kind === 'daily') daily++; if (d.kind !== 'photo') works.add(d.key); }
-      const ppm = secs > 0 ? (soloPieces * 60) / secs : 0;
-      const rows: [string, string][] = [[V.statSolved, String(list.length)], [V.statPieces, pieces.toLocaleString()], [M.statTime, M.hm(Math.floor(secs / 3600), Math.floor((secs % 3600) / 60))], [M.statPpm, ppm >= 10 ? String(Math.round(ppm)) : ppm.toFixed(1)], [M.statBiggest, biggest.toLocaleString()], [M.statDaily, String(daily)], [V.statWorks, String(works.size)]];
-      for (const [k, v] of rows) { const w = document.createElement('div'); const b = document.createElement('b'); b.textContent = v; const s = document.createElement('small'); s.textContent = k; w.appendChild(b); w.appendChild(s); tiles.appendChild(w); }
-    }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);
       $('e-fav').hidden = !!list.length; $('c-fav').textContent = list.length ? String(list.length) : '';
@@ -145,7 +126,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       btn(A.rename, '', async () => { const n = await askNick(u.nick, 'edit'); if (n && n !== u.nick && (await setNickRemote(n))) renderAcct(); });
       btn(A.logout, '', async () => { await logout(); location.reload(); });
       btn(A.del, 'danger', async () => { if (!confirm(A.delAsk)) return; if (await deleteAccount()) { alert(A.deleted); location.reload(); } });
-      const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); renderStats(); }
+      const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); }
     }
     async function renderLevel() {
       const d = await fetchLevel(); if (!d) return;
@@ -184,6 +165,6 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       label();
       blk.hidden = false;
     }
-    renderProg(); renderDone(); renderStats(); renderFav(); renderAcct(); renderLevel();
+    renderProg(); renderDone(); renderFav(); renderAcct(); renderLevel();
   </script>
 </Base>

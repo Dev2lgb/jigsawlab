@@ -12,6 +12,7 @@ export const CATEGORIES: Category[] = [
   { id: 'animal', name: ['동물', 'Animals', '動物', 'Tiere', 'Animales'], daily: true },
   { id: 'pets', name: ['고양이와 강아지', 'Cats & Dogs', '猫と犬', 'Katzen & Hunde', 'Gatos y perros'], daily: true },
   { id: 'tale', name: ['동화와 판타지', 'Fairy Tales & Fantasy', '童話とファンタジー', 'Märchen & Fantasie', 'Cuentos y fantasía'], daily: true },
+  { id: 'mucha', name: ['알폰스 무하', 'Alphonse Mucha', 'アルフォンス・ミュシャ', 'Alphonse Mucha', 'Alphonse Mucha'], daily: true },
   { id: 'ukiyoe', name: ['우키요에·일본 회화', 'Ukiyo-e & Japanese Painting', '浮世絵・日本絵画', 'Ukiyo-e & japanische Malerei', 'Ukiyo-e y pintura japonesa'], daily: true },
   { id: 'korean', name: ['한국 회화', 'Korean Painting', '韓国絵画', 'Koreanische Malerei', 'Pintura coreana'], daily: true },
   { id: 'photo', name: ['빈티지 사진', 'Vintage Photographs', 'ヴィンテージ写真', 'Historische Fotografien', 'Fotografía antigua'], daily: true },

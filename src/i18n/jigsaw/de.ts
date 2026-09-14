@@ -2,7 +2,7 @@
 import type { JigsawStrings } from './ko';
 export const DE: JigsawStrings = {
   title: 'Was puzzeln wir?', sub: 'Das Tagespuzzle, ein eigenes Foto oder eines von unten.',
-  seoTitle: 'Kostenlose Online-Puzzles — 518 Bilder zur Auswahl', boardTitle: 'Puzzlebrett', seoDesc: 'Kostenlos online puzzeln, ohne Anmeldung. 518 Gemälde, koreanische Kunst und Aufnahmen aus dem All — oder dein eigenes Bild. Von 48 bis 1000 Teile. Mit einem Link gemeinsam lösen.',
+  seoTitle: (n: number) => `Kostenlose Online-Puzzles — ${n} Bilder zur Auswahl`, boardTitle: 'Puzzlebrett', seoDesc: (n: number) => `Kostenlos online puzzeln, ohne Anmeldung. ${n} Gemälde, koreanische Kunst und Aufnahmen aus dem All — oder dein eigenes Bild. Von 48 bis 1000 Teile. Mit einem Link gemeinsam lösen.`,
   pick: 'Mein Foto auswählen', drop: 'Foto hierher ziehen oder tippen zum Auswählen', daily: 'Tagespuzzle', dailyCap: (title: string, n: number) => `${title} · ${n} Teile`, pieces: 'Teile', custom: 'Eigene Zahl', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} Teile`, noImg: 'Wähl zuerst ein Foto oder ein Gemälde', chosen: 'Ausgewähltes Bild', myPhoto: 'Mein Foto',
   start: 'Los', privacy: 'Dein Foto verlässt dein Gerät nie', loading: 'Teile werden geschnitten…', opening: 'Puzzle wird geöffnet…', saveGone: 'Dieses gespeicherte Puzzle gibt es nicht mehr',
   moves: 'Gelegt', left: (n: number) => `noch ${n} Teile`, edgeOnly: 'Nur Randteile', hint: 'Bild schwach einblenden', original: 'Bild anzeigen (gedrückt halten)', trayHint: 'Zieh Teile aus der Ablage nach oben an ihren Platz. Zum Zoomen aufziehen, mit zwei Fingern verschieben',

@@ -1,4 +1,4 @@
-// 전체 작품 목록 — 기존 22점(lib/jigsaw PAINTINGS + paintings.ts) + AIC 204점(aic.json) + 추가 소스 292점(extra.json: 위키미디어 공용·NASA 등).
+// 전체 작품 목록 — 기존 22점(lib/jigsaw PAINTINGS + paintings.ts) + AIC 204점(aic.json) + 추가 소스 392점(extra.json: 위키미디어 공용·NASA·알폰스 무하 등).
 // 제목은 titles.ts + 작가명은 artists.ts. 그림 이야기(about/)는 상세 페이지에서만 쓰므로 여기서 물지 않는다 — 물면 클라이언트 번들까지 따라간다
 import { PAINTINGS } from '../lib/jigsaw';
 import { MUSEUM } from './paintings';

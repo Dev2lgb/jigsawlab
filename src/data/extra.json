@@ -1909,7 +1909,7 @@
  },
  {
   "key": "mucha-zodiac",
-  "cat": "poster",
+  "cat": "mucha",
   "title": "Zodiac",
   "artist": "Alphonse Mucha",
   "date": "1896",
@@ -1927,7 +1927,7 @@
  },
  {
   "key": "mucha-job",
-  "cat": "poster",
+  "cat": "mucha",
   "title": "Job",
   "artist": "Alphonse Mucha",
   "date": "1896",
@@ -5254,5 +5254,1805 @@
   "license": "Public domain",
   "w": 1600,
   "h": 1353
+ },
+ {
+  "key": "mucha-gismonda",
+  "cat": "mucha",
+  "title": "Gismonda",
+  "artist": "Alphonse Mucha",
+  "date": "1894",
+  "year": 1894,
+  "credit": "",
+  "museum": [
+   "프라하 국립미술관",
+   "National Gallery Prague",
+   "プラハ国立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:1894_Mucha_Gismonda_Nationalgalerie_Prag_anagoria.jpg",
+  "license": "Public domain",
+  "w": 556,
+  "h": 1600
+ },
+ {
+  "key": "mucha-camelias",
+  "cat": "mucha",
+  "title": "La Dame aux Camélias",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "미국 의회도서관",
+   "Library of Congress",
+   "アメリカ議会図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_1896_-_La_Dame_aux_Cam%C3%A9lias_-_Sarah_Bernhardt.jpg",
+  "license": "Public domain",
+  "w": 600,
+  "h": 1600
+ },
+ {
+  "key": "mucha-samaritaine",
+  "cat": "mucha",
+  "title": "La Samaritaine",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Samaritaine._Th%C3%A9%C3%A2tre_de_La_Renaissance._Sarah_Bernhardt._La_Samaritaine_%C3%A9vangile_en_trois_tableaux_en_vers_de_Mr_Edmond_Rostand,_musique_de_Mr_Gabriel_Piern%C3%A9_affiche,_Mucha.jpg",
+  "license": "Public domain",
+  "w": 591,
+  "h": 1600
+ },
+ {
+  "key": "mucha-medee",
+  "cat": "mucha",
+  "title": "Médée",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:M%C3%A9d%C3%A9e._Th%C3%A9%C3%A2tre_de_La_Renaissance._Sarah_Bernhardt_-_affiche_-_Mucha_-_btv1b9016288g.jpg",
+  "license": "Public domain",
+  "w": 636,
+  "h": 1600
+ },
+ {
+  "key": "mucha-hamlet",
+  "cat": "mucha",
+  "title": "Hamlet",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Hamlet._Tragique_histoire_d%27Hamlet_prince_de_Danemark._Sarah_Bernhardt._Th%C3%A9%C3%A2tre_Sarah_Bernhardt_-_affiche_-_Mucha_99_-_btv1b9016315x.jpg",
+  "license": "Public domain",
+  "w": 617,
+  "h": 1600
+ },
+ {
+  "key": "mucha-tosca",
+  "cat": "mucha",
+  "title": "La Tosca",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:La_Tosca,_drame_en_cinq_actes_et_six_tableaux_de_Mr_Victorien_Sardou._Th%C3%A9atre-Sarah-Bernhardt_-_affiche_-_Mucha_-_btv1b9005267q.jpg",
+  "license": "Public domain",
+  "w": 615,
+  "h": 1600
+ },
+ {
+  "key": "mucha-trappistine",
+  "cat": "mucha",
+  "title": "La Trappistine",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Mucha_-_La_Trappistine,_1897.jpg",
+  "license": "Public domain",
+  "w": 581,
+  "h": 1600
+ },
+ {
+  "key": "mucha-salon-cent-1896",
+  "cat": "mucha",
+  "title": "Salon des Cent, 20th Exhibition",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Salon_des_Cent._XXme_exposition_du_Salon_des_Cent_(mars-avril_1896),_hall_de_la_Plume.jpg",
+  "license": "Public domain",
+  "w": 1092,
+  "h": 1600
+ },
+ {
+  "key": "mucha-salon-cent-1897",
+  "cat": "mucha",
+  "title": "Salon des Cent, Mucha Exhibition",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립미술사연구소 도서관",
+   "Bibliothèque de l'INHA, Paris",
+   "フランス国立美術史研究所図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Salon_des_Cent_(30)_-_June_1897_EAL.jpg",
+  "license": "Public domain",
+  "w": 1081,
+  "h": 1600
+ },
+ {
+  "key": "mucha-day-brightness",
+  "cat": "mucha",
+  "title": "The Times of the Day: Brightness of Day",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Times_of_the_Day_-_Brightness_of_Day,_1899.jpg",
+  "license": "Public domain",
+  "w": 593,
+  "h": 1600
+ },
+ {
+  "key": "mucha-day-morning",
+  "cat": "mucha",
+  "title": "The Times of the Day: Morning Awakening",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Times_of_the_Day_-_Morning_Awakening,_1899.jpg",
+  "license": "Public domain",
+  "w": 597,
+  "h": 1600
+ },
+ {
+  "key": "mucha-day-evening",
+  "cat": "mucha",
+  "title": "The Times of the Day: Evening Contemplation",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Times_of_the_Day_-_Evening_Contemplation,_1899.jpg",
+  "license": "Public domain",
+  "w": 582,
+  "h": 1600
+ },
+ {
+  "key": "mucha-day-night",
+  "cat": "mucha",
+  "title": "The Times of the Day: Night's Rest",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Times_of_the_Day_-_Night%27s_Rest,_1899.jpg",
+  "license": "Public domain",
+  "w": 587,
+  "h": 1600
+ },
+ {
+  "key": "mucha-slav-homeland",
+  "cat": "mucha",
+  "title": "The Slavs in Their Original Homeland",
+  "artist": "Alphonse Mucha",
+  "date": "1912",
+  "year": 1912,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Slovane_v_pravlasti_81x61m.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1172
+ },
+ {
+  "key": "mucha-slav-svantovit",
+  "cat": "mucha",
+  "title": "The Celebration of Svantovít",
+  "artist": "Alphonse Mucha",
+  "date": "1912",
+  "year": 1912,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Slavnost_svatovitova_na_rujane.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1213
+ },
+ {
+  "key": "mucha-slav-liturgy",
+  "cat": "mucha",
+  "title": "The Introduction of the Slavonic Liturgy",
+  "artist": "Alphonse Mucha",
+  "date": "1912",
+  "year": 1912,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Zavedeni_slovanske_liturgie_na_velke_morave.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1121
+ },
+ {
+  "key": "mucha-slav-hus",
+  "cat": "mucha",
+  "title": "Master Jan Hus Preaching at the Bethlehem Chapel",
+  "artist": "Alphonse Mucha",
+  "date": "1916",
+  "year": 1916,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Kazani_mistra_jana_husa_v_kapli_betlemske_81x61m.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1156
+ },
+ {
+  "key": "mucha-slav-krizky",
+  "cat": "mucha",
+  "title": "The Meeting at Křížky",
+  "artist": "Alphonse Mucha",
+  "date": "1916",
+  "year": 1916,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_Na_Krizku.jpg",
+  "license": "Public domain",
+  "w": 1070,
+  "h": 1600
+ },
+ {
+  "key": "mucha-lorenzaccio",
+  "cat": "mucha",
+  "title": "Lorenzaccio",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Lorenzaccio,_1896.jpg",
+  "license": "Public domain",
+  "w": 652,
+  "h": 1600
+ },
+ {
+  "key": "mucha-la-plume",
+  "cat": "mucha",
+  "title": "Sarah Bernhardt (La Plume)",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Bridges,_A16b_-c.jpg",
+  "license": "Public domain",
+  "w": 1128,
+  "h": 1600
+ },
+ {
+  "key": "mucha-salome",
+  "cat": "mucha",
+  "title": "Salomé",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Salom%C3%A9,_1897.jpg",
+  "license": "Public domain",
+  "w": 1144,
+  "h": 1600
+ },
+ {
+  "key": "mucha-amants",
+  "cat": "mucha",
+  "title": "Amants",
+  "artist": "Alphonse Mucha",
+  "date": "1895",
+  "year": 1895,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Amants,_com%C3%A9die_de_M._Donnay._Th%C3%A9atre_de_la_Renaissance_-_affiche_-_Mucha_-_btv1b531874109.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1241
+ },
+ {
+  "key": "mucha-hyacinth",
+  "cat": "mucha",
+  "title": "Princess Hyacinth",
+  "artist": "Alphonse Mucha",
+  "date": "1911",
+  "year": 1911,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Princess_Hyacinth.jpg",
+  "license": "Public domain",
+  "w": 1076,
+  "h": 1600
+ },
+ {
+  "key": "mucha-salammbo",
+  "cat": "mucha",
+  "title": "Salammbô",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_1896_-_Salammb%C3%B4.jpg",
+  "license": "Public domain",
+  "w": 900,
+  "h": 1556
+ },
+ {
+  "key": "mucha-job-1898",
+  "cat": "mucha",
+  "title": "Job (1898)",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "미국 의회도서관",
+   "Library of Congress",
+   "アメリカ議会図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:JOB,_cigarette_paper_advertisement_by_Alfons_Mucha,_1898.jpg",
+  "license": "Public domain",
+  "w": 1066,
+  "h": 1600
+ },
+ {
+  "key": "mucha-reverie",
+  "cat": "mucha",
+  "title": "Rêverie (F. Champenois Imprimeur-Éditeur)",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:F._Champenois_imprimeur-%C3%A9diteur.jpg",
+  "license": "Public domain",
+  "w": 1196,
+  "h": 1600
+ },
+ {
+  "key": "mucha-cycles-perfecta",
+  "cat": "mucha",
+  "title": "Cycles Perfecta",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Mucha_-_Cycles_Perfecta.jpg",
+  "license": "Public domain",
+  "w": 1055,
+  "h": 1600
+ },
+ {
+  "key": "mucha-waverley",
+  "cat": "mucha",
+  "title": "Waverley Cycles",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Cycles_Waverley_affiche_Mucha_1898.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1281
+ },
+ {
+  "key": "mucha-lefevre-utile",
+  "cat": "mucha",
+  "title": "Biscuits Lefèvre-Utile",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "워싱턴 국립미술관",
+   "National Gallery of Art, Washington",
+   "ワシントン・ナショナル・ギャラリー"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Marie_Mucha,_Biscuits_Lef%C3%A8vre-Utile,_1896,_NGA_208207.jpg",
+  "license": "CC0",
+  "w": 1162,
+  "h": 1600
+ },
+ {
+  "key": "mucha-flirt",
+  "cat": "mucha",
+  "title": "Flirt (Biscuits Lefèvre-Utile)",
+  "artist": "Alphonse Mucha",
+  "date": "1900",
+  "year": 1900,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Flirt._Biscuits_Lef%C3%A8vre-Utile_affiche,_Mucha.jpg",
+  "license": "Public domain",
+  "w": 785,
+  "h": 1600
+ },
+ {
+  "key": "mucha-gaufrettes",
+  "cat": "mucha",
+  "title": "Lefèvre-Utile: Gaufrettes Vanille",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Mucha_-_Lef%C3%A8vre-Utile,_Gaufrettes_vanille,_1898.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1583
+ },
+ {
+  "key": "mucha-cognac-bisquit",
+  "cat": "mucha",
+  "title": "Cognac Bisquit",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Cognac_Bisquit,_1899.jpg",
+  "license": "Public domain",
+  "w": 879,
+  "h": 1600
+ },
+ {
+  "key": "mucha-moet-white-star",
+  "cat": "mucha",
+  "title": "Moët & Chandon: Champagne White Star",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mo%C3%ABt_%26_Chandon_-_Champagne_White_Star_-_affiche_-_Mucha_99_-_btv1b9005300w.jpg",
+  "license": "Public domain",
+  "w": 701,
+  "h": 1600
+ },
+ {
+  "key": "mucha-moet-cremant",
+  "cat": "mucha",
+  "title": "Moët & Chandon: Grand Crémant Impérial",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "안트베르펜 시 컬렉션",
+   "City of Antwerp collections",
+   "アントワープ市コレクション"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mo%C3%ABt_%26amp_Chandon_Grand_Cr%C3%A9mant_Imp%C3%A9rial,_asset_SbU6TdjMXnPonkcETiErC7mZ.tif",
+  "license": "Public domain",
+  "w": 717,
+  "h": 1600
+ },
+ {
+  "key": "mucha-ruinart",
+  "cat": "mucha",
+  "title": "Champagne Ruinart",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Champagne_Ruinart-Mucha.jpg",
+  "license": "Public domain",
+  "w": 1069,
+  "h": 1600
+ },
+ {
+  "key": "mucha-heidsieck",
+  "cat": "mucha",
+  "title": "Heidsieck & Co.",
+  "artist": "Alphonse Mucha",
+  "date": "1901",
+  "year": 1901,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha-Heidsieck_and_Co.-1901.jpg",
+  "license": "Public domain",
+  "w": 1174,
+  "h": 1593
+ },
+ {
+  "key": "mucha-bieres-meuse",
+  "cat": "mucha",
+  "title": "Bières de la Meuse",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "카르나발레 박물관",
+   "Musée Carnavalet, Paris",
+   "カルナヴァレ博物館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:BIERES_de_la_MEUSE,_AFF1371.jpg",
+  "license": "CC0",
+  "w": 1113,
+  "h": 1600
+ },
+ {
+  "key": "mucha-benedictine",
+  "cat": "mucha",
+  "title": "Bénédictine",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:B%C3%A9n%C3%A9dictine_de_l%27Abbaye_de_F%C3%A9camp_affiche,_Mucha.jpg",
+  "license": "Public domain",
+  "w": 636,
+  "h": 1600
+ },
+ {
+  "key": "mucha-chocolat-ideal",
+  "cat": "mucha",
+  "title": "Chocolat Idéal",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Chocolat_Ideal,_1897.jpg",
+  "license": "Public domain",
+  "w": 1063,
+  "h": 1600
+ },
+ {
+  "key": "mucha-nestle",
+  "cat": "mucha",
+  "title": "Nestlé's Food for Infants",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Nestl%C3%A9%27_food_for_infants_affiche,_Mucha.jpg",
+  "license": "Public domain",
+  "w": 771,
+  "h": 1600
+ },
+ {
+  "key": "mucha-nestle-hommage",
+  "cat": "mucha",
+  "title": "Hommage Respectueux de Nestlé",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "안트베르펜 시 컬렉션",
+   "City of Antwerp collections",
+   "アントワープ市コレクション"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Hommage_respectueux_de_Nestl%C3%A9,_asset_f2dLFfvAhiepTokLQjtjyS75.tif",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1106
+ },
+ {
+  "key": "mucha-rodo",
+  "cat": "mucha",
+  "title": "Lance Parfum Rodo",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_Lance_Parfum_Rodo_1896-97.jpg",
+  "license": "Public domain",
+  "w": 1127,
+  "h": 1600
+ },
+ {
+  "key": "mucha-monaco",
+  "cat": "mucha",
+  "title": "Monaco · Monte-Carlo",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Monaco,_Monte-Carlo._Chemins_de_Fer_P.L.M._affiche,_Mucha_1897.jpg",
+  "license": "Public domain",
+  "w": 1112,
+  "h": 1600
+ },
+ {
+  "key": "mucha-luchon",
+  "cat": "mucha",
+  "title": "Luchon, Queen of the Pyrenees",
+  "artist": "Alphonse Mucha",
+  "date": "1895",
+  "year": 1895,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Chemins_de_fer_d%27Orl%C3%A9ans_et_du_Midi,_Luchon,_la_reine_des_Pyr%C3%A9n%C3%A9es,_casino,_%C3%A9tablissement_thermal,_saison_du_1er_juin_au_1er_ooctobre_affiche,_attribu%C3%A9e_%C3%A0_Mucha.jpg",
+  "license": "Public domain",
+  "w": 1073,
+  "h": 1600
+ },
+ {
+  "key": "mucha-st-louis",
+  "cat": "mucha",
+  "title": "Saint Louis World's Fair",
+  "artist": "Alphonse Mucha",
+  "date": "1903",
+  "year": 1903,
+  "credit": "",
+  "museum": [
+   "미주리 역사박물관",
+   "Missouri History Museum, St. Louis",
+   "ミズーリ歴史博物館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Exposition_Universelles_et_Internationale_de_St._Louis_(Etats_Unis)_du_30_Avril_au_30_Novembre._(Poster_advertising_the_1904_World%27s_Fair).jpg",
+  "license": "Public domain",
+  "w": 1149,
+  "h": 1600
+ },
+ {
+  "key": "mucha-austria-1900",
+  "cat": "mucha",
+  "title": "Austria at the Paris Exposition 1900",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Plakat_Mucha_%C3%96sterreich_Paris_1900.jpg",
+  "license": "Public domain",
+  "w": 1113,
+  "h": 1600
+ },
+ {
+  "key": "mucha-beaux-arts",
+  "cat": "mucha",
+  "title": "Société Populaire des Beaux-Arts",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Soci%C3%A9t%C3%A9_Populaire_des_Beaux-Arts._L%27Art_enseign%C3%A9_au_peuple_par_les_projections.jpg",
+  "license": "Public domain",
+  "w": 1154,
+  "h": 1600
+ },
+ {
+  "key": "mucha-cassan-fils",
+  "cat": "mucha",
+  "title": "Imprimerie Cassan Fils",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "안트베르펜 시 컬렉션",
+   "City of Antwerp collections",
+   "アントワープ市コレクション"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Imprimerie_Cassan_Fils_Fond%C3%A9e_en_1851_Impressions_de_Luxe_Artistiques_%26amp_Commerciales_Ramier_du_Chateau_Toulouse,_asset_DjWjNVWfleEAPXHmJrJE4P2a.tif",
+  "license": "Public domain",
+  "w": 631,
+  "h": 1600
+ },
+ {
+  "key": "mucha-bleu-deschamps",
+  "cat": "mucha",
+  "title": "Bleu Deschamps",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Bridges,_A30_-c.jpg",
+  "license": "Public domain",
+  "w": 1175,
+  "h": 1600
+ },
+ {
+  "key": "mucha-west-end-review",
+  "cat": "mucha",
+  "title": "West End Review",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_West_End_Review_(1897).jpg",
+  "license": "Public domain",
+  "w": 1138,
+  "h": 1600
+ },
+ {
+  "key": "mucha-quartier-latin",
+  "cat": "mucha",
+  "title": "Au Quartier Latin",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Au_Quartier_Latin,_1898.jpg",
+  "license": "Public domain",
+  "w": 1160,
+  "h": 1600
+ },
+ {
+  "key": "mucha-moravian-choir",
+  "cat": "mucha",
+  "title": "Moravian Teachers' Choir",
+  "artist": "Alphonse Mucha",
+  "date": "1911",
+  "year": 1911,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha-Moravian_Teachers%27_Choir-1911.jpg",
+  "license": "Public domain",
+  "w": 1163,
+  "h": 1600
+ },
+ {
+  "key": "mucha-zdenka-cerny",
+  "cat": "mucha",
+  "title": "Zdenka Černý",
+  "artist": "Alphonse Mucha",
+  "date": "1903",
+  "year": 1903,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Zdenka_Cerny,_1903.jpg",
+  "license": "Public domain",
+  "w": 935,
+  "h": 1600
+ },
+ {
+  "key": "mucha-ivancice",
+  "cat": "mucha",
+  "title": "Regional Exhibition at Ivančice",
+  "artist": "Alphonse Mucha",
+  "date": "1912",
+  "year": 1912,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Poster_for_%27Regional_Exhibition_at_Ivan%C4%8Dice_1913%27,_1912.jpg",
+  "license": "Public domain",
+  "w": 1005,
+  "h": 1600
+ },
+ {
+  "key": "mucha-czechoslovakia",
+  "cat": "mucha",
+  "title": "10th Anniversary of Czechoslovak Independence",
+  "artist": "Alphonse Mucha",
+  "date": "1928",
+  "year": 1928,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Poster_for_the_10th_Anniversary_of_the_Independence_of_the_Republic_of_Czechoslovakia,_1928.jpg",
+  "license": "Public domain",
+  "w": 1086,
+  "h": 1600
+ },
+ {
+  "key": "mucha-brooklyn",
+  "cat": "mucha",
+  "title": "Mucha Exhibition, Brooklyn Museum",
+  "artist": "Alphonse Mucha",
+  "date": "1921",
+  "year": 1921,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Bridges,_A66_-c.jpg",
+  "license": "Public domain",
+  "w": 1057,
+  "h": 1600
+ },
+ {
+  "key": "mucha-masson-childhood",
+  "cat": "mucha",
+  "title": "Chocolat Masson: Childhood",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Ages_of_Man_Calendar_for_Chocolat_Masson_-_L%27Enfance,_1898.jpg",
+  "license": "Public domain",
+  "w": 1166,
+  "h": 1600
+ },
+ {
+  "key": "mucha-masson-youth",
+  "cat": "mucha",
+  "title": "Chocolat Masson: Youth",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Ages_of_Man_Calendar_for_Chocolat_Masson_-_L%27Adolescence,_1898.jpg",
+  "license": "Public domain",
+  "w": 1169,
+  "h": 1600
+ },
+ {
+  "key": "mucha-spring",
+  "cat": "mucha",
+  "title": "The Seasons: Spring",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Les_Saisons_(1896)_-_printempsFXD.jpg",
+  "license": "Public domain",
+  "w": 814,
+  "h": 1600
+ },
+ {
+  "key": "mucha-summer",
+  "cat": "mucha",
+  "title": "The Seasons: Summer",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Les_Saisons_(1896)_-_eteFXD.jpg",
+  "license": "Public domain",
+  "w": 814,
+  "h": 1600
+ },
+ {
+  "key": "mucha-autumn",
+  "cat": "mucha",
+  "title": "The Seasons: Autumn",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Les_Saisons_(1896)_-_automneFXD.jpg",
+  "license": "Public domain",
+  "w": 814,
+  "h": 1600
+ },
+ {
+  "key": "mucha-winter",
+  "cat": "mucha",
+  "title": "The Seasons: Winter",
+  "artist": "Alphonse Mucha",
+  "date": "1896",
+  "year": 1896,
+  "credit": "",
+  "museum": [
+   "프랑스 국립도서관",
+   "Bibliothèque nationale de France",
+   "フランス国立図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_-_Les_Saisons_(1896)_-_hiverFXD.jpg",
+  "license": "Public domain",
+  "w": 821,
+  "h": 1600
+ },
+ {
+  "key": "mucha-seasons-1897",
+  "cat": "mucha",
+  "title": "The Seasons (1897 series)",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "미국 의회도서관",
+   "Library of Congress",
+   "アメリカ議会図書館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Four_Seasons_by_Alfons_Mucha,_circa_1897.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 867
+ },
+ {
+  "key": "mucha-dance",
+  "cat": "mucha",
+  "title": "The Arts: Dance",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Arts_Dance,_1898.jpg",
+  "license": "Public domain",
+  "w": 1052,
+  "h": 1600
+ },
+ {
+  "key": "mucha-painting",
+  "cat": "mucha",
+  "title": "The Arts: Painting",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Arts_Painting,_1898.jpg",
+  "license": "Public domain",
+  "w": 1028,
+  "h": 1600
+ },
+ {
+  "key": "mucha-poetry",
+  "cat": "mucha",
+  "title": "The Arts: Poetry",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Arts_Poetry,_1898.jpg",
+  "license": "Public domain",
+  "w": 1047,
+  "h": 1600
+ },
+ {
+  "key": "mucha-music",
+  "cat": "mucha",
+  "title": "The Arts: Music",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Arts_Music,_1898.jpg",
+  "license": "Public domain",
+  "w": 1019,
+  "h": 1600
+ },
+ {
+  "key": "mucha-rose",
+  "cat": "mucha",
+  "title": "The Flowers: Rose",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Die_Rose_-_1898.jpeg",
+  "license": "Public domain",
+  "w": 678,
+  "h": 1600
+ },
+ {
+  "key": "mucha-iris",
+  "cat": "mucha",
+  "title": "The Flowers: Iris",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Flowers-Iris,_1898.jpg",
+  "license": "Public domain",
+  "w": 759,
+  "h": 1600
+ },
+ {
+  "key": "mucha-carnation",
+  "cat": "mucha",
+  "title": "The Flowers: Carnation",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Flowers-Carnation,_1898.jpg",
+  "license": "Public domain",
+  "w": 750,
+  "h": 1600
+ },
+ {
+  "key": "mucha-lily",
+  "cat": "mucha",
+  "title": "The Flowers: Lily",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:The_Lily_Alphonse_Mucha.jpg",
+  "license": "Public domain",
+  "w": 704,
+  "h": 1600
+ },
+ {
+  "key": "mucha-precious-stones",
+  "cat": "mucha",
+  "title": "The Precious Stones",
+  "artist": "Alphonse Mucha",
+  "date": "1900",
+  "year": 1900,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_les_pierres_precieuses.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 868
+ },
+ {
+  "key": "mucha-ruby",
+  "cat": "mucha",
+  "title": "The Precious Stones: Ruby",
+  "artist": "Alphonse Mucha",
+  "date": "1900",
+  "year": 1900,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_Ruby.jpg",
+  "license": "Public domain",
+  "w": 648,
+  "h": 1600
+ },
+ {
+  "key": "mucha-north-star",
+  "cat": "mucha",
+  "title": "The Moon and the Stars: North Star",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Stars-Etoile_Polaire_(North_Star),_1902.jpg",
+  "license": "Public domain",
+  "w": 704,
+  "h": 1600
+ },
+ {
+  "key": "mucha-morning-star",
+  "cat": "mucha",
+  "title": "The Moon and the Stars: Morning Star",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Stars-Etoile_du_Matin_(Morning_star),_1902.jpg",
+  "license": "Public domain",
+  "w": 663,
+  "h": 1600
+ },
+ {
+  "key": "mucha-evening-star",
+  "cat": "mucha",
+  "title": "The Moon and the Stars: Evening Star",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Stars-Etoile_Du_Soir_(evening_star),_1902.jpg",
+  "license": "Public domain",
+  "w": 642,
+  "h": 1600
+ },
+ {
+  "key": "mucha-moon",
+  "cat": "mucha",
+  "title": "The Moon and the Stars: The Moon",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Moon_and_the_Stars,_1902.jpg",
+  "license": "Public domain",
+  "w": 618,
+  "h": 1600
+ },
+ {
+  "key": "mucha-byzantine-blonde",
+  "cat": "mucha",
+  "title": "Byzantine Heads: Blonde",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Byzantine_Heads-Blonde.jpg",
+  "license": "Public domain",
+  "w": 1211,
+  "h": 1600
+ },
+ {
+  "key": "mucha-byzantine-brunette",
+  "cat": "mucha",
+  "title": "Byzantine Heads: Brunette",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Byzantine_Heads-Brunette.jpg",
+  "license": "Public domain",
+  "w": 1161,
+  "h": 1600
+ },
+ {
+  "key": "mucha-ivy",
+  "cat": "mucha",
+  "title": "Ivy",
+  "artist": "Alphonse Mucha",
+  "date": "1901",
+  "year": 1901,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Ivy_(1901)_by_Alfons_Mucha.jpg",
+  "license": "Public domain",
+  "w": 1190,
+  "h": 1600
+ },
+ {
+  "key": "mucha-laurel",
+  "cat": "mucha",
+  "title": "Laurel",
+  "artist": "Alphonse Mucha",
+  "date": "1901",
+  "year": 1901,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Laurel_(1901)_by_Alfons_Mucha.jpg",
+  "license": "Public domain",
+  "w": 1164,
+  "h": 1600
+ },
+ {
+  "key": "mucha-fruit",
+  "cat": "mucha",
+  "title": "Fruit",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Fruit2FXD.jpg",
+  "license": "Public domain",
+  "w": 1012,
+  "h": 1600
+ },
+ {
+  "key": "mucha-flower",
+  "cat": "mucha",
+  "title": "Flower",
+  "artist": "Alphonse Mucha",
+  "date": "1897",
+  "year": 1897,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Flower,_1897.jpg",
+  "license": "Public domain",
+  "w": 1025,
+  "h": 1600
+ },
+ {
+  "key": "mucha-primrose",
+  "cat": "mucha",
+  "title": "Primrose",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Primrose_(1899).jpg",
+  "license": "Public domain",
+  "w": 645,
+  "h": 1600
+ },
+ {
+  "key": "mucha-feather",
+  "cat": "mucha",
+  "title": "Feather",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Feather_(1899).jpg",
+  "license": "Public domain",
+  "w": 649,
+  "h": 1600
+ },
+ {
+  "key": "mucha-heather",
+  "cat": "mucha",
+  "title": "Heather from Coastal Cliffs",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Heather_from_Coastal_Cliffs.jpg",
+  "license": "Public domain",
+  "w": 785,
+  "h": 1600
+ },
+ {
+  "key": "mucha-thistle",
+  "cat": "mucha",
+  "title": "Thistle from the Sands",
+  "artist": "Alphonse Mucha",
+  "date": "1902",
+  "year": 1902,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Thistle_from_the_Sands.jpg",
+  "license": "Public domain",
+  "w": 718,
+  "h": 1600
+ },
+ {
+  "key": "mucha-poppies",
+  "cat": "mucha",
+  "title": "Woman with Poppies",
+  "artist": "Alphonse Mucha",
+  "date": "1898",
+  "year": 1898,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_Woman_with_Pppies_1898.png",
+  "license": "Public domain",
+  "w": 1107,
+  "h": 1600
+ },
+ {
+  "key": "mucha-language-flowers",
+  "cat": "mucha",
+  "title": "Language of Flowers",
+  "artist": "Alphonse Mucha",
+  "date": "c. 1900",
+  "year": 1900,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Language_of_Flowers,_1900.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1069
+ },
+ {
+  "key": "mucha-january",
+  "cat": "mucha",
+  "title": "The Months: January",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Months_-_January,_1899.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1588
+ },
+ {
+  "key": "mucha-april",
+  "cat": "mucha",
+  "title": "The Months: April",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Months_-_April,_1899.jpg",
+  "license": "Public domain",
+  "w": 1591,
+  "h": 1600
+ },
+ {
+  "key": "mucha-july",
+  "cat": "mucha",
+  "title": "The Months: July",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Months_-_July,_1899.jpg",
+  "license": "Public domain",
+  "w": 1585,
+  "h": 1600
+ },
+ {
+  "key": "mucha-october",
+  "cat": "mucha",
+  "title": "The Months: October",
+  "artist": "Alphonse Mucha",
+  "date": "1899",
+  "year": 1899,
+  "credit": "",
+  "museum": [
+   "개인 소장",
+   "Private collection",
+   "個人蔵"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_The_Months_-_October,_1899.jpg",
+  "license": "Public domain",
+  "w": 1571,
+  "h": 1600
+ },
+ {
+  "key": "mucha-madonna-lilies",
+  "cat": "mucha",
+  "title": "Madonna of the Lilies",
+  "artist": "Alphonse Mucha",
+  "date": "1905",
+  "year": 1905,
+  "credit": "",
+  "museum": [
+   "무하 재단",
+   "Mucha Trust",
+   "ミュシャ財団"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alfons_Mucha_-_Madonna_of_the_Lilies_(1905).jpg",
+  "license": "Public domain",
+  "w": 1132,
+  "h": 1600
+ },
+ {
+  "key": "mucha-fate",
+  "cat": "mucha",
+  "title": "Fate",
+  "artist": "Alphonse Mucha",
+  "date": "1920",
+  "year": 1920,
+  "credit": "",
+  "museum": [
+   "무하 재단",
+   "Mucha Trust",
+   "ミュシャ財団"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Mucha_-_Fate.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1517
+ },
+ {
+  "key": "mucha-slavia",
+  "cat": "mucha",
+  "title": "Slavia (Portrait of Josephine Crane Bradley)",
+  "artist": "Alphonse Mucha",
+  "date": "1908",
+  "year": 1908,
+  "credit": "",
+  "museum": [
+   "프라하 국립미술관",
+   "National Gallery Prague",
+   "プラハ国立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Alphonse_Mucha_-_Portrait_of_Josephine_Crane_Bradley_as_Slavia,_1908.jpg",
+  "license": "Public domain",
+  "w": 955,
+  "h": 1600
+ },
+ {
+  "key": "mucha-slav-otakar",
+  "cat": "mucha",
+  "title": "King Přemysl Otakar II of Bohemia",
+  "artist": "Alphonse Mucha",
+  "date": "1924",
+  "year": 1924,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Premysl_otakar_ii_kral_zelezny_a_zlaty.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1338
+ },
+ {
+  "key": "mucha-slav-podebrady",
+  "cat": "mucha",
+  "title": "The Hussite King Jiří of Poděbrady",
+  "artist": "Alphonse Mucha",
+  "date": "1923",
+  "year": 1923,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_Jiri_z_Podebrad.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1314
+ },
+ {
+  "key": "mucha-slav-athos",
+  "cat": "mucha",
+  "title": "The Holy Mount Athos",
+  "artist": "Alphonse Mucha",
+  "date": "1926",
+  "year": 1926,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha,_Alfons_-_Der_Heilige_Berg_Athos_-_1926.jpg",
+  "license": "Public domain",
+  "w": 1600,
+  "h": 1373
+ },
+ {
+  "key": "mucha-slav-apotheosis",
+  "cat": "mucha",
+  "title": "The Apotheosis of the Slavs",
+  "artist": "Alphonse Mucha",
+  "date": "1926",
+  "year": 1926,
+  "credit": "",
+  "museum": [
+   "프라하 시립미술관",
+   "Prague City Gallery",
+   "プラハ市立美術館"
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Mucha_Apoteoza.jpg",
+  "license": "Public domain",
+  "w": 1322,
+  "h": 1600
  }
 ]

@@ -11,11 +11,12 @@ export const POPULAR: Record<string, string[]> = {
   animal: ['surprised', 'pine-forest', 'audubon-flamingo', 'delacroix-lion-hunt', 'koson-crow', 'jakuchu-red-parrot-branch', 'geungjae-pajeok', 'bonheur-cattle-rest-hillside', 'kunisada-crouching-tiger', 'hokusai-chrysanthemum-horsefly'],
   pets: ['wain-psychedelic-cat', 'reichert-four-graces', 'ronner-cat-three-kittens', 'barber-girl-sheltie', 'adam-four-kittens', 'wain-gothic-cat', 'barber-family-of-pugs', 'reichert-kittens-frog', 'aldin-hounds-chorus', 'kuniyoshi-cats-catfish'],
   tale: ['bauer-tuvstarr', 'hughes-midsummer-eve', 'hughes-night-train-stars', 'sterrett-white-palace', 'fitzgerald-fairies-favourite', 'bauer-knight-rode', 'robinson-russian-princess', 'sterrett-good-doe', 'goble-swans', 'clarke-butterfly-design'],
+  mucha: ['mucha-gismonda', 'mucha-zodiac', 'mucha-job', 'mucha-spring', 'mucha-camelias', 'mucha-dance', 'mucha-monaco', 'mucha-reverie', 'mucha-summer', 'mucha-ruby'],
   ukiyoe: ['redfuji', 'shower', 'plum-garden', 'three-beauties', 'wind-thunder', 'korin-irises', 'kajikazawa', 'ejiri', 'hida-bridge', 'hokusai-shower-below-summit'],
   korean: ['ssireum', 'dano', 'jeongseon-inwang', 'hyewon-wolha', 'danwon-seodang', 'minhwa-tiger-magpie', 'mudong', 'irworobongdo', 'jeongseon-geumgang', 'hyewon-ssanggeom'],
   photo: ['pc-eiffel', 'pc-venice', 'pc-neuschwanstein', 'pc-matterhorn', 'pc-colosseum', 'pc-mont-saint-michel', 'pc-niagara', 'pc-alhambra', 'pc-pisa', 'pc-tower-bridge'],
   space: ['sp-pillars', 'sp-earthrise', 'sp-blue-marble', 'sp-cosmic-cliffs', 'sp-saturn', 'sp-orion', 'sp-whirlpool', 'sp-aldrin', 'sp-crab', 'sp-sombrero'],
-  poster: ['mucha-job', 'mucha-zodiac', 'toulouse-lautrec-englishman-moulin-rouge', 'cheret-palais-de-glace', 'bonnard-france-champagne', 'toulouse-lautrec-jockey', 'toulouse-lautrec-concert', 'toulouse-lautrec-elsa', 'penfield-will-you-help', 'toulouse-lautrec-photographer-sescau'],
+  poster: ['toulouse-lautrec-englishman-moulin-rouge', 'cheret-palais-de-glace', 'bonnard-france-champagne', 'toulouse-lautrec-jockey', 'toulouse-lautrec-concert', 'toulouse-lautrec-elsa', 'penfield-will-you-help', 'toulouse-lautrec-photographer-sescau'],
   pattern: ['morris-snakeshead', 'morris-peacock-dragon', 'morris-acanthus', 'morris-windrush', 'morris-tulip-rose', 'haeckel-actiniae', 'morris-corncockle', 'morris-oak', 'morris-tulip', 'morris-swan-house-carpet'],
   modern: ['munch-madonna', 'composition-vii', 'munch-sun', 'mondrian-lozenge-composition-yellow', 'matisse-woman-before-aquarium', 'marc-bewitched-mill', 'munch-girl-by-window', 'matisse-still-life-geranium', 'matisse-woman-rose-divan', 'mondrian-farm-near-duivendrecht'],
 };

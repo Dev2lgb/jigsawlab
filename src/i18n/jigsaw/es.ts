@@ -2,7 +2,7 @@
 import type { JigsawStrings } from './ko';
 export const ES: JigsawStrings = {
   title: '¿Qué armamos?', sub: 'El reto de hoy, una foto tuya o uno de los de abajo.',
-  seoTitle: 'Rompecabezas en línea gratis — 518 imágenes para elegir', boardTitle: 'Tablero', seoDesc: 'Arma rompecabezas en línea gratis, sin registro. 518 cuadros, arte coreano y fotos del espacio, o tu propia imagen. De 48 a 1000 piezas. Con un enlace lo armáis entre varios.',
+  seoTitle: (n: number) => `Rompecabezas en línea gratis — ${n} imágenes para elegir`, boardTitle: 'Tablero', seoDesc: (n: number) => `Arma rompecabezas en línea gratis, sin registro. ${n} cuadros, arte coreano y fotos del espacio, o tu propia imagen. De 48 a 1000 piezas. Con un enlace lo armáis entre varios.`,
   pick: 'Elegir mi foto', drop: 'Arrastra una foto aquí o toca para elegir', daily: 'Reto de hoy', dailyCap: (title: string, n: number) => `${title} · ${n} piezas`, pieces: 'Piezas', custom: 'A medida', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n} piezas`, noImg: 'Elige antes una foto o un cuadro', chosen: 'Imagen elegida', myPhoto: 'Mi foto',
   start: 'Empezar', privacy: 'Tu foto nunca sale de tu dispositivo', loading: 'Cortando las piezas…', opening: 'Abriendo el rompecabezas…', saveGone: 'Ese rompecabezas guardado ya no existe',
   moves: 'Colocadas', left: (n: number) => `quedan ${n} piezas`, edgeOnly: 'Solo los bordes', hint: 'Imagen de fondo', original: 'Ver la imagen (mantén pulsado)', trayHint: 'Arrastra las piezas de la bandeja hacia arriba hasta su sitio. Pellizca para acercar, dos dedos para desplazar',

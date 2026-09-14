@@ -21,8 +21,8 @@ if (cat && !here) throw new Error(`Picker: 카테고리 '${cat}' 에 작품이 �
 const shelves = here ? [here] : all;
 const rel = here ? `/play/${here.id}/` : '/play/';
 const win = here ? null : dailyWindow(DAILY_POOL, lang); // 오늘의 퍼즐 칸은 /play/ 에만 있다
-const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle} · jigsawlab`;
-const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
+const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle(WORKS.length)} · jigsawlab`;
+const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(WORKS.length);
 ---
 <Base title={title} desc={desc} lang={lang} alts={altsFor(rel)} path={`${P}${rel}`} ads={false}>
   <div class="wrap picker">

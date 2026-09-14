@@ -3,7 +3,8 @@ import type { Penta } from '../i18n/langs';
 export interface EdgeParams { a: number; b: number; c: number; d: number; e: number; s: 1 | -1 }
 export type Pt = [number, number];
 export interface Seg { c1: Pt; c2: Pt; p: Pt }
-export interface Edge { start: Pt; segs: Seg[] }
+/** s = 톱니가 +v 쪽(가로 변은 아래, 세로 변은 오른쪽)으로 나왔으면 1 — 조각 모양(톱니·홈 배치)을 셀 때 쓴다 */
+export interface Edge { start: Pt; segs: Seg[]; s: 1 | -1 }
 export interface Cut { W: number; H: number; cols: number; rows: number; pw: number; ph: number; padX: number; padY: number; hEdges: Edge[][]; vEdges: Edge[][] }
 
 /** mulberry32 시드 난수 */
@@ -38,12 +39,12 @@ export function makeCut(W: number, H: number, cols: number, rows: number, rand: 
   for (let r = 0; r < rows - 1; r++) { hEdges[r] = []; for (let c = 0; c < cols; c++) {
     const p = edgeParams(rand), x0 = c * pw, y0 = (r + 1) * ph;
     const map = ([u, v]: [number, number]): Pt => [x0 + u * pw, y0 + v * ph];
-    hEdges[r][c] = { start: [x0, y0], segs: tabSegs(p).map(([c1, c2, pt]) => ({ c1: map(c1), c2: map(c2), p: map(pt) })) };
+    hEdges[r][c] = { start: [x0, y0], segs: tabSegs(p).map(([c1, c2, pt]) => ({ c1: map(c1), c2: map(c2), p: map(pt) })), s: p.s };
   } }
   for (let r = 0; r < rows; r++) { vEdges[r] = []; for (let c = 0; c < cols - 1; c++) {
     const p = edgeParams(rand), x0 = (c + 1) * pw, y0 = r * ph;
     const map = ([u, v]: [number, number]): Pt => [x0 + v * pw, y0 + u * ph];
-    vEdges[r][c] = { start: [x0, y0], segs: tabSegs(p).map(([c1, c2, pt]) => ({ c1: map(c1), c2: map(c2), p: map(pt) })) };
+    vEdges[r][c] = { start: [x0, y0], segs: tabSegs(p).map(([c1, c2, pt]) => ({ c1: map(c1), c2: map(c2), p: map(pt) })), s: p.s };
   } }
   return { W, H, cols, rows, pw, ph, padX: pw * 0.36, padY: ph * 0.36, hEdges, vEdges };
 }

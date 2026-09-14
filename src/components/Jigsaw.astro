@@ -59,11 +59,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <canvas class="fx" id="jg-fx"></canvas>
       <div class="emofx" id="jg-emofx" aria-hidden="true"></div>
       <!-- 트레이 도구 — 판 오른쪽 아래의 둥근 FAB 하나. 누르면 위로 둥근 버튼 넷이 차례로 튀어나온다(가까운 것부터). 트레이 바에 늘어놓으면 폰에서 자리가 안 났다.
-           영역 필터가 켜져 있으면 FAB 에 점이 찍힌다 -->
+           -->
       <div class="dial" id="jg-dial">
         <div class="dial-items" id="jg-dial-items">
           <div class="di" style="--i: 3"><span class="di-l">{t.bg}</span><button type="button" class="db" id="jg-bg" title={t.bg}><Fragment set:html={icon('drop', 18)} /></button></div>
-          <div class="di" style="--i: 2"><span class="di-l">{t.region}</span><button type="button" class="db" id="jg-region" title={t.region} aria-pressed="false"><Fragment set:html={icon('target', 18)} /></button></div>
+          <div class="di" style="--i: 2"><span class="di-l">{U.play.sortShape}</span><button type="button" class="db" id="jg-shape" title={U.play.sortShape}><Fragment set:html={icon('shapes', 18)} /></button></div>
           <div class="di" style="--i: 1"><span class="di-l">{U.play.shuffle}</span><button type="button" class="db" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
           <div class="di" style="--i: 0"><span class="di-l">{U.play.sortColor}</span><button type="button" class="db" id="jg-sort" title={U.play.sortColor}><Fragment set:html={icon('palette', 18)} /></button></div>
         </div>
@@ -74,8 +74,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     <div class="tray" id="jg-tray" aria-label={t.trayHint}></div>
     <div class="tray-drop" id="jg-traydrop" hidden><b>{U.play.dropHere}</b></div>
     <div class="emopick" id="jg-emopick" hidden role="dialog" aria-label={U.play.emoji}><div class="ep-list" id="jg-emopick-list"></div></div>
-    <!-- 영역 필터: 그림을 3×3 으로 나눠 누른 칸의 조각만 트레이에 남긴다 (테두리 필터와 같은 계열). 폰에서 1000조각을 끝내는 데 거의 필수 -->
-    <div class="emopick rgpick" id="jg-regionpick" hidden role="dialog" aria-label={t.region}><p class="rg-hint">{t.regionHint}</p><div class="rg-wrap"><canvas id="jg-region-cv" width="240" height="180"></canvas><div class="rg-grid" id="jg-region-grid"></div></div><button type="button" class="tb rg-all" id="jg-region-all">{t.regionAll}</button></div>
     <!-- 판 배경: 어두운 그림(밤 풍경·우주)은 밝은 판에서 조각 경계가 안 보인다. 고른 값은 기기에 남는다(board:bg) -->
     <div class="emopick bgpick" id="jg-bgpick" hidden role="dialog" aria-label={t.bg}><div class="bg-list" id="jg-bgpick-list"></div></div>
     <div class="modal" id="jg-pldlg" hidden>
@@ -187,29 +185,21 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   /* 좁은 폰에서 띠가 눌리지 않게: 색 띠가 떠 있는 동안만 XP 칩을 한 치수 줄인다 (390px 에 여덟 칩이 다 선다) */
   @media (max-width: 480px) { .pal { gap: 2px; } .pal :global(.pc) { width: 17px; height: 20px; border-radius: 6px; } .tray-bar.paloon .xpc { font-size: .72rem; padding: 3px 7px; } }
   /* 스피드 다이얼 — FAB 는 판 오른쪽 아래(트레이 위). 열리면 항목이 아래(가까운 것)부터 위로 40ms 간격으로 튀어나오고, 닫힐 때는 위부터 들어간다.
-     항목 = 이름 알약 + 둥근 버튼. 영역 필터가 켜져 있으면 그 버튼은 강조, FAB 에는 금색 점 */
-  .dial { position: absolute; right: max(12px, env(safe-area-inset-right)); bottom: 12px; z-index: 6; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-  .fab, .db { -webkit-tap-highlight-color: transparent; }
+     항목 = 이름 알약 + 둥근 버튼. 상자 자체는 pointer-events 를 끈다 — 접힌 항목도 자리를 차지해서, 안 끄면 판 오른쪽 아래 한 뼘이 캔버스 대신 이 상자에 닿아 끌기·핀치가 안 됐다 */
+  .dial { pointer-events: none; position: absolute; right: max(12px, env(safe-area-inset-right)); bottom: 12px; z-index: 6; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .fab, .di { pointer-events: auto; } .fab, .db { -webkit-tap-highlight-color: transparent; }
   .fab { position: relative; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--ink); color: #fff; cursor: pointer; display: grid; place-items: center; box-shadow: 0 10px 24px -8px rgba(15,18,34,.7), 0 0 0 1px rgba(255,255,255,.25); transition: transform .28s var(--ease), background .2s; }
   .fab:hover { transform: scale(1.06); } .fab:active { transform: scale(.94); }
   .fab-i { grid-area: 1 / 1; display: grid; place-items: center; transition: transform .28s var(--ease), opacity .18s; }
   .fab-close { opacity: 0; transform: rotate(-90deg) scale(.5); } .fab[aria-expanded="true"] .fab-open { opacity: 0; transform: rotate(90deg) scale(.5); } .fab[aria-expanded="true"] .fab-close { opacity: 1; transform: none; }
-  .fab.on::after { content: ''; position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--board); }
   .dial-items { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
   .di { display: flex; align-items: center; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(14px) scale(.5); transform-origin: right center; transition: opacity .16s, transform .3s var(--ease), visibility 0s .3s; transition-delay: calc((3 - var(--i)) * 35ms), calc((3 - var(--i)) * 35ms), .3s; }
   .dial.open .di { opacity: 1; visibility: visible; transform: none; transition: opacity .16s, transform .32s var(--ease), visibility 0s; transition-delay: calc(var(--i) * 40ms), calc(var(--i) * 40ms), 0s; }
   .di-l { padding: 5px 11px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: .8rem; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 16px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); }
   .db { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; display: grid; place-items: center; box-shadow: 0 8px 18px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); transition: transform .15s var(--ease), background .15s; }
-  .db:hover { transform: scale(1.08); } .db:active { transform: scale(.94); } .db[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -8px rgba(15,18,34,.6); }
+  .db:hover { transform: scale(1.08); } .db:active { transform: scale(.94); }
   @media (prefers-reduced-motion: reduce) { .di, .dial.open .di, .fab, .fab-i { transition: none; } }
   .emopick { position: fixed; z-index: 12; left: 50%; transform: translateX(-50%); padding: 8px; border-radius: 18px; background: var(--bg); box-shadow: 0 24px 60px -20px rgba(15,18,34,.55), 0 0 0 1px var(--line); animation: pp .18s var(--ease); } @keyframes pp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
-  /* 영역 고르기 팝오버 — 그림 위에 3×3 칸. 고른 칸은 강조, 나머지는 살짝 어둡게 */
-  .rgpick { width: min(92vw, 300px); padding: 12px; } .rg-hint { margin: 0 0 10px; font-size: .8rem; color: var(--muted); line-height: 1.45; }
-  .rg-wrap { position: relative; border-radius: 12px; overflow: hidden; background: var(--board); } .rg-wrap canvas { display: block; width: 100%; height: auto; }
-  .rg-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
-  .rg-grid :global(button) { border: 1px solid rgba(255,255,255,.55); background: rgba(15,18,34,0); cursor: pointer; padding: 0; transition: background .12s; } .rg-grid :global(button:hover) { background: rgba(255,255,255,.18); }
-  .rg-grid.picked :global(button:not([aria-pressed="true"])) { background: rgba(15,18,34,.55); } .rg-grid :global(button[aria-pressed="true"]) { box-shadow: inset 0 0 0 3px var(--gold); }
-  .rg-all { display: block; margin: 10px auto 0; }
   /* 판 배경 고르기 — 네 개 견본 */
   .bgpick { padding: 10px; } .bg-list { display: flex; gap: 8px; }
   .bg-list :global(button) { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; padding: 6px 4px 8px; border: 0; border-radius: 12px; background: transparent; font: inherit; font-size: .72rem; font-weight: 700; color: var(--ink-2); cursor: pointer; } .bg-list :global(button:hover) { background: var(--bg-2); }
@@ -406,7 +396,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); setRegion(null); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -472,7 +462,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const outside = (e: Event) => { if ((e.target as HTMLElement).closest(keep)) { document.addEventListener('pointerdown', outside, { once: true }); return; } box.hidden = true; };
     setTimeout(() => document.addEventListener('pointerdown', outside, { once: true }), 0);
   }
-  const closePops = () => { for (const id of ['jg-emopick', 'jg-regionpick', 'jg-bgpick']) $(id).hidden = true; closeDial(); };
+  const closePops = () => { for (const id of ['jg-emopick', 'jg-bgpick']) $(id).hidden = true; closeDial(); };
   // ── 스피드 다이얼 — 열고 닫기. 바깥을 누르거나 항목을 고르면 닫힌다
   const dial = $('jg-dial'), fab = $('jg-fab') as HTMLButtonElement;
   const dialOpen = () => dial.classList.contains('open');
@@ -506,22 +496,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   $('jg-bg').addEventListener('click', openBgPick); applyBg(bgName);
 
-  // ── 영역 필터 — 그림을 3×3 으로 나눠 한 칸의 조각만 트레이에 남긴다. 테두리 필터와 겹쳐 쓸 수 있다(둘 다 만족하는 조각만)
-  let region: number | null = null; // 0..8 (행×3+열)
-  const regionOf = (p: Piece) => Math.floor((p.r * 3) / cut.rows) * 3 + Math.floor((p.c * 3) / cut.cols);
-  function setRegion(r: number | null) {
-    region = r; $('jg-region').setAttribute('aria-pressed', String(r !== null)); fab.classList.toggle('on', r !== null);
-    const grid = $('jg-region-grid'); grid.classList.toggle('picked', r !== null); grid.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === r)));
-    if (pieces.length) { applyTrayFilter(); tray.scrollLeft = 0; }
-  }
-  function openRegionPick() {
-    if (!img || !cut) return; const box = $('jg-regionpick'); if (!box.hidden) return (box.hidden = true);
-    const cv = $('jg-region-cv') as HTMLCanvasElement; const k = Math.min(276 / cut.W, 276 / cut.H, 1); cv.width = Math.round(cut.W * k); cv.height = Math.round(cut.H * k); cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height);
-    const grid = $('jg-region-grid'); if (!grid.children.length) for (let i = 0; i < 9; i++) { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', String(i + 1)); b.addEventListener('click', () => { setRegion(region === i ? null : i); box.hidden = true; }); grid.appendChild(b); }
-    grid.classList.toggle('picked', region !== null); grid.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === region)));
-    openPop(box, '#jg-regionpick, #jg-region');
-  }
-  $('jg-region').addEventListener('click', openRegionPick); $('jg-region-all').addEventListener('click', () => { setRegion(null); $('jg-regionpick').hidden = true; });
   function sendEmo(i: number) {
     if (!room?.me || room.ws?.readyState !== 1) return; const now = performance.now(); if (now - emoT < EMO_COOL) return; emoT = now;
     send({ t: 'emo', e: i }); showEmo(i, room.me); // 내 것은 바로 띄운다 — 서버는 보낸 사람에게 되돌려 주지 않는다
@@ -540,9 +514,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   $('jg-emo').addEventListener('click', openEmoPick);
   /** 트레이 순서. 판 위·잠긴 조각도 빠뜨리지 않고 같이 세운다 — 꺼냈다 되돌린 조각이 제 자리(색상순이면 제 색 자리)로
    *  돌아가려면 order 안에 자리가 남아 있어야 한다. 저장에는 트레이에 선 몫만 나간다(boardSnapshot) */
-  function sortTray(mode: 'color' | 'shuffle') {
+  // ── 조각 모양 — 네 변이 각각 톱니(2)·홈(1)·테두리(0). 실물 퍼즐 매니아가 모양으로 고르듯 같은 실루엣끼리 모은다:
+  //    테두리 조각(모서리 → 변)이 먼저, 그다음 톱니 많은 순, 같은 수면 위·오른쪽·아래·왼쪽 배치순. 방향은 엔진이 변마다 남긴 s 로(hEdges 는 +가 아래, vEdges 는 +가 오른쪽 톱니)
+  const sidesOf = (p: Piece) => [p.r === 0 ? 0 : cut.hEdges[p.r - 1][p.c].s === -1 ? 2 : 1, p.c === cut.cols - 1 ? 0 : cut.vEdges[p.r][p.c].s === 1 ? 2 : 1, p.r === cut.rows - 1 ? 0 : cut.hEdges[p.r][p.c].s === 1 ? 2 : 1, p.c === 0 ? 0 : cut.vEdges[p.r][p.c - 1].s === -1 ? 2 : 1];
+  const shapeKey = (p: Piece) => { const s = sidesOf(p); const flats = s.filter((v) => v === 0).length, tabs = s.filter((v) => v === 2).length; return (2 - Math.min(2, flats)) * 1000 + (4 - tabs) * 100 + s[0] * 27 + s[1] * 9 + s[2] * 3 + s[3]; };
+  function sortTray(mode: 'color' | 'shuffle' | 'shape') {
     const seen = new Set(order); const all = [...order, ...pieces.filter((p) => !seen.has(p))];
-    if (mode === 'shuffle') all.sort(() => Math.random() - 0.5); else all.sort((a, b) => a.hue - b.hue || a.lum - b.lum);
+    if (mode === 'shuffle') all.sort(() => Math.random() - 0.5); else if (mode === 'shape') all.sort((a, b) => shapeKey(a) - shapeKey(b) || a.hue - b.hue); else all.sort((a, b) => a.hue - b.hue || a.lum - b.lum);
     order = all; for (const p of all) if (p.el && p.el.parentNode === tray) tray.appendChild(p.el);
     tray.scrollLeft = 0; scheduleSave(); if (mode === 'color') buildPal(); else hidePal();
   }
@@ -595,7 +573,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const to = tray.scrollLeft + p.el.getBoundingClientRect().left - tray.getBoundingClientRect().left - 8;
     tray.scrollTo({ left: Math.max(0, to), behavior: 'smooth' });
   }
-  $('jg-sort').addEventListener('click', () => { sortTray('color'); closeDial(); }); $('jg-shuffle').addEventListener('click', () => { sortTray('shuffle'); closeDial(); });
+  $('jg-sort').addEventListener('click', () => { sortTray('color'); closeDial(); }); $('jg-shuffle').addEventListener('click', () => { sortTray('shuffle'); closeDial(); }); $('jg-shape').addEventListener('click', () => { sortTray('shape'); closeDial(); });
 
   // ── 조각 단위 XP (회원만) — 셈과 불변식은 lib/xp.ts. 재도전 감산(×¼)은 서버가 정하지만 이 기기의 완성 기록으로 미리 짐작해 둔다(bestDoneN) —
   // 안 그러면 첫 묶음 응답에 HUD 숫자가 갑자기 ¼ 로 내려앉는다. 화면의 숫자는 여기(HUD)와 판 설정 알약(updateGrid)에만
@@ -802,8 +780,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   fullBtn.addEventListener('blur', () => setPeek(false)); addEventListener('blur', () => setPeek(false));
   document.addEventListener('visibilitychange', () => { if (document.hidden) setPeek(false); });
   let edgeOnly = false; const isEdge = (p: Piece) => p.r === 0 || p.c === 0 || p.r === cut.rows - 1 || p.c === cut.cols - 1;
-  /** 트레이에 보이는 조각: 테두리 필터와 영역 필터를 둘 다 만족하는 것만 */
-  const passFilter = (p: Piece) => (!edgeOnly || isEdge(p)) && (region === null || regionOf(p) === region);
+  /** 트레이에 보이는 조각 */
+  const passFilter = (p: Piece) => !edgeOnly || isEdge(p);
   function applyTrayFilter() { for (const p of pieces) if (p.el) p.el.hidden = !passFilter(p); refreshPal(); }
   const toggleEdge = () => { edgeOnly = !edgeOnly; $('jg-edge').setAttribute('aria-pressed', String(edgeOnly)); applyTrayFilter(); };
   $('jg-edge').addEventListener('click', toggleEdge);
@@ -815,8 +793,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const toggleFs = () => { if (!document.fullscreenEnabled) return; if (fsOn()) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen({ navigationUI: 'hide' } as FullscreenOptions).catch(() => {}); };
   if (document.fullscreenEnabled) { fsBtn.hidden = false; fsBtn.addEventListener('click', toggleFs); document.addEventListener('fullscreenchange', () => fsBtn.setAttribute('aria-pressed', String(fsOn()))); }
   // ── 단축키 (데스크톱) — 판 화면에서만, 글자를 치는 중이거나 다이얼로그가 떠 있으면 무시.
-  //  H 밑그림 · E 테두리 · O 윤곽선 · R 영역 · B 판 배경(차례로) · S 색상순 · F 전체 화면 · Space 원본(누르고 있는 동안) · Esc 팝오버 닫기
-  const KEYS: Record<string, () => void> = { h: toggleHint, e: toggleEdge, o: toggleOutline, r: openRegionPick, b: () => applyBg(BG_NAMES[(BG_NAMES.indexOf(bgName) + 1) % BG_NAMES.length]), s: () => sortTray('color'), f: toggleFs };
+  //  H 밑그림 · E 테두리 · O 윤곽선 · B 판 배경(차례로) · S 색상순 · F 전체 화면 · Space 원본(누르고 있는 동안) · Esc 팝오버 닫기
+  const KEYS: Record<string, () => void> = { h: toggleHint, e: toggleEdge, o: toggleOutline, b: () => applyBg(BG_NAMES[(BG_NAMES.indexOf(bgName) + 1) % BG_NAMES.length]), s: () => sortTray('color'), f: toggleFs };
   const typing = (e: KeyboardEvent) => { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable); };
   const keysOk = () => scenes.current === 'play' && running && !complete && setup.hidden && $('jg-gate').hidden && $('jg-pldlg').hidden;
   addEventListener('keydown', (e) => {
@@ -827,7 +805,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   });
   addEventListener('keyup', (e) => { if (e.key === ' ' && e.target !== fullBtn) setPeek(false); });
   // 마우스 쓰는 기기에서만 버튼 설명에 단축키를 덧붙인다
-  if (matchMedia('(pointer: fine)').matches) for (const [id, k] of [['jg-hint', 'H'], ['jg-edge', 'E'], ['jg-outline', 'O'], ['jg-region', 'R'], ['jg-bg', 'B'], ['jg-sort', 'S'], ['jg-fs', 'F'], ['jg-full', 'Space']] as const) { const b = $(id); b.title = `${b.title} · ${T.keyHint(k)}`; }
+  if (matchMedia('(pointer: fine)').matches) for (const [id, k] of [['jg-hint', 'H'], ['jg-edge', 'E'], ['jg-outline', 'O'], ['jg-bg', 'B'], ['jg-sort', 'S'], ['jg-fs', 'F'], ['jg-full', 'Space']] as const) { const b = $(id); b.title = `${b.title} · ${T.keyHint(k)}`; }
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; await xp.flush(true); running = false; await forgetSave(); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
   $('jg-quit').addEventListener('click', async () => { if (room && photoBlob && src?.kind === 'photo' && room.players.size > 1 && !confirm(U.quitHostAsk)) return; if (running && !complete) { await xp.flush(true); await saveNow(true); } await reportLive(false); running = false; clearInterval(timer); gen++; leaveRoom(); goPick(); });
@@ -859,7 +837,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const p = g.pieces[0]; tweens.delete(g); ungroup(g); netUntake(g);
     // 테두리 조각만 보는 중에 가운데 조각을 되돌리면 트레이에서 숨겨져 버린다. 방금 되돌린 것은 보여야 하니 필터를 푼다
     if (edgeOnly && !isEdge(p)) { edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); }
-    if (region !== null && regionOf(p) !== region) setRegion(null);
     toTray(p); applyTrayFilter(); draw(); scheduleSave();
     p.el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
@@ -1145,7 +1122,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

@@ -72,7 +72,7 @@ let N1 = 0;
   await page.click('#jg-outline'); await page.click('#jg-hint');
   await page.goto(`${BASE}/board/?k=arnolfini&n=48`); await waitPlay(page); const s1 = await st(); ok(s1 === 'false,true', `prefs: 다른 판에서도 윤곽선 꺼짐·밑그림 켜짐 (${s1})`);
   await ctx.close(); }
-// G. 스피드 다이얼·판 배경·단축키·영역 필터·전체 화면 버튼 (비회원, 데스크톱 뷰포트)
+// G. 스피드 다이얼·판 배경·단축키·모양순·전체 화면 버튼 (비회원, 데스크톱 뷰포트)
 { const { ctx, page } = await newPage(br);
   await page.goto(`${BASE}/board/?k=wave&n=100`); await waitPlay(page); const N = await left(page);
   const vis = () => page.$$eval('#jg-tray .tp:not([hidden])', (els) => els.length);
@@ -86,11 +86,13 @@ let N1 = 0;
   const o0 = await page.$eval('#jg-outline', (e) => e.getAttribute('aria-pressed')); await page.keyboard.press('o'); ok((await page.$eval('#jg-outline', (e) => e.getAttribute('aria-pressed'))) !== o0, `keys: O 윤곽선 토글 (${o0} → 반대)`);
   await page.keyboard.press('e'); const edgeN = await vis(); ok((await page.$eval('#jg-edge', (e) => e.getAttribute('aria-pressed'))) === 'true' && edgeN > 0 && edgeN < N, `keys: E 테두리 → 트레이 ${edgeN}/${N}`);
   await page.keyboard.press('e'); ok((await vis()) === N, 'keys: E 다시 → 전체');
-  // 영역 필터: 3×3 첫 칸 → 그 칸 조각만. 테두리와 겹쳐 쓰면 둘 다 만족하는 것만. 전체 버튼으로 해제
-  await tool('#jg-region'); await page.waitForSelector('#jg-regionpick:not([hidden])'); await page.click('#jg-region-grid button:nth-child(1)');
-  const rN = await vis(); ok(rN > 0 && rN < N / 3 && (await page.$eval('#jg-region', (e) => e.getAttribute('aria-pressed'))) === 'true' && (await page.$eval('#jg-fab', (e) => e.classList.contains('on'))), `region: 첫 칸 조각만 ${rN}/${N}, FAB 에 점`);
-  await page.keyboard.press('e'); const bothN = await vis(); ok(bothN > 0 && bothN < rN, `region+edge: 겹친 조각만 ${bothN}`); await page.keyboard.press('e');
-  await page.keyboard.press('r'); await page.waitForSelector('#jg-regionpick:not([hidden])'); await page.click('#jg-region-all'); ok((await vis()) === N && (await page.$eval('#jg-region', (e) => e.getAttribute('aria-pressed'))) === 'false' && !(await page.$eval('#jg-fab', (e) => e.classList.contains('on'))), 'region: 전체로 되돌림, FAB 점 사라짐');
+  // 모양순: 같은 실루엣끼리 — 트레이 순서가 모양 키(테두리 → 톱니 수 → 배치) 오름차순
+  await tool('#jg-shape'); await page.waitForTimeout(300);
+  const ks = await page.evaluate(() => window.__jigsaw.state().trayShape); ok(ks.length === N && ks.every((v, i) => i === 0 || v >= ks[i - 1]) && ks[0] < 1000 && ks[ks.length - 1] >= 2000, `shape: 트레이가 모양순 (${ks.slice(0, 5).join(',')} … ${ks.slice(-2).join(',')})`);
+  // 다이얼 상자가 판을 가리지 않는다 — FAB 위쪽 빈 자리(접힌 항목이 있던 곳)에서 끌면 판이 움직인다. 전에는 그 한 뼘이 캔버스에 안 닿아 끌기·핀치가 안 됐다
+  { const wr = await (await page.$('#jg-boardwrap')).boundingBox(); const v0 = await page.evaluate(() => window.__jigsaw.state().view);
+    await page.mouse.move(wr.x + wr.width - 40, wr.y + wr.height - 150); await page.mouse.down(); await page.mouse.move(wr.x + wr.width - 220, wr.y + wr.height - 320, { steps: 8 }); await page.mouse.up();
+    const v1 = await page.evaluate(() => window.__jigsaw.state().view); ok(Math.abs(v1.tx - v0.tx) > 50 && Math.abs(v1.ty - v0.ty) > 50, 'dial: FAB 위 빈 자리에서 끌어도 판이 움직인다', JSON.stringify({ v0, v1 })); }
   ok(await page.$eval('#jg-fs', (e) => !e.hidden), 'fs: 데스크톱에 전체 화면 버튼');
   ok((await page.$eval('#jg-hint', (e) => e.title)).includes('H'), 'keys: 마우스 기기 버튼 설명에 단축키');
   await ctx.close(); }

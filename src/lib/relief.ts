@@ -1,4 +1,4 @@
-// 완성본을 실물 퍼즐처럼 새긴다 — 완성 보기 페이지(/done/)와 결과 화면이 쓴다. 빛·테두리 세기는 한 번 낮췄다(처음 값은 너무 세다고 했다)
+// 완성본을 실물 퍼즐처럼 새긴다 — 완성 보기 페이지(/done/)와 결과 화면이 쓴다. 빛·테두리 세기는 두 번 낮췄다(처음 값은 너무 세다고 했고, 더 투명하게 해 달라고 했다)
 // 조각마다 그림을 경로로 오려 넣고, 안쪽 가장자리에 빛(왼쪽 위)과 그늘(오른쪽 아래)을 떨어뜨려 두께를 내고, 조각 사이에 가는 틈을 낸다.
 // 안쪽 그늘의 요령: 선은 캔버스 밖 멀리(OFF) 그리고 그림자(shadowOffset)만 제자리에 떨어뜨린다 — 클립이 조각 안쪽이라
 // 그림자 중 조각 안으로 들어온 쪽만 남는다. 띠(lineWidth)보다 밀어내는 거리(d)가 커서 왼쪽 위 변에는 그늘이 남지 않고 오른쪽 아래 변에만 남는다(빛은 반대)
@@ -15,21 +15,21 @@ export function reliefPiece(ctx: CanvasRenderingContext2D, img: CanvasImageSourc
   ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.clip(path);
   ctx.drawImage(img, x, y, w, h, x, y, w, h);
   // 조각마다 아주 옅게 다른 밝기 — 한 그림에서 오려도 조각은 저마다 조금씩 다르게 빛을 받는다
-  const v = ((r * 7 + c * 13) % 11) / 11; ctx.fillStyle = `rgba(0,0,0,${(v * 0.045).toFixed(3)})`; ctx.fillRect(x, y, w, h);
+  const v = ((r * 7 + c * 13) % 11) / 11; ctx.fillStyle = `rgba(0,0,0,${(v * 0.035).toFixed(3)})`; ctx.fillRect(x, y, w, h);
   ctx.lineJoin = 'round'; ctx.strokeStyle = '#000'; ctx.setTransform(k, 0, 0, k, -OFF, 0);
   // 1) 흐린 띠: 빛(왼쪽 위)·그늘(오른쪽 아래)
   ctx.lineWidth = bev / k; ctx.shadowBlur = bev * 0.7;
-  ctx.shadowColor = 'rgba(255,255,255,.3)'; ctx.shadowOffsetX = OFF + d; ctx.shadowOffsetY = d; ctx.stroke(path);
-  ctx.shadowColor = 'rgba(0,0,0,.42)'; ctx.shadowOffsetX = OFF - d; ctx.shadowOffsetY = -d; ctx.stroke(path);
+  ctx.shadowColor = 'rgba(255,255,255,.2)'; ctx.shadowOffsetX = OFF + d; ctx.shadowOffsetY = d; ctx.stroke(path);
+  ctx.shadowColor = 'rgba(0,0,0,.32)'; ctx.shadowOffsetX = OFF - d; ctx.shadowOffsetY = -d; ctx.stroke(path);
   // 2) 또렷한 모서리 선: 같은 방향으로 얇게, 거의 안 흐리게
   ctx.lineWidth = edge / k; ctx.shadowBlur = edge * 0.35;
-  ctx.shadowColor = 'rgba(255,255,255,.38)'; ctx.shadowOffsetX = OFF + de; ctx.shadowOffsetY = de; ctx.stroke(path);
-  ctx.shadowColor = 'rgba(0,0,0,.46)'; ctx.shadowOffsetX = OFF - de; ctx.shadowOffsetY = -de; ctx.stroke(path);
+  ctx.shadowColor = 'rgba(255,255,255,.26)'; ctx.shadowOffsetX = OFF + de; ctx.shadowOffsetY = de; ctx.stroke(path);
+  ctx.shadowColor = 'rgba(0,0,0,.34)'; ctx.shadowOffsetX = OFF - de; ctx.shadowOffsetY = -de; ctx.stroke(path);
   ctx.restore();
 }
 /** 이음매 — 조각 사이의 가는 틈. 전체를 한 번에 */
 export function seams(ctx: CanvasRenderingContext2D, cut: Cut, k: number) {
-  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.lineWidth = 0.8 / k; ctx.strokeStyle = 'rgba(12,9,5,.27)'; ctx.lineJoin = 'round';
+  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.lineWidth = 0.8 / k; ctx.strokeStyle = 'rgba(12,9,5,.18)'; ctx.lineJoin = 'round';
   for (let r = 0; r < cut.rows; r++) for (let c = 0; c < cut.cols; c++) ctx.stroke(piecePath(cut, r, c));
   ctx.restore();
 }

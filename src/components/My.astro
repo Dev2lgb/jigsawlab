@@ -5,7 +5,6 @@ import Base from '../layouts/Base.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
 import { CATEGORIES } from '../data/catalog';
-import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
 // 넷째 칸 cat 은 통계의 진열대별 진도용 — works 를 클라이언트에 안 싣고도 그림 → 진열대를 안다
@@ -44,17 +43,6 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
-  </div>
-  <!-- 완성 보기 — 완성한 퍼즐 카드를 누르면. 그 판의 컷으로 조각 윤곽이 보이는 완성본을 그리고, 놓은 순서가 이 기기에 있으면 타임랩스 -->
-  <div class="gdlg" id="done-dlg" hidden>
-    <div class="gdlg-bg" id="done-bg"></div>
-    <div class="gdlg-box done-box" role="dialog" aria-modal="true" aria-labelledby="done-h">
-      <button type="button" class="gdlg-x" id="done-x" aria-label={A.close}><Fragment set:html={icon('x', 18)} /></button>
-      <div class="done-art"><canvas id="done-cv" width="640" height="480"></canvas><button type="button" class="done-play" id="done-play" hidden title={M.replay} aria-label={M.replay}><Fragment set:html={icon('play', 18)} /></button></div>
-      <h2 id="done-h"></h2>
-      <p class="done-sub" id="done-sub"></p>
-      <div class="done-row"><a class="btn primary" id="done-again">{M.again}</a><button type="button" class="btn" id="done-close">{A.close}</button></div>
-    </div>
   </div>
   <script is:inline define:vars={{ meta, cats }}>window.__meta = JSON.parse(meta); window.__cats = JSON.parse(cats);</script>
   <style>
@@ -105,13 +93,6 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     .catbars :global(.cb-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink-2); }
     .catbars :global(.cb-bar) { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; } .catbars :global(.cb-bar i) { display: block; height: 100%; border-radius: 999px; background: var(--accent); } .catbars :global(li.all .cb-bar i) { background: var(--gold); }
     .catbars :global(b) { font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--muted); white-space: nowrap; } .catbars :global(li.all b) { color: #8a5f00; }
-    /* 완성 보기 창 — 공용 .gdlg-box 보다 넓게, 그림이 주인공 */
-    .done-box { width: min(94vw, 860px); padding: 14px 14px 18px; }
-    .done-art { position: relative; border-radius: 14px; overflow: hidden; background: var(--board); box-shadow: 0 20px 50px -30px rgba(15,18,34,.6); } .done-art canvas { display: block; width: 100%; height: auto; }
-    .done-play { position: absolute; left: 12px; bottom: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(15,18,34,.65); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(4px); transition: transform .15s var(--ease), background .15s; } .done-play:hover { background: rgba(15,18,34,.85); transform: scale(1.08); } .done-play:disabled { opacity: .4; cursor: default; transform: none; }
-    #done-h { margin: 14px 4px 2px; font-size: 1.3rem; letter-spacing: -.03em; } .done-sub { margin: 0 4px; color: var(--muted); font-size: .88rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .done-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 4px 0; }
-    .cards :global(.mc.click) { cursor: pointer; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -132,16 +113,13 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     import { BADGES, levelProgress, tierOf, kstDay } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
-    import { makeCut, seeded, piecePath, gridFor, hashStr, type Cut } from '../lib/jigsaw';
-    import { replays, hasIDB } from '../lib/db';
     import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
     const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = prefix(LANG);
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, string[]>, cats = (window as any).__cats as [string, string, number][];
     const $ = (id: string) => document.getElementById(id)!;
-    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void; onClick?: () => void }) => {
+    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
       const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
-      if (o.onClick) { a.classList.add('click'); a.setAttribute('role', 'button'); a.tabIndex = 0; a.addEventListener('click', o.onClick); a.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onClick!(); } }); }
       const im = document.createElement('img'); im.src = o.img; im.alt = ''; im.loading = 'lazy'; a.appendChild(im);
       if (o.bar !== undefined) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = `<i style="width:${o.bar}%"></i>`; a.appendChild(b); }
       const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.appendChild(t); a.appendChild(s);
@@ -157,44 +135,8 @@ const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filte
     function renderDone() {
       const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
-      // 카드를 누르면 다시 맞추기가 아니라 완성 보기 — 맞춘 그림을 조각 모양째 감상하고 순서를 되돌려 본다. 다시 맞추기는 그 창 안에
-      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined, onClick: isPhoto || !m ? undefined : () => openView(d) })); }
-    }
-    // ── 완성 보기: 그 판의 컷(seed·cols·rows)으로 조각 윤곽이 보이는 완성본. 순서(replays)가 이 기기에 있으면 3초 타임랩스 —
-    //  조각마다 경로로 클립해 그 자리만 그린다(비트맵을 다시 뜨지 않는다). seed 가 없는 기록(옛 것·다른 기기)은 같은 조각 수의 정해진 컷으로
-    const dlg = $('done-dlg'), dcv = $('done-cv') as HTMLCanvasElement, dplay = $('done-play') as HTMLButtonElement; let viewGen = 0;
-    const closeView = () => { viewGen++; dlg.hidden = true; document.documentElement.classList.toggle('dlg-open', !!document.querySelector('.gdlg:not([hidden])')); };
-    for (const id of ['done-bg', 'done-x', 'done-close']) $(id).addEventListener('click', closeView);
-    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dlg.hidden) closeView(); });
-    const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
-    const strokePiece = (c: CanvasRenderingContext2D, cut: Cut, k: number, r: number, col: number) => { c.save(); c.setTransform(k, 0, 0, k, 0, 0); c.lineWidth = Math.max(1.2 / k, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.38)'; c.lineJoin = 'round'; c.stroke(piecePath(cut, r, col)); c.restore(); };
-    async function openView(d: DoneEntry) {
-      const m = meta[d.key]; if (!m) return; const my = ++viewGen;
-      dlg.hidden = false; document.documentElement.classList.add('dlg-open'); dplay.hidden = true;
-      $('done-h').textContent = m[0]; $('done-sub').textContent = `${m[1]} · ${M.pieces(d.n)} · ${fmtSec(d.sec)} · ${new Date(d.at).toLocaleDateString()}`;
-      ($('done-again') as HTMLAnchorElement).href = `${P}/puzzle/${d.key}/`;
-      const c = dcv.getContext('2d')!; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, dcv.width, dcv.height);
-      let img: HTMLImageElement; try { img = await loadImg(`/jigsaw/${d.key}.webp`); } catch { return; } if (my !== viewGen) return;
-      const W = img.naturalWidth, H = img.naturalHeight, g = d.cols && d.rows ? { cols: d.cols, rows: d.rows } : gridFor(d.n, W / H);
-      const cut = makeCut(W, H, g.cols, g.rows, seeded(d.seed ?? hashStr(`${d.key}:${d.n}`)));
-      const k = Math.min(1280 / W, 960 / H, 1); dcv.width = Math.round(W * k); dcv.height = Math.round(H * k);
-      const still = () => { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, dcv.width, dcv.height); c.drawImage(img, 0, 0, dcv.width, dcv.height); for (let r = 0; r < g.rows; r++) for (let col = 0; col < g.cols; col++) strokePiece(c, cut, k, r, col); dplay.disabled = false; };
-      still();
-      let seq: number[] | null = null; if (hasIDB()) try { seq = (await replays.get(d.at))?.seq ?? null; } catch {} if (my !== viewGen) return;
-      if (!seq || seq.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const order = seq.filter((i) => i >= 0 && i < g.cols * g.rows); dplay.hidden = false;
-      const play = () => {
-        const gen = ++viewGen; dplay.disabled = true; c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#e6e8ee'; c.fillRect(0, 0, dcv.width, dcv.height);
-        const DUR = 3000, t0 = performance.now(); let drawn = 0; const ease = (t: number) => 1 - Math.pow(1 - t, 2);
-        const frame = () => {
-          if (gen !== viewGen) return; const t = Math.min(1, (performance.now() - t0) / DUR), upto = Math.floor(ease(t) * order.length);
-          for (; drawn < upto; drawn++) { const i = order[drawn], r = Math.floor(i / g.cols), col = i % g.cols; const x = col * cut.pw - cut.padX, y = r * cut.ph - cut.padY, w = cut.pw + cut.padX * 2, h = cut.ph + cut.padY * 2;
-            c.save(); c.setTransform(k, 0, 0, k, 0, 0); c.clip(piecePath(cut, r, col)); c.drawImage(img, x, y, w, h, x, y, w, h); c.restore(); strokePiece(c, cut, k, r, col); }
-          if (t < 1) requestAnimationFrame(frame); else setTimeout(() => { if (gen === viewGen) still(); }, 250);
-        };
-        requestAnimationFrame(frame);
-      };
-      dplay.onclick = play; play(); // 열자마자 한 번 돌고, 버튼으로 다시
+      // 카드를 누르면 다시 맞추기가 아니라 완성 보기 페이지(/done/?at=) — 맞춘 그림을 조각 모양째 구경하고 순서를 되돌려 본다. 다시 맞추기는 그 페이지 안에
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
     /** 통계 — 이 기기 기록과 서버 기록을 at 으로 합쳐 셈한다. 방에서 맞춘 판은 내가 놓은 조각(mine)만 조각 수에 넣고 시간은 안 넣는다(방의 시간은 판이 열린 뒤 흐른 시간이라 내 것이 아니다) */
     function renderStats() {

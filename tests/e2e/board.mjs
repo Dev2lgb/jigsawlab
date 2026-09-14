@@ -17,10 +17,13 @@ const level = (page) => page.evaluate(() => fetch('/api/level').then((r) => r.js
   // 완성 기록에 그 판의 컷이, 놓은 순서는 IndexedDB replays 에 — /my/ 완성 보기가 조각 윤곽 완성본과 타임랩스를 그린다
   await page.waitForTimeout(500); const rec = await page.evaluate(() => JSON.parse(localStorage.getItem('done:list'))[0]); ok(rec && rec.seed > 0 && rec.cols * rec.rows === 48, 'done: 기록에 seed·cols·rows', JSON.stringify({ seed: rec?.seed, cols: rec?.cols, rows: rec?.rows }));
   const rp = await page.evaluate((at) => new Promise((res) => { const r = indexedDB.open('jigsawlab'); r.onsuccess = () => { const q = r.result.transaction('replays').objectStore('replays').get(at); q.onsuccess = () => res(q.result); }; }), rec.at); ok(rp?.seq?.length === 48, 'done: 놓은 순서 48개가 replays 에', JSON.stringify(rp?.seq?.slice(0, 5)));
-  await page.goto(`${BASE}/my/`); await page.waitForSelector('#l-done .mc.click', { timeout: 15000 }); await page.click('#l-done .mc.click'); await page.waitForSelector('#done-dlg:not([hidden])');
-  await page.waitForFunction(() => !document.getElementById('done-play').hidden, null, { timeout: 8000 });
-  ok((await page.$eval('#done-cv', (c) => c.width)) > 100 && (await page.$eval('#done-again', (a) => a.getAttribute('href'))).includes('/puzzle/arnolfini/'), '완성 보기: 창·완성본·타임랩스 버튼·다시 맞추기 링크');
-  ok(await page.$eval('#done-play', (b) => b.disabled), '완성 보기: 열자마자 타임랩스 재생 중'); await page.waitForFunction(() => !document.getElementById('done-play').disabled, null, { timeout: 8000 }); await page.click('#done-play'); ok(await page.$eval('#done-play', (b) => b.disabled), '완성 보기: 다시 보기');
+  // 결과 화면의 '완성 보기' → /done/?at= 페이지: 실물처럼 새긴 완성본, 놓은 순서가 있으니 타임랩스가 바로 돌고 버튼으로 다시
+  const viewHref = await page.$eval('#jg-res-view', (a) => (a.hidden ? '' : a.getAttribute('href'))); ok(viewHref.includes(`/done/?at=${rec.at}`), '결과: 완성 보기 링크', viewHref);
+  await page.click('#jg-res-view'); await page.waitForFunction(() => document.getElementById('dv')?.dataset.ready === '1', null, { timeout: 30000 });
+  ok((await page.$eval('#dv-cv', (c) => c.width)) > 100 && (await page.$eval('#dv-again', (a) => a.getAttribute('href'))).includes('/puzzle/arnolfini/') && (await page.$eval('#dv-title', (e) => e.textContent)).length > 0, '완성 보기: 페이지·완성본·다시 맞추기 링크');
+  await page.waitForFunction(() => !document.getElementById('dv-play').hidden, null, { timeout: 8000 }); ok(await page.$eval('#dv-play', (b) => b.disabled), '완성 보기: 열자마자 타임랩스 재생 중');
+  await page.waitForFunction(() => !document.getElementById('dv-play').disabled, null, { timeout: 12000 }); await page.click('#dv-play'); ok(await page.$eval('#dv-play', (b) => b.disabled), '완성 보기: 타임랩스 다시');
+  await page.goto(`${BASE}/my/`); const cardHref = await page.$eval('#l-done .mc', (a) => a.getAttribute('href')); ok(cardHref?.includes('/done/?at='), '/my/: 완성 카드가 완성 보기 페이지로', cardHref);
   await ctx.close(); }
 // B. 회원 — 조각 XP 묶음 → HUD, 완성 정산은 나머지만
 let N1 = 0;

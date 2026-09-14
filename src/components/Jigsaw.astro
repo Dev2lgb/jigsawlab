@@ -104,6 +104,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <div class="row">
         <button class="btn primary" id="jg-retry">{t.retry}</button>
         <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
+        <a class="btn" id="jg-res-view" href={`${P}/my/`} hidden>{U.my.view}</a>
         <a class="btn" href={`${P}/play/`}>{t.another}</a>
         <a class="btn ghost" href={`${P}/`}>{U.foot.toHome}</a>
       </div>
@@ -283,6 +284,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { BADGES, pieceRate, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { createDust, outerEdges } from '../lib/dust';
+  import { renderRelief } from '../lib/relief';
   import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
@@ -454,8 +456,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // ── 판 위 조각 윤곽선 (켜면 한 번 그려 캐시)
   function outlineCanvas() { if (outlineLayer) return outlineLayer; if (pieces.length < total) { const e = document.createElement('canvas'); e.width = e.height = 1; return e; } const cv = document.createElement('canvas'); const k = Math.min(1, 1600 / Math.max(cut.W, cut.H)); cv.width = Math.ceil(cut.W * k); cv.height = Math.ceil(cut.H * k); const c = cv.getContext('2d')!; c.scale(k, k); c.lineWidth = Math.max(1.5, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = BG[bgName].outline; for (const p of pieces) c.stroke(piecePath(cut, p.r, p.c)); outlineLayer = cv; return cv; }
   $('jg-outline').addEventListener('click', () => toggleOutline());
-  /** 완성본 위에 조각 윤곽 — 결과 화면의 완성작. 매니아는 맞춘 그림을 조각 모양째 보고 싶어 한다(/my/ 의 완성 보기도 같은 그림). 굵기는 판의 윤곽선과 같다 */
-  function strokeCut(c: CanvasRenderingContext2D, k: number) { c.save(); c.scale(k, k); c.lineWidth = Math.max(1.2 / k, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.38)'; c.lineJoin = 'round'; for (const p of pieces) c.stroke(piecePath(cut, p.r, p.c)); c.restore(); }
 
   // ── 더미(트레이 탭)
   // ── 방 이모지: 트레이 바의 버튼 → 고르기 팝오버 → 서버 중계(emo). 판 한가운데 잠깐 떠올랐다 사라진다. 방에서만 보인다
@@ -1108,12 +1108,15 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     // 방에서 맞춘 판은 내가 놓은 조각만큼만 XP 로 친다 (mine). 기록 자체는 늘 한 판으로 남는다
     // member: 로그인한 채 맞춘 판만 서버에 올라간다(Base.astro 가 로그인 확인 뒤 html.member 를 붙인다). 비회원으로 맞춘 판은 나중에 로그인해도 XP 를 주지 않는다
     { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xp.paid, member: document.documentElement.classList.contains('member'), seed: cutSeed, cols: cut.cols, rows: cut.rows, ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); dropClearedCache(); showAward(null);
+      { const v = $('jg-res-view') as HTMLAnchorElement; v.hidden = src!.kind === 'photo'; v.href = `${PFX}/done/?at=${entry.at}`; } // 완성 보기 페이지 — 사진은 완성 때 지우므로 못 연다
       // 놓은 순서는 기기 안 IndexedDB 에(기록에 실으면 localStorage 가 부푼다). 완성 목록 200건에서 밀려난 기록의 순서는 같이 지운다
       if (hasIDB()) replays.put({ at: entry.at, seq: [...seq] }).then(() => replays.keys()).then((ks) => { const keep = new Set(getDone().map((e) => e.at)); for (const k of ks) if (!keep.has(k)) replays.del(k).catch(() => {}); }).catch(() => {}); xp.settle().then(() => syncDone({ ...entry, paid: xp.paid })).then(showAward); }
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmtSec(sec), pTitle) : T.shareTitle(total, fmtSec(sec)); sb.dataset.text = T.shareText;
     sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${PFX}/photo/` : `${location.origin}${PFX}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
-    const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k); { const c = rc.getContext('2d')!; c.drawImage(img!, 0, 0, rc.width, rc.height); strokeCut(c, k); }
+    const rc = $('jg-res-img') as HTMLCanvasElement; const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k);
+    // 완성작은 실물 퍼즐처럼 새긴다(lib/relief.ts — /done/ 완성 보기와 같은 그림). 조각이 많으면 오래 걸리니 색종이가 내리는 동안 프레임을 나눠 그린다
+    { const c = rc.getContext('2d')!; c.drawImage(img!, 0, 0, rc.width, rc.height); const myGen = gen; renderRelief(rc, img!, cut, k, { alive: () => gen === myGen }); }
   }
   // 완성 뒤 받은 XP·레벨업·새 업적. 로그인 안 했으면 로그인하면 쌓인다는 안내만
   async function showAward(a: Award | null) {

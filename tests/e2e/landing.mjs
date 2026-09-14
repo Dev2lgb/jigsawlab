@@ -52,7 +52,8 @@ for (const [o, show] of [[-1, true], [-3, false]]) { const { ctx, page } = await
   const hidden = await page.$eval('#hero-streak', (e) => e.hidden); ok(hidden === !show, `guest: 마지막 ${-o}일 전 → 연속 ${show ? '보임' : '숨김'}`); await ctx.close(); }
 // H. 컬렉션 진도 — 이 기기의 완성 기록이 상자 리본·진열대 진도로, /play/ 의 '안 해 본 그림만' 필터, /my/ 의 통계
 { const { ctx, page } = await newPage(br);
-  await ctx.addInitScript(() => { localStorage.setItem('done:list', JSON.stringify([{ key: 'wave', kind: 'gallery', name: 'w', n: 300, sec: 600, moves: 300, at: Date.now() - 86400e3 }, { key: 'arnolfini', kind: 'gallery', name: 'a', n: 100, sec: 200, moves: 100, at: Date.now() - 2 * 86400e3 }, { key: 'wave', kind: 'daily', name: 'w', n: 48, sec: 100, moves: 48, at: Date.now() }])); });
+  // 시각은 한 번만 만들어 넘긴다 — 초기화 스크립트는 페이지마다 다시 돌아서 Date.now() 를 안에서 부르면 /my/ 가 링크한 at 과 /done/ 이 심은 at 이 달라진다
+  const T0 = Date.now(); await ctx.addInitScript((t0) => { localStorage.setItem('done:list', JSON.stringify([{ key: 'wave', kind: 'gallery', name: 'w', n: 300, sec: 600, moves: 300, at: t0 - 86400e3 }, { key: 'arnolfini', kind: 'gallery', name: 'a', n: 100, sec: 200, moves: 100, at: t0 - 2 * 86400e3 }, { key: 'wave', kind: 'daily', name: 'w', n: 48, sec: 100, moves: 48, at: t0 }])); }, T0);
   await page.goto(BASE + '/play/', { waitUntil: 'networkidle' }); await page.waitForTimeout(300);
   const done = await page.$$eval('.boxw.done', (els) => els.map((e) => [e.dataset.key, e.dataset.done]));
   ok(done.some(([k, n]) => k === 'wave' && n === '300') && done.some(([k, n]) => k === 'arnolfini' && n === '100'), 'progress: 완성한 그림에 리본(최고 조각 수)', JSON.stringify(done));
@@ -72,9 +73,10 @@ for (const [o, show] of [[-1, true], [-3, false]]) { const { ctx, page } = await
   const tiles = await page.$$eval('#st-tiles > div', (els) => els.map((e) => e.querySelector('b').textContent));
   ok(tiles.length === 7 && tiles[0] === '3' && tiles[1] === '448' && tiles[4] === '300' && tiles[5] === '1' && tiles[6] === '2', 'my stats: 타일(완성 3·조각 448·최대 300·오늘의 퍼즐 1·그림 2)', JSON.stringify(tiles));
   ok((await page.$$eval('#st-cal .d', (els) => els.length)) >= 100 && (await page.$$eval('#st-cal .d[class*=" c"]', (els) => els.length)) === 3, 'my stats: 잔디 달력에 완성한 날 3개');
-  // 완성 카드를 누르면 다시 맞추기가 아니라 완성 보기 창. 순서 기록이 없는 기록(다른 기기·옛 것)은 완성본만, 타임랩스 버튼 없음
-  await page.click('#l-done .mc.click'); await page.waitForSelector('#done-dlg:not([hidden])'); await page.waitForFunction(() => document.getElementById('done-cv').width > 100, null, { timeout: 8000 }); await page.waitForTimeout(300);
-  ok(await page.$eval('#done-play', (b) => b.hidden), 'my done view: 순서 기록 없으면 타임랩스 버튼 없음'); await page.click('#done-close'); ok(await page.$eval('#done-dlg', (e) => e.hidden), 'my done view: 닫기');
   const bars = await page.$$eval('#st-cats li', (els) => els.map((e) => e.textContent)); ok(bars.length >= 10 && bars.some((t) => /[1-9]\d* \/ \d+/.test(t)), 'my stats: 진열대별 진도', JSON.stringify(bars.slice(0, 4)));
+  // 완성 카드 → 완성 보기 페이지. 순서 기록이 없는 기록(다른 기기·옛 것)은 완성본만, 타임랩스 버튼 없음. 없는 기록은 안내
+  await page.click('#l-done .mc'); await page.waitForFunction(() => document.getElementById('dv')?.dataset.ready === '1', null, { timeout: 30000 });
+  ok(/\/done\/\?at=\d+/.test(page.url()) && (await page.$eval('#dv-play', (b) => b.hidden)) && (await page.$eval('#dv-msg', (e) => e.hidden)), 'done page: 완성본만, 타임랩스 버튼 없음', page.url());
+  await page.goto(BASE + '/done/?at=1'); await page.waitForFunction(() => !document.getElementById('dv-msg').hidden && document.getElementById('dv-msg').textContent.length > 0 && !document.getElementById('dv-msg').textContent.includes('%'), null, { timeout: 8000 }); ok(true, 'done page: 없는 기록은 안내');
   await ctx.close(); }
 await br.close(); finish();

@@ -1,0 +1,8 @@
+---
+// 완성 보기 — /my/ 의 완성한 퍼즐 카드에서 ?at=<완성 시각> 으로. 정적 껍데기 하나에 브라우저가 기록을 읽어 그린다 (noindex, 사이트맵에도 없다)
+import DoneView from '../../components/DoneView.astro';
+import { langPaths, type Lang } from '../../i18n/ui';
+export function getStaticPaths() { return langPaths(); }
+const { lang } = Astro.props as { lang: Lang };
+---
+<DoneView lang={lang} />

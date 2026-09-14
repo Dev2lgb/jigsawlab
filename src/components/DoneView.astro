@@ -1,0 +1,124 @@
+---
+// 완성 보기(/done/?at=…) — 완성한 판을 판처럼 넓게 놓고 구경하는 페이지. 실물 퍼즐처럼 새긴 완성본(lib/relief.ts)을 확대·이동하며 보고,
+// 놓은 순서가 이 기기에 있으면 타임랩스. 기록은 이 기기의 완성 목록(+회원이면 서버)에서 at 으로 찾는다. 헤더·바닥글은 판처럼 걷는다(html[data-play])
+import Base from '../layouts/Base.astro';
+import { UI, prefix, altsFor, type Lang } from '../i18n/ui';
+import { icon } from '../lib/icons';
+const { lang = 'ko' } = Astro.props as { lang?: Lang };
+const T = UI[lang], P = prefix(lang), M = T.my;
+---
+<Base title={`${M.view} · jigsawlab`} desc={M.onDevice} lang={lang} alts={altsFor('/done/')} path={`${P}/done/`} noindex ads={false}>
+  <script is:inline>document.documentElement.setAttribute('data-play', 'on');</script>
+  <div class="dv" id="dv">
+    <div class="dv-bar">
+      <a class="dv-back" href={`${P}/my/`}><Fragment set:html={icon('x', 18)} /><span>{T.nav.my}</span></a>
+      <div class="dv-t"><b id="dv-title"></b><small id="dv-sub"></small></div>
+      <div class="dv-act">
+        <button type="button" class="btn sm dv-play" id="dv-play" hidden title={M.replay}><Fragment set:html={icon('play', 16)} /><span>{M.timelapse}</span></button>
+        <a class="btn sm primary" id="dv-again" href={`${P}/play/`}>{M.again}</a>
+      </div>
+    </div>
+    <div class="dv-stage" id="dv-stage"><canvas id="dv-cv"></canvas><p class="dv-msg" id="dv-msg">{M.carving}</p><p class="dv-hint" id="dv-hint" hidden>{M.zoomHint}</p></div>
+  </div>
+  <style>
+    .dv { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--board); -webkit-user-select: none; user-select: none; }
+    .dv-bar { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left)); background: var(--bg-2); border-bottom: 1px solid var(--line-soft); }
+    .dv-back { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: .85rem; font-weight: 700; white-space: nowrap; } .dv-back:hover { text-decoration: none; background: var(--bg-3); }
+    .dv-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; } .dv-t b { font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .dv-t small { color: var(--muted); font-size: .76rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dv-act { display: flex; gap: 6px; flex: none; } .dv-play { display: inline-flex; align-items: center; gap: 6px; } .dv-play[hidden] { display: none; }
+    @media (max-width: 640px) { .dv-back span { display: none; } .dv-back { width: 36px; padding: 0; justify-content: center; } .dv-play span { display: none; } .dv-play { width: 38px; padding: 0; justify-content: center; } }
+    .dv-stage { position: relative; flex: 1; min-height: 0; background: var(--board); background-image: radial-gradient(rgba(23,26,36,.09) 1px, transparent 1px); background-size: 22px 22px; }
+    .dv-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; } .dv-stage canvas.drag { cursor: grabbing; }
+    .dv-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--ink-2); font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; } .dv-msg[hidden] { display: none; }
+    .dv-msg a { pointer-events: auto; }
+    /* 처음 한 번만 뜨는 조작 안내 — 손을 대면 사라진다 */
+    .dv-hint { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(15,18,34,.7); color: #fff; font-size: .76rem; font-weight: 600; pointer-events: none; white-space: nowrap; animation: dv-hint 6s var(--ease) forwards; } .dv-hint[hidden] { display: none; }
+    @keyframes dv-hint { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .dv-hint { animation: none; } }
+  </style>
+  <script>
+    import { getDone, fmtSec, type DoneEntry } from '../lib/store';
+    import { fetchSync } from '../lib/account';
+    import { makeCut, seeded, gridFor, hashStr, type Cut } from '../lib/jigsaw';
+    import { replays, hasIDB } from '../lib/db';
+    import { renderRelief, copyPiece } from '../lib/relief';
+    import { docLang, prefix, UI } from '../i18n/ui';
+    const LANG = docLang(), M = UI[LANG].my, P = prefix(LANG);
+    const $ = (id: string) => document.getElementById(id)!;
+    const cv = $('dv-cv') as HTMLCanvasElement, ctx = cv.getContext('2d')!, stage = $('dv-stage'), msg = $('dv-msg'), play = $('dv-play') as HTMLButtonElement;
+    const dpr = () => Math.min(2, window.devicePixelRatio || 1);
+    const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+    const fail = () => { msg.hidden = false; msg.innerHTML = ''; msg.appendChild(document.createTextNode(M.notFound + ' · ')); const a = document.createElement('a'); a.href = `${P}/my/`; a.textContent = UI[LANG].nav.my; msg.appendChild(a); };
+
+    // ── 기록 찾기: 이 기기 → (회원) 서버
+    const at = Number(new URLSearchParams(location.search).get('at'));
+    async function findEntry(): Promise<DoneEntry | null> {
+      if (!at) return null; const l = getDone().find((e) => e.at === at); if (l) return l;
+      const r = await fetchSync().catch(() => null); return (r?.done as DoneEntry[] | undefined)?.find((e) => Number(e.at) === at) ?? null;
+    }
+
+    // ── 보기: 확대·이동 (판과 같은 손맛 — 휠은 커서 자리로, 두 손가락은 핀치, 한 손가락은 이동, 두 번 두드리면 맞춤)
+    let W = 0, H = 0, k = 1, still: HTMLCanvasElement | null = null, layer: HTMLCanvasElement | null = null; // layer = 타임랩스 중엔 드러난 만큼, 아니면 still
+    const view = { s: 1, tx: 0, ty: 0 }; let fitS = 1, lastW = 0, lastH = 0, drawQ = false;
+    const minS = () => fitS * 0.5, maxS = () => Math.max(fitS * 8, 260 / Math.min(W, H) * 8);
+    function resize() { const r = stage.getBoundingClientRect(); cv.width = Math.round(r.width * dpr()); cv.height = Math.round(r.height * dpr()); lastW = r.width; lastH = r.height; }
+    function fit() { const r = stage.getBoundingClientRect(); fitS = Math.min(r.width / (W * 1.12), r.height / (H * 1.16)); view.s = fitS; view.tx = (r.width - W * fitS) / 2; view.ty = (r.height - H * fitS) / 2; draw(); }
+    function draw() { if (drawQ) return; drawQ = true; requestAnimationFrame(() => { drawQ = false; drawNow(); }); }
+    function drawNow() {
+      const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); if (!layer) return;
+      ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
+      // 판 위에 놓인 실물처럼 — 아래로 떨어지는 그림자
+      ctx.save(); ctx.shadowColor = 'rgba(15,18,34,.4)'; ctx.shadowBlur = 36 * d; ctx.shadowOffsetY = 14 * d; ctx.fillStyle = '#d9dbe2'; ctx.fillRect(0, 0, W, H); ctx.restore();
+      ctx.drawImage(layer, 0, 0, W, H);
+    }
+    const toBoard = (cx: number, cy: number) => { const r = stage.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; };
+    function zoomAt(f: number, cx: number, cy: number) { const r = stage.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top; const ns = Math.max(minS(), Math.min(maxS(), view.s * f)); const q = ns / view.s; view.tx = px - (px - view.tx) * q; view.ty = py - (py - view.ty) * q; view.s = ns; draw(); }
+    const ptrs = new Map<number, { x: number; y: number }>(); let pinch: { d0: number; s0: number; bx: number; by: number } | null = null, moved = false;
+    const hideHint = () => { $('dv-hint').hidden = true; };
+    cv.addEventListener('pointerdown', (e) => { if (ptrs.size >= 2) return; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = false; cv.classList.add('drag'); hideHint(); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const bm = toBoard((a.x + b.x) / 2, (a.y + b.y) / 2); pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), s0: view.s, bx: bm.x, by: bm.y }; } });
+    cv.addEventListener('pointermove', (e) => {
+      if (!ptrs.has(e.pointerId)) return; const prev = ptrs.get(e.pointerId)!; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, r = stage.getBoundingClientRect(); view.s = Math.max(minS(), Math.min(maxS(), pinch.s0 * (dd / pinch.d0))); view.tx = mx - r.left - pinch.bx * view.s; view.ty = my - r.top - pinch.by * view.s; draw(); return; }
+      if (ptrs.size === 1) { view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; moved = true; draw(); }
+    });
+    const up = (e: PointerEvent) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) cv.classList.remove('drag'); };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('wheel', (e) => { e.preventDefault(); hideHint(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    cv.addEventListener('dblclick', () => fit());
+    for (const ev of ['touchstart', 'touchmove'] as const) cv.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+    new ResizeObserver(() => { if (!W) return; const r = stage.getBoundingClientRect(); if (!r.width || (r.width === lastW && r.height === lastH)) return; const wasFit = Math.abs(view.s - fitS) < 1e-6; resize(); if (wasFit) fit(); else draw(); }).observe(stage);
+
+    // ── 타임랩스: 새겨 둔 완성본에서 조각을 놓은 순서대로 옮겨 드러낸다
+    let playGen = 0;
+    function startPlay(cut: Cut, order: number[]) {
+      const gen = ++playGen; const lc = document.createElement('canvas'); lc.width = still!.width; lc.height = still!.height; const c = lc.getContext('2d')!;
+      c.fillStyle = '#e6e8ee'; c.fillRect(0, 0, lc.width, lc.height); layer = lc; play.disabled = true;
+      const DUR = Math.max(3000, Math.min(8000, order.length * 4)), t0 = performance.now(); let drawn = 0; const ease = (t: number) => 1 - Math.pow(1 - t, 2);
+      const frame = () => {
+        if (gen !== playGen) return; const t = Math.min(1, (performance.now() - t0) / DUR), upto = Math.floor(ease(t) * order.length);
+        for (; drawn < upto; drawn++) { const i = order[drawn]; copyPiece(c, still!, cut, Math.floor(i / cut.cols), i % cut.cols, k); }
+        draw();
+        if (t < 1) requestAnimationFrame(frame); else setTimeout(() => { if (gen === playGen) { layer = still; play.disabled = false; draw(); } }, 300);
+      };
+      requestAnimationFrame(frame);
+    }
+
+    (async () => {
+      const d = await findEntry(); if (!d || d.kind === 'photo') return fail();
+      $('dv-title').textContent = d.name; $('dv-sub').textContent = `${M.pieces(d.n)} · ${fmtSec(d.sec)} · ${new Date(d.at).toLocaleDateString()}`; document.title = `${d.name} · ${M.view} · jigsawlab`;
+      ($('dv-again') as HTMLAnchorElement).href = `${P}/puzzle/${d.key}/`;
+      let img: HTMLImageElement; try { img = await loadImg(`/jigsaw/${d.key}.webp`); } catch { return fail(); }
+      W = img.naturalWidth; H = img.naturalHeight; resize();
+      const g = d.cols && d.rows ? { cols: d.cols, rows: d.rows } : gridFor(d.n, W / H);
+      const cut = makeCut(W, H, g.cols, g.rows, seeded(d.seed ?? hashStr(`${d.key}:${d.n}`)));
+      // 확대해도 버틸 만큼 크게 새긴다 — 긴 변 2200px 까지(폰 메모리)
+      k = Math.min(2200 / Math.max(W, H), 2); const sc = document.createElement('canvas'); sc.width = Math.round(W * k); sc.height = Math.round(H * k);
+      const ok = await renderRelief(sc, img, cut, k, { alive: () => true, onProgress: (n, t) => { msg.textContent = `${M.carving} ${Math.round((n / t) * 100)}%`; } });
+      if (!ok) return; still = sc; layer = sc; msg.hidden = true; $('dv-hint').hidden = false; fit(); $('dv').dataset.ready = '1';
+      let seq: number[] | null = null; if (hasIDB()) try { seq = (await replays.get(d.at))?.seq ?? null; } catch {}
+      if (!seq || seq.length < 2) return;
+      const order = seq.filter((i) => i >= 0 && i < g.cols * g.rows); play.hidden = false; play.addEventListener('click', () => startPlay(cut, order));
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) startPlay(cut, order); // 열자마자 한 번
+    })();
+  </script>
+</Base>

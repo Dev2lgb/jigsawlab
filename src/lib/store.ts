@@ -25,7 +25,8 @@ export const getStreak = (today: string) => { try { const s = JSON.parse(ls.get(
 
 /** 완성한 퍼즐 목록 (최근 200개) */
 // member = 로그인한 채 맞춘 판. 서버 동기화(XP·업적)는 이 표시가 있는 기록만 — 비회원으로 맞춘 판은 나중에 로그인해도 안 준다
-export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number; room?: boolean; mine?: number; member?: boolean }
+// seed·cols·rows = 그 판의 컷. /my/ 의 완성 보기가 조각 윤곽이 보이는 완성본을 같은 컷으로 다시 그린다(없으면 같은 조각 수의 정해진 컷). 놓은 순서는 IndexedDB replays 에
+export interface DoneEntry { key: string; kind: 'photo' | 'daily' | 'gallery'; name: string; n: number; sec: number; moves: number; day?: string; at: number; room?: boolean; mine?: number; member?: boolean; seed?: number; cols?: number; rows?: number }
 export const getDone = (): DoneEntry[] => { try { return JSON.parse(ls.get('done:list') ?? '[]'); } catch { return []; } };
 export const addDone = (e: DoneEntry) => { const l = getDone(); l.unshift(e); ls.set('done:list', JSON.stringify(l.slice(0, 200))); };
 /** 이 기기에서 그 그림을 깬 최대 조각 수 — 재도전 감산(×¼)을 미리 보여 주는 용도. 서버 값이 오면 그쪽이 맞다 */

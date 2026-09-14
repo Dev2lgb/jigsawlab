@@ -28,6 +28,9 @@ import { BASE, get, post, ok, finish, dayKST } from './lib.mjs';
 { const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 2000, placed: 1000 }, true); const a = r.body?.award; ok(a?.gained === 0 && a.xp === 8438 && a.capped === true, 'pieces: 상한 → capped, 0', JSON.stringify(r.body)); }
 { const r = await post('/api/sync', { action: 'done', entry: { kind: 'gallery', key: 'wave', name: 'wave', n: 2000, sec: 2000, moves: 2000, at: Date.now() + 1, mine: 2000, paid: 2000 } }, true); const a = r.body?.award; ok(a && a.gained === 0 && a.xp === 8438 && a.stats.solved === 2 && a.stats.best_n === 2000 && a.badges.includes('p2000'), 'done: 2000 조각 → best_n·p2000 업적', JSON.stringify(r.body)); }
 { const d = await get('/api/sync', true); ok(d.done?.length === 2 && d.done[0].n === 2000, 'sync GET: done 2건'); }
+// 진열대 진도 — 그림별 최고 조각 수(user_cleared). 오늘의 퍼즐 날짜 행(d:…)은 그림이 아니라 안 나온다
+{ const d = await get('/api/sync?cleared=1', true); ok(Array.isArray(d.cleared) && d.cleared.some(([k, n]) => k === 'wave' && n === 2000) && !d.cleared.some(([k]) => String(k).startsWith('d:')), 'sync GET cleared: 그림별 최고 조각 수', JSON.stringify(d)); }
+{ const r = await fetch(BASE + '/api/sync?cleared=1'); ok(r.status === 401, 'sync GET cleared: 비회원 401'); }
 { const r = await post('/api/me', { nick: 'tester2' }, true); ok(r.body?.user?.nick === 'tester2', 'me POST: 닉네임'); await post('/api/me', { nick: 'tester' }, true); }
 // 계정의 오늘의 퍼즐(홈의 지난 7일 ✓·연속) — ✓ 는 판의 날짜(어제 판), 연속은 푼 날짜(오늘)로 센다
 { const r = await fetch(BASE + '/api/sync?daily=1'); ok(r.status === 401, 'sync GET daily: 비회원 401'); await r.text(); }

@@ -83,10 +83,12 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     import { rateFor } from '../lib/level';
     import { isDailyToday } from '../lib/daily';
     import { initFavUI } from '../lib/fav';
+    import { clearedMap, markBoxes } from '../lib/progress';
     initFavUI();
     import { getBest, bestDoneN, fmtSec } from '../lib/store';
     import { docLang, prefix, UI } from '../i18n/ui';
     const LANG = docLang(), T = UI[LANG];
+    clearedMap().then((m) => markBoxes(m, T.catalog.progress)); // 큰 상자·아래 진열대의 깬 그림에 리본
     const img = document.querySelector<HTMLImageElement>('.stage .box3d img')!, key = document.getElementById('best')!.dataset.key!;
     const fl = document.getElementById('fullload')!, flTxt = document.getElementById('fullload-txt')!;
     addEventListener('pageshow', () => { const b = document.getElementById('together') as HTMLButtonElement; b.disabled = false; fl.classList.remove('on'); });

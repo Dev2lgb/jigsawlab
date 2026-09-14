@@ -66,6 +66,16 @@ export type SaveMeta = Pick<SaveData, 'id' | 'kind' | 'key' | 'name' | 'day' | '
 export async function fetchSync(): Promise<{ done: any[]; saves: SaveMeta[] } | null> { if (!(await me())) return null; const r = await fetch('/api/sync', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
 /** 계정에 남은 오늘의 퍼즐 — 지난 7일 중 완성한 판의 날짜와 지금 이어지는 연속 일수. 홈이 이 기기 기록에 얹는다. 로그인 안 했으면 null */
 export async function fetchDaily(): Promise<{ days: string[]; streak: number } | null> { if (!(await me())) return null; const r = await fetch('/api/sync?daily=1', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json().catch(() => null) as Promise<{ days: string[]; streak: number } | null>; }
+/** 서버가 아는 그림별 최고 조각 수(user_cleared) — 진열대의 완성 표시·진도에 쓴다. 5분 캐시(sessionStorage). 로그인 안 했으면 null */
+export async function fetchCleared(): Promise<[string, number][] | null> {
+  if (!(await me())) return null;
+  const c = ss.get('auth:cleared'); if (c) { try { const o = JSON.parse(c); if (o.t > Date.now() - 300e3) return o.l; } catch {} }
+  const r = await fetch('/api/sync?cleared=1', { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null;
+  const d: any = await r.json().catch(() => null); const l: [string, number][] = Array.isArray(d?.cleared) ? d.cleared : [];
+  ss.set('auth:cleared', JSON.stringify({ t: Date.now(), l })); return l;
+}
+/** 완성 뒤에는 캐시를 버린다 — 다음 진열대가 새 완성을 바로 보이게 */
+export const dropClearedCache = () => ss.del('auth:cleared');
 export async function fetchSave(id: string): Promise<SaveData | null> { const r = await fetch(`/api/sync?save=${encodeURIComponent(id)}`, { credentials: 'same-origin' }).catch(() => null); if (!r?.ok) return null; return r.json(); }
 /** 하던 퍼즐 업로드. 주기 저장은 안 하고, 저장 버튼·나가기·화면 이탈 때만 (무료 티어 요청 수 절약). 기기 안 IndexedDB 저장은 별도로 계속 됨 */
 export async function syncSave(data: SaveData): Promise<boolean> {

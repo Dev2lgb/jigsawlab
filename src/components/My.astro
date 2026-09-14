@@ -4,9 +4,13 @@
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
+import { CATEGORIES } from '../data/catalog';
+import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
-const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
+// 넷째 칸 cat 은 통계의 진열대별 진도용 — works 를 클라이언트에 안 싣고도 그림 → 진열대를 안다
+const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year, w.cat]])));
+const cats = JSON.stringify(CATEGORIES.map((c) => [c.id, c.name[li], WORKS.filter((w) => w.cat === c.id).length]).filter((c) => (c[2] as number) > 0));
 ---
 <Base title={`${M.title} · jigsawlab`} desc={M.onDevice} lang={lang} alts={altsFor('/my/')} path={`${P}/my/`} noindex>
   <div class="wrap my">
@@ -28,11 +32,31 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       <div class="lvl-stats" id="lvl-stats"></div>
     </section>
     <section class="blk bdg-blk" id="blk-bdg" hidden><h2>{V.badgesTitle}<small id="c-bdg"></small></h2><div class="bdgs" id="l-bdg"></div><button type="button" class="shelf-all bdg-more" id="bdg-more"></button></section>
+    <!-- 통계 — 이 기기의 완성 목록(+회원이면 서버 기록)으로 브라우저에서 셈한다. 시간은 개인 기록으로만 보여 주고 랭킹에는 안 쓴다 -->
+    <section class="blk stats-blk" id="blk-stats"><h2>{M.stats}</h2>
+      <div class="st-tiles" id="st-tiles"></div>
+      <p class="empty muted" id="e-stats" hidden>{M.emptyStats}</p>
+      <div class="st-grid" id="st-grid" hidden>
+        <div class="st-card"><h3>{M.calendar}</h3><div class="cal-wrap"><div class="cal" id="st-cal"></div></div><p class="cal-legend muted" id="st-cal-legend"></p></div>
+        <div class="st-card"><h3>{M.byShelf}</h3><ul class="catbars" id="st-cats"></ul></div>
+      </div>
+    </section>
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
   </div>
-  <script is:inline define:vars={{ meta }}>window.__meta = JSON.parse(meta);</script>
+  <!-- 완성 보기 — 완성한 퍼즐 카드를 누르면. 그 판의 컷으로 조각 윤곽이 보이는 완성본을 그리고, 놓은 순서가 이 기기에 있으면 타임랩스 -->
+  <div class="gdlg" id="done-dlg" hidden>
+    <div class="gdlg-bg" id="done-bg"></div>
+    <div class="gdlg-box done-box" role="dialog" aria-modal="true" aria-labelledby="done-h">
+      <button type="button" class="gdlg-x" id="done-x" aria-label={A.close}><Fragment set:html={icon('x', 18)} /></button>
+      <div class="done-art"><canvas id="done-cv" width="640" height="480"></canvas><button type="button" class="done-play" id="done-play" hidden title={M.replay} aria-label={M.replay}><Fragment set:html={icon('play', 18)} /></button></div>
+      <h2 id="done-h"></h2>
+      <p class="done-sub" id="done-sub"></p>
+      <div class="done-row"><a class="btn primary" id="done-again">{M.again}</a><button type="button" class="btn" id="done-close">{A.close}</button></div>
+    </div>
+  </div>
+  <script is:inline define:vars={{ meta, cats }}>window.__meta = JSON.parse(meta); window.__cats = JSON.parse(cats);</script>
   <style>
     .my { padding-top: clamp(24px, 4vw, 48px); } .my-head { margin-bottom: 8px; } .my-head h1 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; } .my-head p { margin: 6px 0 0; }
     .acct-box { margin-top: 18px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); } .acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; } .acct-btns { display: flex; gap: 8px; flex-wrap: wrap; } .acct-btns :global(.btn) { font-size: .85rem; } .acct-why { margin: 10px 0 0; font-size: .82rem; line-height: 1.55; }
@@ -67,6 +91,27 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     .bdgs :global(.bd-i) { font-size: 1.45rem; line-height: 1.2; flex: none; }
     .bdgs :global(.bd b) { display: block; font-size: .92rem; } .bdgs :global(.bd small) { display: block; color: var(--muted); font-size: .78rem; line-height: 1.5; margin-top: 2px; }
     .bdgs :global(.bd-p) { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+    /* 통계 — 타일은 레벨 카드의 것과 같은 꼴. 달력·진열대 진도는 스크립트가 만드므로 :global */
+    .st-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+    .st-tiles :global(div) { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--bg-2); } .st-tiles :global(b) { font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .st-tiles :global(small) { color: var(--muted); font-size: .76rem; font-weight: 600; }
+    .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; } @media (max-width: 860px) { .st-grid { grid-template-columns: 1fr; } }
+    .st-card { padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); min-width: 0; } .st-card h3 { font-family: var(--font); font-size: .95rem; font-weight: 700; margin: 0 0 12px; }
+    .cal-wrap { overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+    .cal { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); grid-auto-columns: 13px; gap: 3px; width: max-content; }
+    .cal :global(.d) { width: 13px; height: 13px; border-radius: 3px; background: var(--bg-3); } .cal :global(.d.c1) { background: #ffe1a3; } .cal :global(.d.c2) { background: var(--gold); } .cal :global(.d.c3) { background: #d98b06; } .cal :global(.d.c4) { background: #a86400; } .cal :global(.d.today) { box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .cal-legend { margin: 10px 0 0; font-size: .76rem; }
+    .catbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .catbars :global(li) { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: .84rem; }
+    .catbars :global(.cb-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink-2); }
+    .catbars :global(.cb-bar) { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; } .catbars :global(.cb-bar i) { display: block; height: 100%; border-radius: 999px; background: var(--accent); } .catbars :global(li.all .cb-bar i) { background: var(--gold); }
+    .catbars :global(b) { font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--muted); white-space: nowrap; } .catbars :global(li.all b) { color: #8a5f00; }
+    /* 완성 보기 창 — 공용 .gdlg-box 보다 넓게, 그림이 주인공 */
+    .done-box { width: min(94vw, 860px); padding: 14px 14px 18px; }
+    .done-art { position: relative; border-radius: 14px; overflow: hidden; background: var(--board); box-shadow: 0 20px 50px -30px rgba(15,18,34,.6); } .done-art canvas { display: block; width: 100%; height: auto; }
+    .done-play { position: absolute; left: 12px; bottom: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(15,18,34,.65); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(4px); transition: transform .15s var(--ease), background .15s; } .done-play:hover { background: rgba(15,18,34,.85); transform: scale(1.08); } .done-play:disabled { opacity: .4; cursor: default; transform: none; }
+    #done-h { margin: 14px 4px 2px; font-size: 1.3rem; letter-spacing: -.03em; } .done-sub { margin: 0 4px; color: var(--muted); font-size: .88rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .done-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 4px 0; }
+    .cards :global(.mc.click) { cursor: pointer; }
     .blk { padding: clamp(28px, 4vw, 44px) 0 0; } .blk h2 { font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px; } .blk h2 small { color: var(--muted); font-size: .9rem; font-weight: 600; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
     .empty { margin: 0; padding: 22px; border-radius: var(--r); background: var(--bg-2); }
@@ -84,16 +129,19 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     import { getDone, fmtSec, type DoneEntry } from '../lib/store';
     import { openLogin, askNick } from '../lib/authui';
     import { me, logout, deleteAccount, setNickRemote, fetchSync, authAvailable, fetchLevel, type SaveMeta } from '../lib/account';
-    import { BADGES, levelProgress, tierOf } from '../lib/level';
+    import { BADGES, levelProgress, tierOf, kstDay } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
+    import { makeCut, seeded, piecePath, gridFor, hashStr, type Cut } from '../lib/jigsaw';
+    import { replays, hasIDB } from '../lib/db';
     import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
     const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = prefix(LANG);
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
-    const meta = (window as any).__meta as Record<string, string[]>;
+    const meta = (window as any).__meta as Record<string, string[]>, cats = (window as any).__cats as [string, string, number][];
     const $ = (id: string) => document.getElementById(id)!;
-    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
+    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void; onClick?: () => void }) => {
       const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
+      if (o.onClick) { a.classList.add('click'); a.setAttribute('role', 'button'); a.tabIndex = 0; a.addEventListener('click', o.onClick); a.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onClick!(); } }); }
       const im = document.createElement('img'); im.src = o.img; im.alt = ''; im.loading = 'lazy'; a.appendChild(im);
       if (o.bar !== undefined) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = `<i style="width:${o.bar}%"></i>`; a.appendChild(b); }
       const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.appendChild(t); a.appendChild(s);
@@ -109,7 +157,67 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     function renderDone() {
       const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
-      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto ? undefined : `${P}/puzzle/${d.key}/`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
+      // 카드를 누르면 다시 맞추기가 아니라 완성 보기 — 맞춘 그림을 조각 모양째 감상하고 순서를 되돌려 본다. 다시 맞추기는 그 창 안에
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined, onClick: isPhoto || !m ? undefined : () => openView(d) })); }
+    }
+    // ── 완성 보기: 그 판의 컷(seed·cols·rows)으로 조각 윤곽이 보이는 완성본. 순서(replays)가 이 기기에 있으면 3초 타임랩스 —
+    //  조각마다 경로로 클립해 그 자리만 그린다(비트맵을 다시 뜨지 않는다). seed 가 없는 기록(옛 것·다른 기기)은 같은 조각 수의 정해진 컷으로
+    const dlg = $('done-dlg'), dcv = $('done-cv') as HTMLCanvasElement, dplay = $('done-play') as HTMLButtonElement; let viewGen = 0;
+    const closeView = () => { viewGen++; dlg.hidden = true; document.documentElement.classList.toggle('dlg-open', !!document.querySelector('.gdlg:not([hidden])')); };
+    for (const id of ['done-bg', 'done-x', 'done-close']) $(id).addEventListener('click', closeView);
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dlg.hidden) closeView(); });
+    const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+    const strokePiece = (c: CanvasRenderingContext2D, cut: Cut, k: number, r: number, col: number) => { c.save(); c.setTransform(k, 0, 0, k, 0, 0); c.lineWidth = Math.max(1.2 / k, Math.min(cut.pw, cut.ph) * 0.035); c.strokeStyle = 'rgba(15,18,34,.38)'; c.lineJoin = 'round'; c.stroke(piecePath(cut, r, col)); c.restore(); };
+    async function openView(d: DoneEntry) {
+      const m = meta[d.key]; if (!m) return; const my = ++viewGen;
+      dlg.hidden = false; document.documentElement.classList.add('dlg-open'); dplay.hidden = true;
+      $('done-h').textContent = m[0]; $('done-sub').textContent = `${m[1]} · ${M.pieces(d.n)} · ${fmtSec(d.sec)} · ${new Date(d.at).toLocaleDateString()}`;
+      ($('done-again') as HTMLAnchorElement).href = `${P}/puzzle/${d.key}/`;
+      const c = dcv.getContext('2d')!; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, dcv.width, dcv.height);
+      let img: HTMLImageElement; try { img = await loadImg(`/jigsaw/${d.key}.webp`); } catch { return; } if (my !== viewGen) return;
+      const W = img.naturalWidth, H = img.naturalHeight, g = d.cols && d.rows ? { cols: d.cols, rows: d.rows } : gridFor(d.n, W / H);
+      const cut = makeCut(W, H, g.cols, g.rows, seeded(d.seed ?? hashStr(`${d.key}:${d.n}`)));
+      const k = Math.min(1280 / W, 960 / H, 1); dcv.width = Math.round(W * k); dcv.height = Math.round(H * k);
+      const still = () => { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, dcv.width, dcv.height); c.drawImage(img, 0, 0, dcv.width, dcv.height); for (let r = 0; r < g.rows; r++) for (let col = 0; col < g.cols; col++) strokePiece(c, cut, k, r, col); dplay.disabled = false; };
+      still();
+      let seq: number[] | null = null; if (hasIDB()) try { seq = (await replays.get(d.at))?.seq ?? null; } catch {} if (my !== viewGen) return;
+      if (!seq || seq.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const order = seq.filter((i) => i >= 0 && i < g.cols * g.rows); dplay.hidden = false;
+      const play = () => {
+        const gen = ++viewGen; dplay.disabled = true; c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#e6e8ee'; c.fillRect(0, 0, dcv.width, dcv.height);
+        const DUR = 3000, t0 = performance.now(); let drawn = 0; const ease = (t: number) => 1 - Math.pow(1 - t, 2);
+        const frame = () => {
+          if (gen !== viewGen) return; const t = Math.min(1, (performance.now() - t0) / DUR), upto = Math.floor(ease(t) * order.length);
+          for (; drawn < upto; drawn++) { const i = order[drawn], r = Math.floor(i / g.cols), col = i % g.cols; const x = col * cut.pw - cut.padX, y = r * cut.ph - cut.padY, w = cut.pw + cut.padX * 2, h = cut.ph + cut.padY * 2;
+            c.save(); c.setTransform(k, 0, 0, k, 0, 0); c.clip(piecePath(cut, r, col)); c.drawImage(img, x, y, w, h, x, y, w, h); c.restore(); strokePiece(c, cut, k, r, col); }
+          if (t < 1) requestAnimationFrame(frame); else setTimeout(() => { if (gen === viewGen) still(); }, 250);
+        };
+        requestAnimationFrame(frame);
+      };
+      dplay.onclick = play; play(); // 열자마자 한 번 돌고, 버튼으로 다시
+    }
+    /** 통계 — 이 기기 기록과 서버 기록을 at 으로 합쳐 셈한다. 방에서 맞춘 판은 내가 놓은 조각(mine)만 조각 수에 넣고 시간은 안 넣는다(방의 시간은 판이 열린 뒤 흐른 시간이라 내 것이 아니다) */
+    function renderStats() {
+      const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))];
+      const tiles = $('st-tiles'), grid = $('st-grid'), empty = $('e-stats'); tiles.innerHTML = '';
+      if (!list.length) { empty.hidden = false; grid.hidden = true; return; } empty.hidden = true; grid.hidden = false;
+      let pieces = 0, secs = 0, soloPieces = 0, biggest = 0, daily = 0; const works = new Set<string>();
+      for (const d of list) { const mine = d.room && d.mine !== undefined ? d.mine : d.n; pieces += mine; if (!d.room) { secs += d.sec; soloPieces += d.n; } if (d.n > biggest) biggest = d.n; if (d.kind === 'daily') daily++; if (d.kind !== 'photo') works.add(d.key); }
+      const ppm = secs > 0 ? (soloPieces * 60) / secs : 0;
+      const rows: [string, string][] = [[V.statSolved, String(list.length)], [V.statPieces, pieces.toLocaleString()], [M.statTime, M.hm(Math.floor(secs / 3600), Math.floor((secs % 3600) / 60))], [M.statPpm, ppm >= 10 ? String(Math.round(ppm)) : ppm.toFixed(1)], [M.statBiggest, biggest.toLocaleString()], [M.statDaily, String(daily)], [V.statWorks, String(works.size)]];
+      for (const [k, v] of rows) { const w = document.createElement('div'); const b = document.createElement('b'); b.textContent = v; const s = document.createElement('small'); s.textContent = k; w.appendChild(b); w.appendChild(s); tiles.appendChild(w); }
+      // 잔디 달력 — 최근 20주, 월요일 시작 열. 날짜는 KST(사이트 전체가 KST 로 하루를 센다)
+      const per = new Map<string, number>(); for (const d of list) { const k = kstDay(d.at); per.set(k, (per.get(k) ?? 0) + 1); }
+      const today = kstDay(Date.now()); const t = new Date(today + 'T00:00:00Z'); const dow = (t.getUTCDay() + 6) % 7; // 월=0
+      const start = new Date(t); start.setUTCDate(t.getUTCDate() - dow - 7 * 19);
+      const cal = $('st-cal'); cal.innerHTML = ''; let most = 0;
+      for (let i = 0; i < 20 * 7; i++) { const d = new Date(start); d.setUTCDate(start.getUTCDate() + i); const key = d.toISOString().slice(0, 10); if (key > today) break; const n = per.get(key) ?? 0; if (n > most) most = n; const c = document.createElement('i'); c.className = 'd' + (n ? ' c' + Math.min(4, n >= 5 ? 4 : n >= 3 ? 3 : n) : '') + (key === today ? ' today' : ''); c.title = `${key} · ${M.calN(n)}`; cal.appendChild(c); }
+      { const from = start.toISOString().slice(0, 10); let inWin = 0; for (const [k, n] of per) if (k >= from) inWin += n; $('st-cal-legend').textContent = M.calN(inWin); }
+      // 진열대별 진도 — 그림(키)이 서로 다른 것만 센다
+      const byCat = new Map<string, Set<string>>(); for (const k of works) { const c = meta[k]?.[3]; if (!c) continue; if (!byCat.has(c)) byCat.set(c, new Set()); byCat.get(c)!.add(k); }
+      const ul = $('st-cats'); ul.innerHTML = '';
+      for (const [id, name, total] of cats) { const n = byCat.get(id)?.size ?? 0; const li = document.createElement('li'); if (n >= total) li.className = 'all'; const nm = document.createElement('span'); nm.className = 'cb-n'; nm.textContent = name; const bar = document.createElement('span'); bar.className = 'cb-bar'; bar.innerHTML = `<i style="width:${(n / total) * 100}%"></i>`; const b = document.createElement('b'); b.textContent = `${n} / ${total}`; li.appendChild(nm); li.appendChild(bar); li.appendChild(b); ul.appendChild(li); }
+      requestAnimationFrame(() => cal.querySelector<HTMLElement>('.today')?.scrollIntoView({ block: 'nearest', inline: 'end' }));
     }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);
@@ -125,7 +233,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       btn(A.rename, '', async () => { const n = await askNick(u.nick, 'edit'); if (n && n !== u.nick && (await setNickRemote(n))) renderAcct(); });
       btn(A.logout, '', async () => { await logout(); location.reload(); });
       btn(A.del, 'danger', async () => { if (!confirm(A.delAsk)) return; if (await deleteAccount()) { alert(A.deleted); location.reload(); } });
-      const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); }
+      const r = await fetchSync(); if (r) { remote = r; renderProg(); renderDone(); renderStats(); }
     }
     async function renderLevel() {
       const d = await fetchLevel(); if (!d) return;
@@ -164,6 +272,6 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       label();
       blk.hidden = false;
     }
-    renderProg(); renderDone(); renderFav(); renderAcct(); renderLevel();
+    renderProg(); renderDone(); renderStats(); renderFav(); renderAcct(); renderLevel();
   </script>
 </Base>

@@ -16,6 +16,8 @@ const saveMeta = (d: any) => ({ id: String(d.id), kind: d.kind, key: String(d.ke
 
 export const GET: APIRoute = async ({ request }) => {
   const u = await getUser(request); if (!u) return json({ error: 'auth' }, 401); const DB = env.DB; const url = new URL(request.url); const sid = url.searchParams.get('save');
+  // 진열대 진도 — 그림별 최고 조각 수만 (오늘의 퍼즐 날짜 행 d:… 은 그림이 아니라 뺀다)
+  if (url.searchParams.get('cleared')) { const r = await DB.prepare("SELECT key, n FROM user_cleared WHERE user_id = ? AND cat <> '_daily'").bind(u.id).all<{ key: string; n: number }>(); return json({ cleared: (r.results ?? []).map((x) => [x.key, x.n]) }); }
   if (sid) { const r = await DB.prepare('SELECT data FROM user_saves WHERE user_id = ? AND id = ?').bind(u.id, sid).first<{ data: string }>(); return r ? new Response(r.data, { headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }) : json({ error: 'none' }, 404); }
   // 홈의 지난 7일 ✓·연속 — 이 기기 기록에 얹을 계정 몫(다른 기기에서 맞춘 판). days = 판의 날짜(하루 여유를 두고 8일),
   // streak = 푼 날짜로 센 지금의 연속. user_stats 는 마지막으로 푼 날에 멈춰 있으니 오늘·어제가 아니면 끊긴 것이라 0

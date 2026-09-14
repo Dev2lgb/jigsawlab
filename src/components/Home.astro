@@ -184,9 +184,11 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import { fetchLive } from '../lib/live';
   import { getStreak, getBest } from '../lib/store';
   import { initFavUI } from '../lib/fav';
+  import { clearedMap, markBoxes } from '../lib/progress';
   import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
   const LANG = docLang(), LI = LIDX[LANG], T = UI[LANG];
   initFavUI();
+  clearedMap().then((m) => markBoxes(m, T.catalog.progress)); // 깬 그림에 리본, 진열대 제목에 진도
   const P = prefix(LANG);
   // 연속·지난 7일 완성은 이 기기 기록에 계정 기록을 얹는다 — 이 기기만 보면 다른 기기에서 맞춘 판이 '아직'으로 보였다 (계정 몫은 회원만)
   const acct = { days: new Set<string>(), streak: 0 };

@@ -1,8 +1,8 @@
-// IndexedDB 래퍼 — 진행 저장(saves)과 내 사진(images). 전부 기기 안에만 있음
-const NAME = 'jigsawlab', VER = 1;
+// IndexedDB 래퍼 — 진행 저장(saves)·내 사진(images)·완성한 판의 놓은 순서(replays). 전부 기기 안에만 있음
+const NAME = 'jigsawlab', VER = 2;
 let dbp: Promise<IDBDatabase> | null = null;
 function open(): Promise<IDBDatabase> {
-  return dbp ??= new Promise((res, rej) => { const r = indexedDB.open(NAME, VER); r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('saves')) d.createObjectStore('saves', { keyPath: 'id' }); if (!d.objectStoreNames.contains('images')) d.createObjectStore('images'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  return dbp ??= new Promise((res, rej) => { const r = indexedDB.open(NAME, VER); r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('saves')) d.createObjectStore('saves', { keyPath: 'id' }); if (!d.objectStoreNames.contains('images')) d.createObjectStore('images'); if (!d.objectStoreNames.contains('replays')) d.createObjectStore('replays', { keyPath: 'at' }); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 }
 const tx = async (store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest) => { const d = await open(); return new Promise<any>((res, rej) => { const t = d.transaction(store, mode); const q = fn(t.objectStore(store)); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); };
 export interface SaveGroup { dx: number; dy: number; idx: number[] }
@@ -11,6 +11,8 @@ export interface SaveData {
   locked: number[]; groups: SaveGroup[]; tray: number[]; elapsed: number; moves: number; savedAt: number; thumb: string; done: number;
   /** 이 판에서 조각 단위로 이미 XP 를 받은 조각 수. 이어하기로 판이 넘어가도 완성 때 두 번 주지 않으려면 같이 따라와야 한다 */
   paid?: number;
+  /** 제자리에 들어간 순서(조각 번호). 결과 화면의 타임랩스가 이 순서로 그림을 다시 조립한다 — 없으면 locked 순서로 */
+  seq?: number[];
 }
 export const saves = {
   get: (id: string): Promise<SaveData | undefined> => tx('saves', 'readonly', (s) => s.get(id)),
@@ -22,5 +24,13 @@ export const images = {
   get: (id: string): Promise<Blob | undefined> => tx('images', 'readonly', (s) => s.get(id)),
   put: (id: string, b: Blob) => tx('images', 'readwrite', (s) => s.put(b, id)),
   del: (id: string) => tx('images', 'readwrite', (s) => s.delete(id)),
+};
+/** 완성한 판에서 조각이 제자리에 들어간 순서 — /my/ 의 완성 보기 타임랩스. 키 = 완성 기록(DoneEntry)의 at. 완성 목록이 200건에서 잘리면 같이 솎는다 */
+export interface Replay { at: number; seq: number[] }
+export const replays = {
+  get: (at: number): Promise<Replay | undefined> => tx('replays', 'readonly', (s) => s.get(at)),
+  put: (v: Replay) => tx('replays', 'readwrite', (s) => s.put(v)),
+  keys: (): Promise<number[]> => tx('replays', 'readonly', (s) => s.getAllKeys()),
+  del: (at: number) => tx('replays', 'readwrite', (s) => s.delete(at)),
 };
 export const hasIDB = () => typeof indexedDB !== 'undefined';

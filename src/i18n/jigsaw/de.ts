@@ -8,5 +8,7 @@ export const DE: JigsawStrings = {
   moves: 'Gelegt', left: (n: number) => `noch ${n} Teile`, edgeOnly: 'Nur Randteile', hint: 'Bild schwach einblenden', original: 'Bild anzeigen (gedrückt halten)', trayHint: 'Zieh Teile aus der Ablage nach oben an ihren Platz. Zum Zoomen aufziehen, mit zwei Fingern verschieben',
   done: 'Fertig!', resTime: 'Zeit', resPieces: 'Teile', resMoves: 'Züge', best: (s: string) => `Deine Bestzeit: ${s}`, newBest: 'Neuer Rekord!', retry: 'Dasselbe Foto noch einmal', another: 'Anderes Puzzle', toTitle: 'Zurück zum Anfang',
   share: 'Ergebnis teilen', shareTitle: (n: number, t: string) => `${n}-Teile-Puzzle in ${t} gelöst! 🧩`, shareText: 'Du bist dran 🧩', shareDaily: (n: number, t: string, title: string) => `Tagespuzzle „${title}“, ${n} Teile in ${t}! 🧩 Schaffst du das schneller?`,
+  bg: 'Brettfarbe', bgNames: ['Hell', 'Grau', 'Dunkel', 'Sepia'], region: 'Nur Teile aus einem Bereich', regionAll: 'Alle', regionHint: 'Tipp auf ein Feld des Bildes, dann bleiben nur dessen Teile in der Ablage', fullscreen: 'Vollbild', keyHint: (k: string) => `Tastenkürzel ${k}`,
+  tools: 'Ablage-Werkzeuge',
   imgFail: 'Dieses Bild ließ sich nicht öffnen. Bitte nimm ein JPG-, PNG- oder HEIC-Foto', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}, ${y}`,
 };

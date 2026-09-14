@@ -17,11 +17,12 @@ export function initFavUI(opts?: { onToggle?: (k: string, on: boolean) => void }
   paint(); buildFavShelf();
 }
 /** 검색: input 값으로 .boxw[data-q] 필터, 빈 진열대 숨김 */
-export function initSearch(input: HTMLInputElement, opts?: { onResult?: (n: number, q: string) => void }) {
+/** 검색: input 값으로 .boxw[data-q] 필터, 빈 진열대 숨김. filter 를 주면 그 조건도 함께(안 해 본 그림만 등) — 돌려주는 run 으로 다시 걸 수 있다 */
+export function initSearch(input: HTMLInputElement, opts?: { onResult?: (n: number, q: string) => void; filter?: (b: HTMLElement) => boolean }) {
   const run = () => {
     const q = input.value.trim().toLowerCase(); let n = 0;
-    document.querySelectorAll<HTMLElement>('.shelf').forEach((sh) => { let vis = 0; sh.classList.toggle('searching', q !== ''); sh.querySelectorAll<HTMLElement>('.boxw').forEach((b) => { const ok = !q || (b.dataset.q ?? '').includes(q); b.hidden = !ok; if (ok) vis++; }); sh.hidden = (q !== '' && vis === 0) || (sh.id === 'fav-shelf' && !sh.querySelector('#fav-row')?.children.length); n += vis; });
+    document.querySelectorAll<HTMLElement>('.shelf').forEach((sh) => { let vis = 0; sh.classList.toggle('searching', q !== ''); sh.querySelectorAll<HTMLElement>('.boxw').forEach((b) => { const ok = (!q || (b.dataset.q ?? '').includes(q)) && (!opts?.filter || opts.filter(b)); b.hidden = !ok; if (ok) vis++; }); sh.hidden = ((q !== '' || !!opts?.filter) && vis === 0) || (sh.id === 'fav-shelf' && !sh.querySelector('#fav-row')?.children.length); n += vis; });
     opts?.onResult?.(n, q);
   };
-  input.addEventListener('input', run); run();
+  input.addEventListener('input', run); run(); return run;
 }

@@ -385,6 +385,11 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .box3d img { display: block; width: 100%; flex: 1; min-height: 0; object-fit: cover; border: 2px solid var(--box-frame); background: var(--board); }
   .box3d .bf { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 4%; } .box3d .bf .logo { font-family: var(--brand); font-size: .55rem; font-weight: 800; color: var(--ink); letter-spacing: -.01em; } .box3d .bf small { font-size: .58rem; color: #7a715e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .boxw { position: relative; display: inline-block; flex: none; } .boxw.big { display: block; }
+  /* 컬렉션 진도 — 깬 그림의 상자에 리본(✓ 최고 조각 수), 진열대 제목에 "12 / 40". 붙이는 건 lib/progress.ts. '안 해 본 그림만'(.hide-done)이 켜지면 완성한 상자는 숨기고 .shelf.filtering 이 앞 10점 제한을 푼다 */
+  .boxw.done::after { content: '✓ ' attr(data-done); position: absolute; left: 4px; top: 4px; z-index: 2; padding: 3px 8px; border-radius: 999px; background: var(--gold); color: #fff; font-size: .68rem; font-weight: 800; font-variant-numeric: tabular-nums; box-shadow: 0 4px 10px -4px rgba(240,167,27,.9); pointer-events: none; }
+  .boxw.big.done::after { left: 12px; top: 12px; padding: 5px 12px; font-size: .85rem; }
+  .shelf-prog { display: inline-flex; align-items: center; margin-left: auto; padding: 2px 9px; border-radius: 999px; background: var(--gold-soft); color: #8a5f00; font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums; } .shelf-prog.all { background: var(--gold); color: #fff; }
+  .shelf.filtering .shelf-all { display: none; }
   .fav { position: absolute; top: 2px; right: -6px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: #d0345c; font-size: 1.05rem; line-height: 1; cursor: pointer; display: grid; place-items: center; box-shadow: 0 4px 12px -6px rgba(15,18,34,.5); opacity: 0; transition: opacity .15s, transform .15s var(--ease); z-index: 2; }
   .boxw:hover .fav, .fav[aria-pressed="true"], .fav:focus-visible { opacity: 1; } .fav:hover { transform: scale(1.12); } @media (hover: none) { .fav { opacity: .9; } }
   .boxw.big .fav { width: 44px; height: 44px; font-size: 1.4rem; top: 10px; right: 6px; opacity: 1; }
@@ -399,7 +404,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   @media (hover: none), (pointer: coarse) { .shelf-arrow { display: none; } }
   /* 세로 진열대: 가로 스크롤 없이 줄바꿈. .capped 는 앞 10점(popular.ts 의 SHELF_TOP)만 보이고, 나머지는 .shelf-all 로 /play/ 의 그 카테고리로 넘어가서 본다 */
   .shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--w) + var(--d) * .55)), 1fr)); justify-items: center; gap: clamp(14px, 2vw, 26px) clamp(10px, 1.4vw, 20px); padding: 18px 0 26px; }
-  .shelf:not(.open):not(.searching) .shelf-grid.capped > .boxw:nth-child(n + 11) { display: none; }
+  .shelf:not(.open):not(.searching):not(.filtering) .shelf-grid.capped > .boxw:nth-child(n + 11) { display: none; }
   .shelf-all { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; padding: 10px 20px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--bg); color: var(--ink); font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer; transition: border-color .15s, transform .15s var(--ease), box-shadow .15s; }
   .shelf-all:hover { border-color: var(--ink); transform: translateY(-1px); box-shadow: 0 10px 20px -14px rgba(15,18,34,.6); }
   .shelf.searching .shelf-all { display: none; }

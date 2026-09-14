@@ -8,5 +8,7 @@ export const JA: JigsawStrings = {
   moves: '置いた回数', left: (n: number) => `残り${n}ピース`, edgeOnly: '外周ピースのみ', hint: '下絵', original: '元の絵を見る（押している間）', trayHint: '下のピースを上に引き上げてはめてください。2本指で拡大・移動',
   done: '完成！', resTime: 'タイム', resPieces: 'ピース', resMoves: '置いた回数', best: (s: string) => `自己ベスト ${s}`, newBest: '新記録！', retry: '同じ写真でもう一度', another: '別のパズル', toTitle: 'はじめに戻る',
   share: '結果を共有', shareTitle: (n: number, t: string) => `ジグソー${n}ピースを${t}で完成！🧩`, shareText: '次はあなたの番 🧩', shareDaily: (n: number, t: string, title: string) => `今日のパズル「${title}」${n}ピースを${t}で完成！🧩 あなたは？`,
+  bg: '盤の色', bgNames: ['明るい', 'グレー', '暗い', 'セピア'], region: 'この部分のピースだけ', regionAll: 'すべて', regionHint: '絵の一区画を押すと、その部分のピースだけがトレイに残ります', fullscreen: '全画面', keyHint: (k: string) => `ショートカット ${k}`,
+  tools: 'トレイのツール',
   imgFail: '画像を開けませんでした。JPG・PNG・HEICの写真か確認してください', paintingBy: (t: string, a: string, y: string) => `${t} — ${a}、${y}`,
 };

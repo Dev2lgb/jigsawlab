@@ -58,7 +58,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
           {!here && <h2 class="gal-h">{U.catalog.every}</h2>}
           <div class="tools">
             <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="pk-search" placeholder={U.catalog.search} autocomplete="off" /></label>
-            <span class="chip" id="pk-count" data-n={here ? here.items.length : total}>{U.catalog.all(here ? here.items.length : total)}</span>
+            <span class="chips"><button type="button" class="chip undone" id="pk-undone" aria-pressed="false">{U.catalog.undoneOnly}</button><span class="chip" id="pk-count" data-n={here ? here.items.length : total}>{U.catalog.all(here ? here.items.length : total)}</span></span>
           </div>
         </div>
         <p class="none muted" id="pk-none" hidden>{U.catalog.none}{here && <> · <a id="pk-none-all" href={`${P}/play/`}>{U.catalog.noneAll}</a></>}</p>
@@ -103,6 +103,9 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
   .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 40px; }
   .pane-head > .tools:only-child { margin-left: auto; }
   .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chips { display: flex; align-items: center; gap: 8px; }
+  /* 안 해 본 그림만 — 켜면 완성한 상자를 숨기고 진열대의 앞 10점 제한을 푼다(Base 의 .shelf.filtering). 기기에 남는다(catalog:undone) */
+  .undone { cursor: pointer; color: var(--ink-2); } .undone:hover { border-color: var(--ink); } .undone[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
   #pk-gallery { margin-top: 22px; } /* 안 주면 진열대 소제목이 검색칸에 딱 붙는다 */
   .none { padding-top: 12px; }
   .shelf { margin: 0 0 clamp(26px, 3vw, 40px); } .shelf h3 { display: flex; align-items: baseline; gap: 8px; font-size: 1rem; font-weight: 600; margin: 0; } .shelf h3 .muted { font-weight: 400; font-size: .85rem; }
@@ -120,7 +123,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     .tools { display: contents; }
     .pane-head .gal-h { grid-area: title; }
     .search { grid-area: search; min-width: 0; }
-    .chip { grid-area: count; justify-self: end; }
+    .chips { grid-area: count; justify-self: end; }
     .pane-head.solo { grid-template-areas: 'search count'; } /* 제목이 없는 카테고리 판은 한 줄로 */
     #pk-gallery { margin-top: 18px; }
   }
@@ -138,6 +141,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     import { fetchSync, me, type SaveMeta } from '../lib/account';
     import { allSaves, deleteSave } from '../lib/saves';
     import { initFavUI, initSearch } from '../lib/fav';
+    import { clearedMap, markBoxes } from '../lib/progress';
     import { toast } from '../lib/share';
     import { DAILY_PIECES } from '../lib/jigsaw';
     import { dailyLite, dayKST } from '../lib/daily';
@@ -172,17 +176,26 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc;
     const count = $('pk-count')!, base = Number(count.dataset.n ?? 0), box = $('pk-search') as HTMLInputElement;
     const q0 = new URLSearchParams(location.search).get('q'); if (q0) box.value = q0;
     const noneAll = $('pk-none-all') as HTMLAnchorElement | null; // 카테고리 판에서 못 찾았을 때 전체로 넘어가는 길
-    initSearch(box, { onResult: (n, q) => {
-      count.textContent = q ? U.catalog.results(n) : U.catalog.all(base);
+    // '안 해 본 그림만' — 검색과 같은 필터 자리에 얹는다. 켜져 있으면 완성한 상자(.done)는 검색 결과에서도 빠지고 개수도 그만큼 준다
+    let undone = false; try { undone = localStorage.getItem('catalog:undone') === '1'; } catch {}
+    const undoneBtn = $('pk-undone') as HTMLButtonElement;
+    const rerun = initSearch(box, { filter: (b) => !undone || !b.classList.contains('done'), onResult: (n, q) => {
+      count.textContent = q || undone ? U.catalog.results(n) : U.catalog.all(base);
       $('pk-none')!.hidden = !(q && n === 0);
       if (noneAll) noneAll.href = `${P}/play/${q ? `?q=${encodeURIComponent(q)}` : ''}`;
     } });
+    const applyUndone = () => { undoneBtn.setAttribute('aria-pressed', String(undone)); document.querySelectorAll('.shelf').forEach((s) => s.classList.toggle('filtering', undone)); rerun(); };
+    undoneBtn.addEventListener('click', () => { undone = !undone; try { localStorage.setItem('catalog:undone', undone ? '1' : '0'); } catch {} applyUndone(); });
+    // 컬렉션 진도 — 깬 그림에 리본, 진열대 제목에 "12 / 40". 즐겨찾기 진열대는 상자를 복제해 채우므로 하트를 누를 때마다 다시 표시한다
+    let cleared = new Map<string, number>(); const mark = () => markBoxes(cleared, U.catalog.progress);
+    clearedMap().then((m) => { cleared = m; mark(); applyUndone(); });
+    applyUndone();
 
     // 즐겨찾기가 있을 때만 옆줄에 그 칸을 세운다. 실제 진열대는 /play/ 위쪽에 있다
     const favBtn = $('pk-cat-fav')!;
     const syncFav = () => { const n = $('fav-row')?.children.length ?? favCount(); favBtn.hidden = n === 0; favBtn.querySelector('b')!.textContent = String(n); };
     const favCount = () => { try { return (JSON.parse(localStorage.getItem('fav:keys') ?? '[]') as string[]).length; } catch { return 0; } };
-    initFavUI({ onToggle: syncFav }); syncFav();
+    initFavUI({ onToggle: () => { syncFav(); mark(); rerun(); } }); syncFav();
 
     // 하던 퍼즐 — 누르면 판으로 넘긴다. 서버에만 있는 것도 /board/ 가 알아서 받아 온다 (/play/ 에만)
     let remoteSaves: SaveMeta[] = [];

@@ -42,12 +42,13 @@ const T = UI[lang], P = prefix(lang), M = T.my;
     import { makeCut, seeded, gridFor, hashStr, type Cut } from '../lib/jigsaw';
     import { replays, hasIDB } from '../lib/db';
     import { renderRelief, copyPiece } from '../lib/relief';
+    import { artUrl } from '../lib/img';
     import { docLang, prefix, UI } from '../i18n/ui';
     const LANG = docLang(), M = UI[LANG].my, P = prefix(LANG);
     const $ = (id: string) => document.getElementById(id)!;
     const cv = $('dv-cv') as HTMLCanvasElement, ctx = cv.getContext('2d')!, stage = $('dv-stage'), msg = $('dv-msg'), play = $('dv-play') as HTMLButtonElement;
     const dpr = () => Math.min(2, window.devicePixelRatio || 1);
-    const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+    const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = u; });
     const fail = () => { msg.hidden = false; msg.innerHTML = ''; msg.appendChild(document.createTextNode(M.notFound + ' · ')); const a = document.createElement('a'); a.href = `${P}/my/`; a.textContent = UI[LANG].nav.my; msg.appendChild(a); };
 
     // ── 기록 찾기: 이 기기 → (회원) 서버
@@ -107,7 +108,7 @@ const T = UI[lang], P = prefix(lang), M = T.my;
       const d = await findEntry(); if (!d || d.kind === 'photo') return fail();
       $('dv-title').textContent = d.name; $('dv-sub').textContent = `${M.pieces(d.n)} · ${fmtSec(d.sec)} · ${new Date(d.at).toLocaleDateString()}`; document.title = `${d.name} · ${M.view} · jigsawlab`;
       ($('dv-again') as HTMLAnchorElement).href = `${P}/puzzle/${d.key}/`;
-      let img: HTMLImageElement; try { img = await loadImg(`/jigsaw/${d.key}.webp`); } catch { return fail(); }
+      let img: HTMLImageElement; try { img = await loadImg(artUrl(d.key)); } catch { return fail(); }
       W = img.naturalWidth; H = img.naturalHeight; resize();
       const g = d.cols && d.rows ? { cols: d.cols, rows: d.rows } : gridFor(d.n, W / H);
       const cut = makeCut(W, H, g.cols, g.rows, seeded(d.seed ?? hashStr(`${d.key}:${d.n}`)));

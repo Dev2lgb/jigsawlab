@@ -121,4 +121,14 @@ let N1 = 0;
   const sv = await page.evaluate(() => new Promise((res) => { const r = indexedDB.open('jigsawlab'); r.onsuccess = () => { const q = r.result.transaction('saves').objectStore('saves').get('wave:48'); q.onsuccess = () => res(q.result); }; }));
   ok(Array.isArray(sv?.seq) && sv.seq.length === 7 && sv.locked.length === 7 && sv.seq.every((i) => sv.locked.includes(i)), 'save: seq 7개 = locked', JSON.stringify({ seq: sv?.seq, locked: sv?.locked }));
   await ctx.close(); }
+// I. 그림은 R2 에서 CORS 로 받는다 — 상세 페이지의 큰 상자가 같은 원본을 먼저 받아 두면 판은 그 브라우저 캐시를 쓰는데,
+//    어느 쪽이든 crossorigin 이 빠지면 CORS 헤더 없는 사본이 판에 가서 그림 로드가 실패한다(lib/img.ts)
+{ const { ctx, page } = await newPage(br); const bad = [];
+  page.on('console', (m) => { if (m.type() === 'error' && /CORS|tainted/i.test(m.text())) bad.push(m.text()); });
+  page.on('requestfailed', (r) => { if (r.url().includes('img.jigsawlab.app') && r.failure()?.errorText !== 'net::ERR_ABORTED') bad.push(`${r.url()} ${r.failure()?.errorText}`); });
+  await page.goto(`${BASE}/puzzle/wave/`); await page.waitForFunction(() => { const im = document.querySelector('.box3d.big img'); return im?.complete && im.naturalWidth > 0; }, null, { timeout: 20000 });
+  ok(await page.$eval('.box3d.big img', (im) => im.src.startsWith('https://img.jigsawlab.app/') && im.crossOrigin === 'anonymous'), 'img: 상세 페이지 큰 상자가 R2 원본을 crossorigin 으로');
+  await page.goto(`${BASE}/board/?k=wave&n=48`); await waitPlay(page);
+  ok((await tray(page)) === 48 && bad.length === 0, 'img: 같은 원본 캐시로 판이 뜨고 CORS 오류 없음', bad.join(' | '));
+  await ctx.close(); }
 await br.close(); finish();

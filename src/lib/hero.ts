@@ -1,6 +1,6 @@
 // 홈·상세용 "조각 몇 개 빠진 그림" 렌더 — 실제 시드 컷으로 자르고 n개를 살짝 빼서 그림자와 함께 올려둔다
 import { gridFor, makeCut, renderPiece, piecePath, seeded } from './jigsaw';
-const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = u; });
 export async function drawPopped(cv: HTMLCanvasElement, src: string, seed: number, pieces: number, popped = 4, hole = '#e7e9ef') {
   let im: HTMLImageElement; try { im = await loadImg(src); } catch { return; }
   const W = 720, H = Math.round(W * im.naturalHeight / im.naturalWidth), d = Math.min(2, devicePixelRatio || 1);

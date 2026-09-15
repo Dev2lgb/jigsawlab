@@ -27,7 +27,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   <div class="modal-bg" id="jg-modal-bg"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="jg-chosen-name">
     <button type="button" class="close" id="jg-close" aria-label={t.toTitle}>✕</button>
-    <div class="chosen"><img id="jg-thumb" alt="" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
+    <div class="chosen"><img id="jg-thumb" alt="" crossorigin="anonymous" /><div><b id="jg-chosen-name">{t.chosen}</b><span class="grid-lbl" id="jg-grid"></span></div></div>
     <p class="lbl">{t.pieces}</p>
     <div class="pieces">{PRESETS.map((n) => <button type="button" data-n={n} class:list={[{ on: n === 48 }]}>{n}</button>)}<input class="input custom" id="jg-custom" type="number" min="6" max="2000" placeholder={t.custom} /></div>
     <p class="xp-row"><a class="xp-tip" id="jg-xp" href={`${P}/rank/`}></a></p>
@@ -280,6 +280,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { createDust, outerEdges } from '../lib/dust';
   import { createSparkle, type Lone } from '../lib/sparkle';
   import { renderRelief } from '../lib/relief';
+  import { artUrl, thumbUrl } from '../lib/img';
   import { showAwardDialog } from '../lib/levelup';
   import { BADGE_TEXT } from '../i18n/badges';
   import { openLogin, askNick } from '../lib/authui';
@@ -291,9 +292,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 고르는 화면은 /play/ 에 있다. 알릴 말이 있으면 실어 보내고 저쪽에서 띄운다
   const goPick = (msg?: string) => { if (msg) try { sessionStorage.setItem('jl:toast', msg); } catch {} location.href = `${PFX}/play/`; };
   const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
-  const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+  const loadImg = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = u; });
   type Work = (typeof WORKS)[number];
-  const artUrl = (key: string) => `/jigsaw/${key}.webp`, thumbUrl = (key: string) => `/jigsaw/t-${key}.webp`;
   const workName = (w: Work) => T.paintingBy(w.title[LI], w.artist[LI], w.year);
 
   // ── 오늘의 퍼즐 (빌드 시각과 방문 시각의 날짜가 다를 수 있어 클라이언트에서 다시 계산)

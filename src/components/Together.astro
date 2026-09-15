@@ -94,6 +94,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
     // 판 상태는 /api/live 에서 받는다 (서버가 방 정보에 그림 제목까지 얹어 준다). 못 받아도 카드와 CTA 는 그대로 두고 들여보낸다
     import { docLang, LI as LIDX } from '../i18n/ui';
     import { fetchLive } from '../lib/live';
+    import { thumbUrl } from '../lib/img';
     const card = document.getElementById('lv-card')!;
     const $ = (id: string) => document.getElementById(id)!;
     const fill = (s: string, n: number) => s.replace('{n}', String(n));
@@ -102,7 +103,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: L.seoTitl
       .then((d) => {
         if (!d) throw 0;
         const pct = d.pct, w = d.work;
-        if (w) { const im = $('lv-img') as HTMLImageElement; im.src = `/jigsaw/t-${w.key}.webp`; im.alt = w.title[LI]; im.addEventListener('load', () => im.classList.add('on'), { once: true }); if (im.complete) im.classList.add('on'); }
+        if (w) { const im = $('lv-img') as HTMLImageElement; im.src = thumbUrl(w.key); im.alt = w.title[LI]; im.addEventListener('load', () => im.classList.add('on'), { once: true }); if (im.complete) im.classList.add('on'); }
         $('lv-title').textContent = w ? w.title[LI] : '';
         $('lv-artist').textContent = w ? [w.artist[LI], w.year].filter(Boolean).join(' · ') : '';
         $('lv-round').textContent = fill(card.dataset.tRound!, d.round);

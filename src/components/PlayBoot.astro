@@ -2,8 +2,9 @@
 // /board/ 부팅 1단계 — <head> 인라인. 스크립트 번들이 오기 전, 첫 페인트 전에 URL 만 보고 첫 화면을 정한다.
 // 한 진입점: ?room / ?resume / ?daily / ?k → html[data-boot] (로딩 화면, 선택 화면 숨김), 그 외 → 선택 화면.
 // 그림이 정해져 있으면(k) 원본 이미지를 미리 받고, 썸네일을 로딩 화면 배경(--boot-art)으로 보여 준다. 2단계(실제 분기)는 Jigsaw.astro 의 boot().
+import { IMG } from '../lib/img';
 ---
-<script is:inline>
+<script is:inline define:vars={{ IMG }}>
 (function () {
   var q = new URLSearchParams(location.search), h = document.documentElement, k = q.get('k'), ph = q.get('photo');
   // photo 는 값이 있을 때만(=/photo/ 에서 사진을 들고 넘어온 경우). ?photo=1 은 선택 화면의 업로드 칸을 강조하는 것뿐이라 로딩 화면이 필요 없다
@@ -11,8 +12,8 @@
   if (!mode) return;
   h.setAttribute('data-boot', mode);
   if (k && /^[a-z0-9-]{1,48}$/.test(k)) {
-    h.style.setProperty('--boot-art', 'url(/jigsaw/t-' + k + '.webp)'); h.setAttribute('data-boot-art', '1');
-    var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/jigsaw/' + k + '.webp'; l.fetchPriority = 'high'; document.head.appendChild(l);
+    h.style.setProperty('--boot-art', 'url(' + IMG + '/t-' + k + '.webp)'); h.setAttribute('data-boot-art', '1');
+    var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = IMG + '/' + k + '.webp'; l.crossOrigin = 'anonymous'; l.fetchPriority = 'high'; document.head.appendChild(l);
   }
 })();
 </script>

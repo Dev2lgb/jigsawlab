@@ -10,6 +10,7 @@ import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
 import { dailyPool, WORKS } from '../data/works';
 import { shelvesFor } from '../lib/catalogView';
+import { thumbUrl } from '../lib/img';
 import { dailyWindow } from '../lib/daily';
 import Box from './Box.astro';
 const { lang = 'ko', cat } = Astro.props as { lang?: Lang; cat?: string };
@@ -32,7 +33,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(
 
     {!here && <div class="sources">
       <a class="src daily" id="pk-daily" href={`${P}/puzzle/${daily.painting.key}/?daily=1`} data-key={daily.painting.key}>
-        <img id="pk-daily-thumb" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" width="240" height="190" />
+        <img id="pk-daily-thumb" src={thumbUrl(daily.painting.key)} alt="" width="240" height="190" />
         <span class="src-text"><b>{t.daily}</b><span id="pk-daily-cap">{t.dailyCap(daily.painting.title[li], DAILY_PIECES)}</span><span class="src-go">{U.hero.cta} →</span></span>
       </a>
       <a class="src live" href={`${P}/together/`}>
@@ -138,6 +139,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(
 
   <script>
     import { hasIDB } from '../lib/db';
+    import { thumbUrl } from '../lib/img';
     import { fetchSync, me, type SaveMeta } from '../lib/account';
     import { allSaves, deleteSave } from '../lib/saves';
     import { initFavUI, initSearch } from '../lib/fav';
@@ -157,13 +159,13 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(
     // 자정을 넘겨 열어 둔 탭이면 오늘의 그림이 바뀌어 있다 (/play/ 에만 있는 칸)
     { const a = $('pk-daily') as HTMLAnchorElement | null; if (a) dailyLite(dayKST(), li).then((pick) => { // 자정을 넘긴 탭·묵은 배포 보정 (#daily-win)
       if (a.dataset.key !== pick.key) { a.dataset.key = pick.key; a.href = `${P}/puzzle/${pick.key}/?daily=1`;
-        ($('pk-daily-thumb') as HTMLImageElement).src = `/jigsaw/t-${pick.key}.webp`; $('pk-daily-cap')!.textContent = T.dailyCap(pick.title, DAILY_PIECES); } }); }
+        ($('pk-daily-thumb') as HTMLImageElement).src = thumbUrl(pick.key); $('pk-daily-cap')!.textContent = T.dailyCap(pick.title, DAILY_PIECES); } }); }
 
     // 모두의 퍼즐 — 지금 맞추는 그림·진행률로 카드를 채운다. 못 받으면 서버가 찍어 둔 문구 그대로(링크는 어차피 유효하다)
     { const cap = $('pk-live-cap'); if (cap) import('../lib/live').then(({ fetchLive }) => fetchLive()).then((d) => {
       if (!d) return;
       cap.textContent = `${U.live.pct(d.pct)} · ${d.players > 0 ? U.live.online(d.players) : U.live.alone}`;
-      if (d.work) { const im = $('pk-live-thumb') as HTMLImageElement; im.src = `/jigsaw/t-${d.work.key}.webp`; im.alt = d.work.title[li]; im.hidden = false; $('pk-live-ic')!.hidden = true; }
+      if (d.work) { const im = $('pk-live-thumb') as HTMLImageElement; im.src = thumbUrl(d.work.key); im.alt = d.work.title[li]; im.hidden = false; $('pk-live-ic')!.hidden = true; }
     }); }
 
     // 옆줄이 화면보다 길어 안에서 스크롤될 때(짧은 화면·모바일 가로 칩), 지금 고른 칸이 보이도록 맞춘다. 페이지는 건드리지 않는다

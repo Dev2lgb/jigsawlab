@@ -7,6 +7,7 @@ import Base from '../layouts/Base.astro';
 import { env } from 'cloudflare:workers';
 import { WORK_BY_KEY } from '../data/works';
 import { LI, prefix, type Lang } from '../i18n/ui';
+import { artUrl, ogUrl } from '../lib/img';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const li = LI[lang], P = prefix(lang);
 
@@ -42,7 +43,7 @@ const title = info ? `${name} · ${S.pieces(info.total)} · ${S.join} — jigsaw
 const desc = info
   ? [artist, S.prog(info.locked, info.total), info.done ? S.done : S.here(info.players)].filter(Boolean).join(' · ')
   : S.goneSub;
-const ogImage = work ? `/jigsaw/o-${work.key}.jpg` : '/og.png';
+const ogImage = work ? ogUrl(work.key) : '/og.png';
 const pct = info ? Math.round((info.locked / info.total) * 100) : 0;
 ---
 <Base title={title} desc={desc} lang={lang} ogImage={ogImage} noindex path={`${P}/i/`} ads={false}>
@@ -50,7 +51,7 @@ const pct = info ? Math.round((info.locked / info.total) * 100) : 0;
     {info ? (
       <>
         {work
-          ? <img class="pic" src={`/jigsaw/${work.key}.webp`} alt={name} width={work.w} height={work.h} />
+          ? <img class="pic" src={artUrl(work.key)} crossorigin="anonymous" alt={name} width={work.w} height={work.h} />
           : <div class="pic ph" aria-hidden="true">🧩</div>}
         <p class="lead">{S.h}</p>
         <h1>{name}</h1>

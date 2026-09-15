@@ -7,6 +7,7 @@ import { dailyPool, WORKS } from '../data/works';
 import { dailyWindow } from '../lib/daily';
 import { shelvesFor } from '../lib/catalogView';
 import { earnFor } from '../lib/level';
+import { thumbUrl } from '../lib/img';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
 const day = todayKST(), daily = dailyPick(day, dailyPool(day)), shelves = shelvesFor(lang), total = WORKS.length;
@@ -16,7 +17,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 ---
 <script is:inline type="application/json" id="daily-win" set:html={JSON.stringify(win)} />
 <section class="hero" id="hero" data-key={daily.painting.key}>
-  <div class="glow" aria-hidden="true"><img id="glow-img" src={`/jigsaw/t-${daily.painting.key}.webp`} alt="" /></div>
+  <div class="glow" aria-hidden="true"><img id="glow-img" src={thumbUrl(daily.painting.key)} alt="" /></div>
   <div class="wrap hero-in">
     <div class="hero-text">
       <h1 set:html={T.hero.h1.replace('\n', '<br />')} />
@@ -72,7 +73,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 </section>
 
 <section class="marq" aria-hidden="true">
-  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={`/jigsaw/t-${p.key}.webp`} alt="" loading="lazy" width="240" height="190" />)}</div>
+  <div class="marq-track">{[...marquee, ...marquee].map((p) => <img src={thumbUrl(p.key)} alt="" loading="lazy" width="240" height="190" />)}</div>
 </section>
 
 <section class="sec" id="catalog">
@@ -179,6 +180,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
 
 <script>
   import { drawPopped } from '../lib/hero';
+  import { artUrl, thumbUrl } from '../lib/img';
   import { DAILY_PIECES } from '../lib/jigsaw';
   import { dailyLite, dayKST } from '../lib/daily';
   import { fetchLive } from '../lib/live';
@@ -198,10 +200,10 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import('../lib/account').then(({ fetchDaily }) => fetchDaily()).then((r) => { if (!r) return; for (const d of r.days) acct.days.add(d); acct.streak = r.streak; paintStreak(); paintPast(); }).catch(() => {});
   // 오늘·지난 7일 그림은 서버가 찍어 둔 창(#daily-win)에서 — 자정을 넘긴 탭·묵은 배포도 맞게. works 는 안 싣는다
   (async () => { const pick = await dailyLite(dayKST(), LI);
-  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = dayKST(-i); const pk = await dailyLite(d, LI); const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.dataset.day = d; a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.title; a.innerHTML = `<img src="/jigsaw/t-${pk.key}.webp" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="pd-st"></span></span>`; row.appendChild(a); } paintPast(); }
+  { const row = document.getElementById('past-row')!; for (let i = 0; i < 7; i++) { const d = dayKST(-i); const pk = await dailyLite(d, LI); const a = document.createElement('a'); a.className = 'pd' + (i === 0 ? ' today' : ''); a.dataset.day = d; a.href = `${P}/board/?daily=${i === 0 ? '1' : d}`; a.title = pk.title; a.innerHTML = `<img src="${thumbUrl(pk.key)}" alt="" loading="lazy" width="240" height="190"><span class="pd-d"><span>${i === 0 ? T.play.today : d.slice(5).replace('-', '.')}</span><span class="pd-st"></span></span>`; row.appendChild(a); } paintPast(); }
   { const a = document.getElementById('hero-today') as HTMLAnchorElement; a.firstChild!.textContent = T.hero.todayLink(pick.title); }
-  (document.getElementById('glow-img') as HTMLImageElement).src = `/jigsaw/t-${pick.key}.webp`;
-  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, `/jigsaw/${pick.key}.webp`, pick.seed, DAILY_PIECES, 5);
+  (document.getElementById('glow-img') as HTMLImageElement).src = thumbUrl(pick.key);
+  drawPopped(document.getElementById('hero-cv') as HTMLCanvasElement, artUrl(pick.key), pick.seed, DAILY_PIECES, 5);
   })();
   const countUp = (el: HTMLElement, to: number) => { const t0 = performance.now(), dur = 1100, from = 0; const f = (t: number) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
   document.querySelectorAll<HTMLElement>('.nums b[data-n]').forEach((b) => { if (!b.closest('[hidden]')) countUp(b, Number(b.dataset.n)); });
@@ -223,7 +225,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   fetchLive().then((d) => {
     if (!d || !d.work) return;
     const g = (id: string) => document.getElementById(id)!; const pct = d.pct;
-    const im = g('live-img') as HTMLImageElement; im.src = `/jigsaw/t-${d.work.key}.webp`; im.alt = d.work.title[LI];
+    const im = g('live-img') as HTMLImageElement; im.src = thumbUrl(d.work.key); im.alt = d.work.title[LI];
     g('live-title').textContent = d.work.title[LI];
     g('live-round').textContent = T.live.round(d.round);
     g('live-online').textContent = d.players > 0 ? T.live.online(d.players) : T.live.alone;

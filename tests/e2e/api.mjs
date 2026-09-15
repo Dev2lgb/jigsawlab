@@ -51,6 +51,9 @@ const head = async (p) => { const r = await fetch(BASE + p, { redirect: 'manual'
 { const r = await head('/de/s/'); ok(r.status === 302 && r.loc === '/de/', `s: 쿼리 없으면 /de/ 로 (${r.status} ${r.loc})`); }
 { const r = await head('/xx/s/?k=wave&n=48'); ok(r.status === 404, `s: 모르는 접두어 → 404 (${r.status})`); }
 { const r = await head('/ko/s/?k=wave&n=48'); ok(r.status === 404, `s: /ko/ 접두어는 없다 → 404 (${r.status})`); }
+// 퍼즐 그림은 R2(img.jigsawlab.app) — OG 도 거기를 가리키고, 옛 /jigsaw/* 주소(퍼진 공유 카드·검색 색인)는 _redirects 가 301 로 넘긴다
+{ const r = await head('/s/?k=wave&n=48&t=100&m=50'); ok(r.html.includes('property="og:image" content="https://img.jigsawlab.app/o-wave.jpg"'), 'img: 공유 카드 OG 는 R2'); }
+{ const r = await head('/jigsaw/t-wave.webp'); ok(r.status === 301 && r.loc === 'https://img.jigsawlab.app/t-wave.webp', `img: 옛 /jigsaw/ 주소 → R2 (${r.status} ${r.loc})`); }
 { const r = await head(`/i/?room=${rid}`); ok(r.status === 200 && r.html.includes('<html lang="ko"'), `i: 초대 랜딩 (${r.status})`); }
 { const r = await head(`/ja/i/?room=${rid}`); ok(r.status === 200 && r.html.includes('<html lang="ja"'), `i: 초대 랜딩 ja (${r.status})`); }
 { const r = await head('/a/b/i/'); ok(r.status === 404, `i: 여러 단 접두어 → 404 (${r.status})`); }

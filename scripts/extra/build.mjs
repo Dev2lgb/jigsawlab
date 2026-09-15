@@ -5,7 +5,7 @@ import sharp from 'sharp';
 const H = { 'user-agent': 'jigsawlab-catalog/0.1 (seabow2@nate.com)' };
 const sel = JSON.parse(readFileSync('scripts/extra/selected.json', 'utf8'));
 const only = (process.argv.find((a) => a.startsWith('--only='))?.slice(7) || '').split(',').filter(Boolean);
-mkdirSync('scripts/extra/orig', { recursive: true });
+mkdirSync('scripts/extra/orig', { recursive: true }); mkdirSync('img', { recursive: true }); // 그림은 git 이 아니라 R2 — 만든 뒤 node scripts/img-upload.mjs --only=<key,…>
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function get(url) { for (let i = 0; i < 4; i++) { try { const r = await fetch(url, { headers: H }); if (r.ok) return Buffer.from(await r.arrayBuffer()); if (r.status === 429 || r.status === 403) await sleep(4000 * (i + 1)); } catch {} await sleep(1000); } return null; }
 /** 포토크롬 원본 스캔의 검은 테두리·색상 보정 띠를 잘라낸다: 행·열별 '밝은 픽셀 비율'이 높은 가장 긴 연속 구간을 사진 영역으로 본다 */
@@ -46,9 +46,9 @@ for (const s of sel) {
   if (!buf) { buf = await get(s.dl); if (!buf) { console.log('FAIL', s.key, s.dl); continue; } writeFileSync(orig, buf); await sleep(400); }
   let crop = null; if (s.cat === 'photo') ({ buf, crop } = await autoCrop(buf));
   const im = sharp(buf); const md = await im.metadata();
-  await im.clone().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toFile(`public/jigsaw/${s.key}.webp`);
-  await im.clone().resize({ width: 480, height: 480, fit: 'inside' }).webp({ quality: 80 }).toFile(`public/jigsaw/t-${s.key}.webp`);
-  await im.clone().resize({ width: 400, height: 400, fit: 'cover', position: 'attention' }).jpeg({ quality: 82 }).toFile(`public/jigsaw/o-${s.key}.jpg`);
+  await im.clone().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toFile(`img/${s.key}.webp`);
+  await im.clone().resize({ width: 480, height: 480, fit: 'inside' }).webp({ quality: 80 }).toFile(`img/t-${s.key}.webp`);
+  await im.clone().resize({ width: 400, height: 400, fit: 'cover', position: 'attention' }).jpeg({ quality: 82 }).toFile(`img/o-${s.key}.jpg`);
   const k = Math.min(1, 1600 / Math.max(md.width, md.height)); const w = Math.round(md.width * k), h = Math.round(md.height * k);
   out.push({ key: s.key, cat: s.cat, title: s.title, artist: s.artist, date: s.date, year: s.year, medium: s.medium, credit: s.credit, museum: s.museum, source: s.source, license: s.license, w, h });
   process.stdout.write(`${++n} ${s.key} ${md.width}x${md.height}${crop ? ' crop ' + crop : ''}\n`);

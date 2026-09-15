@@ -5,7 +5,7 @@ import sharp from 'sharp';
 const H = { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128 Safari/537.36', 'AIC-User-Agent': 'jigsawlab catalog builder (seabow2@nate.com)' };
 const sel = JSON.parse(readFileSync('scripts/met/selected.json', 'utf8'));
 const only = (process.argv.find((a) => a.startsWith('--only='))?.slice(7) || '').split(',').filter(Boolean);
-mkdirSync('scripts/met/orig', { recursive: true });
+mkdirSync('scripts/met/orig', { recursive: true }); mkdirSync('img', { recursive: true }); // 그림은 git 이 아니라 R2 — 만든 뒤 node scripts/img-upload.mjs --only=<key,…>
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function get(url) { for (let i = 0; i < 4; i++) { try { const r = await fetch(url, { headers: H }); if (r.ok) return Buffer.from(await r.arrayBuffer()); if (r.status === 403 || r.status === 429) await sleep(5000 * (i + 1)); } catch {} await sleep(1000); } return null; }
 const out = []; let n = 0;
@@ -15,9 +15,9 @@ for (const s of sel) {
   let buf = existsSync(orig) ? readFileSync(orig) : null;
   if (!buf) { buf = await get(`https://www.artic.edu/iiif/2/${s.img}/full/1686,/0/default.jpg`) || await get(`https://www.artic.edu/iiif/2/${s.img}/full/843,/0/default.jpg`); if (!buf) { console.log('FAIL', s.key); continue; } writeFileSync(orig, buf); await sleep(300); }
   const im = sharp(buf); const md = await im.metadata();
-  await im.clone().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toFile(`public/jigsaw/${s.key}.webp`);
-  await im.clone().resize({ width: 480, height: 480, fit: 'inside' }).webp({ quality: 80 }).toFile(`public/jigsaw/t-${s.key}.webp`);
-  await im.clone().resize({ width: 400, height: 400, fit: 'cover', position: 'attention' }).jpeg({ quality: 82 }).toFile(`public/jigsaw/o-${s.key}.jpg`);
+  await im.clone().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toFile(`img/${s.key}.webp`);
+  await im.clone().resize({ width: 480, height: 480, fit: 'inside' }).webp({ quality: 80 }).toFile(`img/t-${s.key}.webp`);
+  await im.clone().resize({ width: 400, height: 400, fit: 'cover', position: 'attention' }).jpeg({ quality: 82 }).toFile(`img/o-${s.key}.jpg`);
   const w = Math.min(1600, md.width), h = Math.round(md.height * (w / md.width));
   out.push({ key: s.key, id: s.id, cat: s.cat, title: s.title, artist: s.artist, date: s.date, year: s.year, medium: s.medium, credit: s.credit, origin: s.origin, w, h, src: md.width });
   process.stdout.write(`${++n} ${s.key} ${md.width}x${md.height}\n`);

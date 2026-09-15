@@ -87,6 +87,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     import { BADGES, levelProgress, tierOf } from '../lib/level';
     import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
     import { favs, toggleFav } from '../lib/fav';
+    import { thumbUrl } from '../lib/img';
     import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
     const LANG = docLang(), LI = LIDX[LANG], M = UI[LANG].my, A = UI[LANG].acct, V = UI[LANG].lv, P = prefix(LANG);
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
@@ -110,12 +111,12 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
       // 카드를 누르면 다시 맞추기가 아니라 완성 보기 페이지(/done/?at=) — 맞춘 그림을 조각 모양째 구경하고 순서를 되돌려 본다. 다시 맞추기는 그 페이지 안에
-      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? '' : `/jigsaw/t-${d.key}.webp`, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? '' : thumbUrl(d.key), title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);
       $('e-fav').hidden = !!list.length; $('c-fav').textContent = list.length ? String(list.length) : '';
-      for (const k of list) { const m = meta[k]; box.appendChild(card({ href: `${P}/puzzle/${k}/`, img: `/jigsaw/t-${k}.webp`, title: m[0], sub: `${m[1]} · ${m[2]}`, onDel: () => { toggleFav(k); renderFav(); } })); }
+      for (const k of list) { const m = meta[k]; box.appendChild(card({ href: `${P}/puzzle/${k}/`, img: thumbUrl(k), title: m[0], sub: `${m[1]} · ${m[2]}`, onDel: () => { toggleFav(k); renderFav(); } })); }
     }
     async function renderAcct() {
       const u = await me(); const box = $('acct-box'), st = $('acct-state'), bt = $('acct-btns'); bt.innerHTML = '';

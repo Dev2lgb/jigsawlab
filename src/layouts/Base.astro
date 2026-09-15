@@ -47,6 +47,8 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" /><link rel="manifest" href="/site.webmanifest" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <!-- 퍼즐 그림(R2). 썸네일(<img>)과 원본(crossorigin)은 브라우저가 연결을 따로 쓰므로 둘 다 -->
+  <link rel="preconnect" href="https://img.jigsawlab.app" /><link rel="preconnect" href="https://img.jigsawlab.app" crossorigin />
   <link rel="preload" href="/fonts/BMHANNAPro.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href={fontCss} />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -393,8 +393,10 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const pieceOf = new WeakMap<HTMLElement, Piece>(); // 트레이 칸 → 조각
   const trayIO = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const el = e.target as HTMLElement; const p = pieceOf.get(el); if (p && !p.thumbed) { p.thumbed = true; const cv = el.querySelector('canvas')!; drawThumb(cv, p); } trayIO.unobserve(el); } }, { root: tray, rootMargin: '0px 600px 0px 600px' });
 
-  let cutSeed = 0;
-  async function start(resume?: SaveData) {
+  let cutSeed = 0, laid = ''; // laid = 지금 판을 깐 저장 id — 방의 판(room:<id>)을 다시 까는 것인지 가른다
+  /** keep = 방에서 같은 회차의 판을 다시 까는 것(재접속·재동기화) — 내가 놓은 조각(myLocked)·아직 안 보낸 조각 XP·모두의 퍼즐 보고분을 그대로 둔다.
+   *  전에는 이것까지 0 으로 지워서, 재접속 전에 놓은 조각이 기여 보고와 완성 정산에서 빠지고 아직 안 보낸 XP 묶음(최대 59조각)은 버려졌다 */
+  async function start(resume?: SaveData, keep = false) {
     if (!img || !src) return toast(T.noImg);
     const rs = resume ?? null;
     const myGen = ++gen;
@@ -403,7 +405,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; myLocked = 0; moves = rs?.moves ?? 0; running = false; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; if (!keep) { myLocked = 0; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; } laid = rs?.id ?? ''; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -1026,14 +1028,15 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function applyRoomState(st: RoomState, o: { dead?: boolean; fresh?: boolean } = {}) {
     const fresh = !!o.fresh;
     // 같은 판을 다시 받는 것(재접속·재동기화)이면 트레이 순서는 그대로 둔다 — 안 그러면 판이 통째로 뒤집힌다
-    const same = !fresh && !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows;
+    const same = !fresh && !!cut && pieces.length === st.total && cut.cols === st.cols && cut.rows === st.rows && cutSeed === st.seed;
     const prevTray = same ? [...tray.children].map((e) => { const p = pieceOf.get(e as HTMLElement); return p ? pieces.indexOf(p) : -1; }).filter((i) => i >= 0) : [];
     const rs: SaveData = { id: `room:${st.id}`, v: 1, kind: 'gallery', key: st.key, name: src!.name, seed: st.seed, cols: st.cols, rows: st.rows, total: st.total, imgW, imgH, locked: st.locked, groups: Object.entries(st.groups as Record<string, { dx: number; dy: number; idx: number[] }>).map(([sid, g]) => ({ ...g, sid })), tray: trayOrderAfterSync(st.total, st.locked, Object.values(st.groups as Record<string, { idx: number[] }>).map((g) => g.idx), prevTray), elapsed: st.live ? 0 : Date.now() - st.createdAt, moves: same ? moves : 0, savedAt: 0, thumb: '', done: st.locked.length };
     // 같은 판을 다시 까는 동안 끌던 뭉치와 확대 상태를 잃지 않는다. 전에는 start() 가 dragging 을 지우고 fit() 으로 시야를 되돌려서,
     // 재접속·재동기화가 끌던 중에 오면 조각이 마우스를 안 따라오고 확대가 풀렸다. 게다가 놓았다는 말(drop)을 안 보내 서버엔 내가 잡은 채로 남았다 —
     // 남들 화면엔 내 테두리를 두른 조각이 떠 있고, 위 heldByOther 가 없던 때는 아무도 못 잡았다
     const keepView = same ? { ...view } : null; const dragSid = same ? dragging?.sid ?? null : null; const off = dragOff;
-    wantN = st.total; return start(rs).then(() => {
+    // 셈을 물려받는 건 이 방의 판을 다시 깔 때만 — 솔로 판에서 사진 방으로 넘어올 때(같은 컷)는 솔로 판의 paid 가 방 정산(mine − paid)을 깎는다
+    wantN = st.total; return start(rs, same && laid === rs.id).then(() => {
       if (keepView) { view.s = keepView.s; view.tx = keepView.tx; view.ty = keepView.ty; }
       if (room) {
         // 끌던 뭉치를 다시 잡는다(재접속이면 id 가 바뀌었으니 grab 으로 서버에 다시 알린다). 그새 남이 잡았으면 놓는다
@@ -1045,12 +1048,26 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       draw(); renderPlayers(); if (!fresh) maybeInvite(); fullLoad(false); roomNote(o.dead ? U.hostGone : null); if (wsDropped) { wsDropped = false; toast(U.reconnected); }
     });
   }
+  /** 공개 판의 다음 회차로 갈아 끼운다 ('next', 또는 끊겨 있는 동안 넘어가 재접속 init 에 새 그림이 왔을 때) */
+  function nextRound(st: RoomState) {
+    const w = WORKS.find((x) => x.key === st.key); if (!w) { location.reload(); return; }
+    // 지난 회차에서 아직 안 알린 몫 — 판을 새로 까면 셈이 0 이 된다. 완성을 지켜봤으면 이미 알렸으니 아무것도 안 간다.
+    // 그림(src)을 바꾸기 전에 불러야 지난 판으로 간다
+    xp.flush(true); reportLive(false);
+    const name = workName(w);
+    roomNote(null); fullLoad(true, L.opening, { img: thumbUrl(w.key), name });
+    loadSource(gallerySrc(w), { quiet: true }).then(() => {
+      if (!room || !img) return; applyRoomState(st, { fresh: true }).then(() => toast(L.nextToast(name)));
+    });
+  }
   function onRoomMsg(m: ServerMsg) {
     if (!room) return;
     switch (m.t) {
       case 'init': {
         room.me = m.you; room.players = new Map(); for (const pl of m.players) room.players.set(pl.id, pl); room.holders = new Map(Object.entries(m.holders || {})); for (const k of room.holders.keys()) holdT.set(k, performance.now()); room.bySid = new Map();
         if (!img) { renderPlayers(); maybeInvite(); requestPhoto(); return; }
+        // 공개 판이 끊겨 있는 동안 다음 그림으로 넘어갔다 — 받은 상태를 옛 그림 위에 깔면 조각이 딴 그림으로 잘린다
+        if (room.live && src && m.state.key !== src.key) { nextRound(m.state); return; }
         applyRoomState(m.state, { dead: !!m.dead }); return;
       }
       case 'join': room.players.set(m.p.id, m.p); renderPlayers(); toast(U.joined(m.p.nick)); return;
@@ -1075,18 +1092,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
       case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) endDrag(); tweens.delete(g); merge(g, into); } else draw(); return; }
       // 내가 청해 둔 잠그기가 받아들여졌을 때만 내 조각으로 친다 — 남과 같은 뭉치를 동시에 놓으면 서버가 거절한다(resync).
+      // 셈은 뭉치가 내 판에 아직 있는지와 따로 한다: 스냅(140ms)이 확인보다 먼저 끝나면 이미 제자리에 잠가 bySid 에서 빠진 뒤다(서버와 먼 접속·몰린 메시지 —
+      // 전에는 그 조각을 안 세서 XP 도 기여도 없었다). 수는 서버가 잠근 조각(idx)으로. 완성 뒤에 온 확인은 XP 묶음에 안 넣는다 — 완성 정산이 mine − paid 로 친다(finish 가 확인을 기다린다)
       // myLocked 를 lockGroup 보다 먼저 올려야 이 조각이 마지막일 때 완성 정산이 제 수를 본다
-      case 'lock': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); g.dx = 0; g.dy = 0; tweens.delete(g); const k = lockReq.delete(m.g) ? g.pieces.length : 0; if (k) { myLocked += k; xp.got(k); } lockGroup(g); } return; }
+      case 'lock': { const k = lockReq.delete(m.g) ? m.idx.length : 0; if (k) { myLocked += k; if (!complete) xp.got(k); } const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
       // 공개 판: 한 판이 끝나거나 너무 오래 멈춰 있으면 서버가 다음 그림으로 갈아 끼운다
-      case 'next': {
-        const st = m.state; const w = WORKS.find((x) => x.key === st.key); if (!w) { location.reload(); return; }
-        const name = workName(w);
-        roomNote(null); fullLoad(true, L.opening, { img: thumbUrl(w.key), name });
-        loadSource(gallerySrc(w), { quiet: true }).then(() => {
-          if (!room || !img) return; applyRoomState(st, { fresh: true }).then(() => toast(L.nextToast(name)));
-        });
-        return;
-      }
+      case 'next': nextRound(m.state); return;
       case 'resync': lockReq.clear(); reqSync(); return;
       // ── 내 사진 방: 사진을 가진 사람이 모두 나가면 아무도 사진을 받을 수 없다
       case 'hostaway': roomNote(U.hostAway); toast(U.hostAway); return;
@@ -1116,9 +1127,15 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
     xp.discard(); // 남은 조각은 아래 완성 정산이 한 번에 친다 (서버가 paid 만큼 빼고 준다)
-    if (room?.live) { reportLive().then(liveAward); roomNote(L.doneNote(myLocked)); celebrateWait(); return; }
+    if (room?.live) { locksAcked().then(() => { roomNote(L.doneNote(myLocked)); return reportLive(); }).then(liveAward); celebrateWait(); return; }
     prepareResult(sec);
     celebrateWait(() => scenes.go('result'));
+  }
+  /** 방: 청해 둔 잠그기의 서버 확인이 다 올 때까지(길어야 3초) — 마지막 조각은 스냅이 확인보다 먼저 끝나 판이 먼저 완성되기도 해서, 기다리지 않으면 완성 정산·기여 보고에서 그 조각이 빠진다.
+   *  거절(resync·deny)·재접속이면 lockReq 가 비워져 바로 끝난다 */
+  function locksAcked(): Promise<void> {
+    const t0 = performance.now();
+    return new Promise((res) => { const f = () => { if (!lockReq.size || performance.now() - t0 > 3000) res(); else setTimeout(f, 50); }; f(); });
   }
   function prepareResult(sec: number) {
     $('jg-res-time').textContent = fmtSec(sec); $('jg-res-n').textContent = String(total); $('jg-res-m').textContent = String(moves); $('jg-res-name').textContent = src!.name;
@@ -1128,10 +1145,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     if (!room) fetch('/api/stats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'solved' }), keepalive: true }).catch(() => {});
     // 방에서 맞춘 판은 내가 놓은 조각만큼만 XP 로 친다 (mine). 기록 자체는 늘 한 판으로 남는다
     // member: 로그인한 채 맞춘 판만 서버에 올라간다(Base.astro 가 로그인 확인 뒤 html.member 를 붙인다). 비회원으로 맞춘 판은 나중에 로그인해도 XP 를 주지 않는다
-    { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xp.paid, member: document.documentElement.classList.contains('member'), seed: cutSeed, cols: cut.cols, rows: cut.rows, ...(room ? { room: true, mine: myLocked } : {}) }; addDone(entry); dropClearedCache(); showAward(null);
+    // 방은 청해 둔 잠그기의 확인이 다 온 뒤에 mine 을 읽는다(locksAcked). 솔로는 기다릴 게 없어 바로
+    const inRoom = !!room;
+    locksAcked().then(() => { const entry = { key: src!.kind === 'photo' ? (src!.photoId ?? 'photo') : src!.key, kind: src!.kind, name: src!.name, n: total, sec, moves, day: src!.day, at: Date.now(), paid: xp.paid, member: document.documentElement.classList.contains('member'), seed: cutSeed, cols: cut.cols, rows: cut.rows, ...(inRoom ? { room: true, mine: myLocked } : {}) }; addDone(entry); dropClearedCache(); showAward(null);
       { const v = $('jg-res-view') as HTMLAnchorElement; v.hidden = src!.kind === 'photo'; v.href = `${PFX}/done/?at=${entry.at}`; } // 완성 보기 페이지 — 사진은 완성 때 지우므로 못 연다
       // 놓은 순서는 기기 안 IndexedDB 에(기록에 실으면 localStorage 가 부푼다). 완성 목록 200건에서 밀려난 기록의 순서는 같이 지운다
-      if (hasIDB()) replays.put({ at: entry.at, seq: [...seq] }).then(() => replays.keys()).then((ks) => { const keep = new Set(getDone().map((e) => e.at)); for (const k of ks) if (!keep.has(k)) replays.del(k).catch(() => {}); }).catch(() => {}); xp.settle().then(() => syncDone({ ...entry, paid: xp.paid })).then(showAward); }
+      if (hasIDB()) replays.put({ at: entry.at, seq: [...seq] }).then(() => replays.keys()).then((ks) => { const keep = new Set(getDone().map((e) => e.at)); for (const k of ks) if (!keep.has(k)) replays.del(k).catch(() => {}); }).catch(() => {}); xp.settle().then(() => syncDone({ ...entry, paid: xp.paid })).then(showAward); });
     const sb = document.querySelector<HTMLButtonElement>('.share-btn')!; const pTitle = src!.kind !== 'photo' ? WORKS.find((x) => x.key === src!.key)!.title[LI] : '';
     sb.dataset.title = src!.kind === 'daily' ? T.shareDaily(total, fmtSec(sec), pTitle) : T.shareTitle(total, fmtSec(sec)); sb.dataset.text = T.shareText;
     sb.dataset.url = src!.kind === 'photo' ? `${location.origin}${PFX}/photo/` : `${location.origin}${PFX}/s/?k=${src!.key}&n=${total}&t=${sec}&m=${moves}${src!.kind === 'daily' ? '&d=1' : ''}`;
@@ -1166,7 +1185,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); lockGroup(makeGroup(p, 0, 0)); } }, state: () => ({ total, lockedN, moves, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  // 방에서는 사람이 트레이에서 꺼내 제자리에 놓은 것처럼 take → lock 을 서버에 청한다. early = 스냅이 서버 확인보다 먼저 끝난 것(서버와 먼 접속). drop = 소켓이 소리 없이 죽은 것(재접속)
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

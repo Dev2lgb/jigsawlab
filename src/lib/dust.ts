@@ -41,27 +41,32 @@ const MAX = 480; // 한꺼번에 살아 있을 수 있는 알갱이 상한 — �
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
+/**
+ * 얼룩 한 장 — 가운데는 빽빽하고 가장자리는 찢어진 솜뭉치. 픽셀마다 (방사형 감쇠)² × (값 노이즈 3옥타브) 로 알파를 정해
+ * 동그란 원반이 아니라 뭉게뭉게한 모양이 된다. 96² 한 장에 1ms 남짓. 알갱이마다 그라디언트를 만드는 것보다 훨씬 싸다.
+ * 색만 다른 금가루 안개(gold.ts)도 이걸 쓴다
+ */
+export function noiseSprite(tone: string): HTMLCanvasElement {
+  const [r, g, b] = tone.split(',').map(Number);
+  const S = 96, G = 5, cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d')!; const im = c.createImageData(S, S), d = im.data;
+  const lat = (o: number) => { const m = (G << o) + 2; return Array.from({ length: m }, () => Array.from({ length: m }, Math.random)); };
+  const L = [lat(0), lat(1), lat(2)]; const sm = (u: number) => u * u * (3 - 2 * u);
+  const val = (l: number[][], x: number, y: number) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi); const a = l[yi][xi], bb = l[yi][xi + 1], cc = l[yi + 1][xi], dd = l[yi + 1][xi + 1]; return (a + (bb - a) * fx) * (1 - fy) + (cc + (dd - cc) * fx) * fy; };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const u = (x + 0.5) / S, v = (y + 0.5) / S, dist = Math.hypot(u - 0.5, v - 0.5) * 2, fall = Math.max(0, 1 - dist);
+    let nz = 0, amp = 0.55; for (let o = 0; o < 3; o++) { nz += val(L[o], u * (G << o), v * (G << o)) * amp; amp *= 0.5; }
+    const a = Math.max(0, Math.min(1, fall * fall * (0.3 + nz * 1.4) - 0.08));
+    const k = (y * S + x) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = Math.round(a * 255);
+  }
+  c.putImageData(im, 0, 0); return cv;
+}
+
 export function createDust() {
   const ps: P[] = [];
   let sprites: HTMLCanvasElement[] | null = null;
-  /**
-   * 톤×모양 개수만큼 얼룩을 미리 그려 둔다 — 가운데는 빽빽하고 가장자리는 찢어진 솜뭉치. 픽셀마다 (방사형 감쇠)² × (값 노이즈 3옥타브) 로
-   * 알파를 정해 동그란 원반이 아니라 뭉게뭉게한 모양이 된다. 처음 한 번 96²×12 장뿐이라 몇 ms. 알갱이마다 그라디언트를 만드는 것보다 훨씬 싸다
-   */
+  /** 톤×모양 개수만큼 얼룩을 미리 그려 둔다(noiseSprite). 처음 한 번 12 장뿐이라 몇 ms */
   function sprite(i: number) {
-    if (!sprites) sprites = TONES.flatMap((t) => { const [r, g, b] = t.split(',').map(Number); return Array.from({ length: VARIANTS }, () => {
-      const S = 96, G = 5, cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d')!; const im = c.createImageData(S, S), d = im.data;
-      const lat = (o: number) => { const m = (G << o) + 2; return Array.from({ length: m }, () => Array.from({ length: m }, Math.random)); };
-      const L = [lat(0), lat(1), lat(2)]; const sm = (u: number) => u * u * (3 - 2 * u);
-      const val = (l: number[][], x: number, y: number) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi); const a = l[yi][xi], bb = l[yi][xi + 1], cc = l[yi + 1][xi], dd = l[yi + 1][xi + 1]; return (a + (bb - a) * fx) * (1 - fy) + (cc + (dd - cc) * fx) * fy; };
-      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const u = (x + 0.5) / S, v = (y + 0.5) / S, dist = Math.hypot(u - 0.5, v - 0.5) * 2, fall = Math.max(0, 1 - dist);
-        let nz = 0, amp = 0.55; for (let o = 0; o < 3; o++) { nz += val(L[o], u * (G << o), v * (G << o)) * amp; amp *= 0.5; }
-        const a = Math.max(0, Math.min(1, fall * fall * (0.3 + nz * 1.4) - 0.08));
-        const k = (y * S + x) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = Math.round(a * 255);
-      }
-      c.putImageData(im, 0, 0); return cv;
-    }); });
+    if (!sprites) sprites = TONES.flatMap((t) => Array.from({ length: VARIANTS }, () => noiseSprite(t)));
     return sprites[i];
   }
   /**

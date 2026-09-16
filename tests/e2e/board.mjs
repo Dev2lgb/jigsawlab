@@ -10,7 +10,9 @@ const level = (page) => page.evaluate(() => fetch('/api/level').then((r) => r.js
   await demo(page, 10); await page.waitForTimeout(300);
   ok((await left(page)) === 38 && (await tray(page)) === 38, 'solo: 10개 놓으면 남은 38', `${await left(page)} ${await tray(page)}`);
   ok((await hud(page)) === null, 'solo(비회원): XP HUD 숨김');
-  await demo(page, 38); await waitResult(page);
+  // 마지막 조각 — 하나 남으면 빈자리에서 금빛 티끌(gold.on), 넣으면 금가루와 함께 꺼진다
+  await demo(page, 37); await page.waitForTimeout(200); ok((await left(page)) === 1 && (await page.evaluate(() => window.__jigsaw.state().last)), 'last: 하나 남으면 빈자리 금빛');
+  await demo(page, 1); await waitResult(page); ok(!(await page.evaluate(() => window.__jigsaw.state().last)), 'last: 넣으면 꺼진다');
   const t = await page.$eval('#jg-res-time', (e) => e.textContent), n = await page.$eval('#jg-res-n', (e) => e.textContent);
   ok(/\d:\d\d/.test(t) && n === '48', `solo: 결과 화면 (${t}, ${n}조각)`);
   const xpBox = await page.$eval('#jg-res-xp', (e) => ({ hidden: e.hidden, text: e.textContent })); ok(xpBox.hidden || xpBox.text.length > 0, 'solo(비회원): 결과 XP 칸은 숨김 또는 로그인 안내', JSON.stringify(xpBox));

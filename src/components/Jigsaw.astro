@@ -278,6 +278,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { BADGES, pieceRate, rateFor } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { createDust, outerEdges } from '../lib/dust';
+  import { createGold, type Slot } from '../lib/gold';
   import { createSparkle, type Lone } from '../lib/sparkle';
   import { renderRelief } from '../lib/relief';
   import { artUrl, thumbUrl } from '../lib/img';
@@ -375,6 +376,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // 화면 크기 변화(모바일 주소창 접힘 등): 맞춤 상태였으면 다시 맞춤, 확대 중이면 보드 중심을 그대로 유지
   function onResize() { if (!cut) return; const r = wrap.getBoundingClientRect(); if (!r.width || !r.height || (r.width === lastW && r.height === lastH)) return; const wasFit = Math.abs(view.s - fitS) < 1e-6; const cx = (lastW / 2 - view.tx) / view.s, cy = (lastH / 2 - view.ty) / view.s; resize(); const nf = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); if (wasFit) { fitS = nf; fit(); return; } fitS = nf; view.s = Math.max(minS(), Math.min(maxS(), view.s)); view.tx = r.width / 2 - cx * view.s; view.ty = r.height / 2 - cy * view.s; draw(); }
   function fit() { const r = wrap.getBoundingClientRect(); fitS = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); view.s = fitS; view.tx = (r.width - cut.W * fitS) / 2; view.ty = (r.height - cut.H * fitS) / 2; draw(); }
+  /** fit() 을 부드럽게 — 지금 시야에서 판 전체로 700ms 에 걸쳐 물러난다 (완성 때) */
+  function fitSmooth() { const r = wrap.getBoundingClientRect(); fitS = Math.min(r.width / (cut.W * 1.12), r.height / (cut.H * 1.12)); viewTw = { from: { ...view }, to: { s: fitS, tx: (r.width - cut.W * fitS) / 2, ty: (r.height - cut.H * fitS) / 2 }, t0: performance.now(), last: { ...view }, dur: 700 }; draw(); }
   const toBoard = (cx: number, cy: number) => { const r = wrap.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; };
   /** 지금 화면에 보이는 보드 좌표 범위 */
   const viewRect = () => { const r = wrap.getBoundingClientRect(); return { x0: -view.tx / view.s, y0: -view.ty / view.s, x1: (r.width - view.tx) / view.s, y1: (r.height - view.ty) / view.s }; };
@@ -405,7 +408,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
     closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; if (!keep) { myLocked = 0; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; } laid = rs?.id ?? ''; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); gold.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; if (!keep) { myLocked = 0; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; } laid = rs?.id ?? ''; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? total <= 150; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -426,7 +429,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const frag = document.createDocumentFragment();
     for (const p of order) { if (p.locked || p.g) continue; frag.appendChild(trayEl(p)); }
     tray.appendChild(frag);
-    applyTrayFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw();
+    applyTrayFilter(); $('jg-loading').hidden = true; resize(); fit(); updateHud(); t0 = performance.now() - (rs?.elapsed ?? 0); running = true; clearInterval(timer); timer = window.setInterval(tick, 250); draw(); checkLast();
     if (!room && src.kind !== 'photo') me().then((u) => { if (u && running && !room && gen === myGen) $('jg-cloud').hidden = false; });
   }
   function trayEl(p: Piece) { const el = document.createElement('div'); el.className = 'tp'; const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1; el.appendChild(cv); p.el = el; p.thumbed = false; pieceOf.set(el, p); bindTray(el, p); trayIO.observe(el); return el; }
@@ -642,15 +645,16 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const dust = createDust(); // 조각이 자리에 들어갈 때 가장자리에서 피어오르는 먼지 (lib/dust.ts). 잠그기·붙이기에서 심고 drawNow 가 그린다
   const pieceSide = () => Math.min(cut.pw, cut.ph);
   const sparkle = createSparkle(); // 판 위 조각 찾기의 반짝임 (lib/sparkle.ts). findLone 이 켜고 drawNow 가 5초 동안 그린다
-  /** 시야를 부드럽게 옮기는 중(찾기가 화면 밖 조각까지 보이게 물러날 때). 그사이 누가 view 를 건드리면(끌기·핀치·휠·리사이즈) 거기서 손을 뗀다 */
+  const gold = createGold(); // 마지막 조각 — 빈자리에서 피어오르는 금빛 티끌과 놓는 순간의 금가루 (lib/gold.ts). checkLast 가 켜고 lockGroup 이 터뜨린다
+  /** 시야를 부드럽게 옮기는 중(찾기가 화면 밖 조각까지 보이게 물러날 때·완성 때 판 전체로). 그사이 누가 view 를 건드리면(끌기·핀치·휠·리사이즈) 거기서 손을 뗀다 */
   type ViewAt = { s: number; tx: number; ty: number };
-  let viewTw: { from: ViewAt; to: ViewAt; t0: number; last: ViewAt } | null = null;
+  let viewTw: { from: ViewAt; to: ViewAt; t0: number; last: ViewAt; dur?: number } | null = null;
   let drawQueued = false, restShadow = false; // restShadow: 판 위 느슨한 조각에 옅은 그림자 (조각이 적을 때만)
   function draw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); }
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
   function drawNow() {
     if (!cut) return; const now = performance.now(); const finished: Group[] = [];
-    if (viewTw) { const w = viewTw; if (view.s !== w.last.s || view.tx !== w.last.tx || view.ty !== w.last.ty) viewTw = null; else { const e = easeOut(Math.min(1, (now - w.t0) / 450)); view.s = w.from.s + (w.to.s - w.from.s) * e; view.tx = w.from.tx + (w.to.tx - w.from.tx) * e; view.ty = w.from.ty + (w.to.ty - w.from.ty) * e; w.last = { ...view }; if (e >= 1) viewTw = null; } }
+    if (viewTw) { const w = viewTw; if (view.s !== w.last.s || view.tx !== w.last.tx || view.ty !== w.last.ty) viewTw = null; else { const e = easeOut(Math.min(1, (now - w.t0) / (w.dur ?? 450))); view.s = w.from.s + (w.to.s - w.from.s) * e; view.tx = w.from.tx + (w.to.tx - w.from.tx) * e; view.ty = w.from.ty + (w.to.ty - w.from.ty) * e; w.last = { ...view }; if (e >= 1) viewTw = null; } }
     for (const [g, tw] of tweens) { const t = Math.min(1, (now - tw.t0) / tw.dur), e = tw.lin ? t : easeOut(t); g.dx = tw.x0 + (tw.x1 - tw.x0) * e; g.dy = tw.y0 + (tw.y1 - tw.y0) * e; if (t >= 1) finished.push(g); }
     const d = dpr(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * view.s, 0, 0, d * view.s, d * view.tx, d * view.ty);
@@ -663,13 +667,14 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     // 화면 밖 조각은 건너뜀. 판 위 느슨한 조각이 적을 때는 옅은 그림자를 깔아 다 맞춰진 그림 위에 얹혀도 눈에 띄게
     const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); let looseN = 0; for (const g of groups) looseN += g.pieces.length; restShadow = looseN <= 48;
     const lone = sparkle.on ? loneItems(vx0, vy0, vx1, vy1) : []; sparkle.back(ctx, now, lone, view.s); // 반짝임의 금빛 번짐은 조각 밑에, 테·빛줄기·별은 위에(뭉치에 깔린 조각도 드러나게)
+    gold.back(ctx, now, view.s); // 마지막 빈자리의 금빛 웅덩이 — 조각 밑(끌어다 대면 조각이 덮는다)
     for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
     const sparkly = sparkle.front(ctx, now, lone, view.s);
-    const dusty = dust.render(ctx, now);
+    const dusty = dust.render(ctx, now), goldy = gold.front(ctx, now, view.s);
     if (room) { for (const g of groups) { const h = g.sid && room.holders.get(g.sid); if (!h || h === room.me?.id) continue; const pl = room.players.get(h); const p0 = g.pieces[0]; ctx.save(); ctx.strokeStyle = pl?.color ?? '#888'; ctx.lineWidth = 3 / view.s; ctx.setLineDash([6 / view.s, 4 / view.s]); ctx.strokeRect(px(p0) - cut.padX, py(p0) - cut.padY, cut.pw + cut.padX * 2, cut.ph + cut.padY * 2); ctx.restore(); }
       for (const pl of room.players.values()) { if (pl.x === undefined || pl.id === room.me?.id) continue; ctx.save(); ctx.translate(pl.x, pl.y!); ctx.scale(1 / view.s, 1 / view.s); ctx.fillStyle = pl.color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 18); ctx.lineTo(5, 13); ctx.lineTo(12, 13); ctx.closePath(); ctx.fill(); ctx.font = '700 12px "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif'; const w = ctx.measureText(pl.nick).width + 12; ctx.fillStyle = pl.color; ctx.beginPath(); ctx.roundRect(14, 4, w, 20, 10); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, 20, 18); ctx.restore(); } }
     for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
-    if (tweens.size || dusty || sparkly || viewTw) draw();
+    if (tweens.size || dusty || goldy || sparkly || viewTw) draw();
   }
   function drawGroup(g: Group, lifted: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
     const shadow = g.pieces.length <= 40 && (lifted || restShadow);
@@ -689,6 +694,18 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       out.push({ id: p, path, dx: g.dx, dy: g.dy, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph });
     }
     return out;
+  }
+  // ── 마지막 조각 (lib/gold.ts) — 남은 조각이 하나(또는 여섯 이하가 전부 한 뭉치)면 그 빈자리에서 금빛 티끌이 피어오르고, 들어가는 순간 금가루가 퍼진다
+  const slotOf = (p: Piece): Slot => { let path = lonePath.get(p); if (!path) lonePath.set(p, (path = piecePath(cut, p.r, p.c))); return { path, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph }; };
+  /** 연출의 크기 기준 — 조각 한 변이되, 손톱만 한 조각(1000조각+)에서는 판 짧은 변의 8% 로 올려 잡는다 */
+  const goldUnit = () => Math.max(pieceSide(), Math.min(cut.W, cut.H) * 0.08);
+  /** 잠그기·붙이기·판 깔기 뒤에 본다. 방에서는 남이 놓은 것도 여기로 오므로 누가 마지막을 쥐었든 빈자리는 같다 */
+  function checkLast() {
+    const rest = total - lockedN;
+    if (complete || rest < 1 || rest > 6) { gold.aura(null); return; }
+    const left = pieces.filter((p) => !p.locked);
+    if (left.length > 1 && (!left[0].g || left.some((p) => p.g !== left[0].g))) { gold.aura(null); return; }
+    gold.aura(left.map(slotOf), goldUnit()); draw();
   }
   /** 화면 밖(판 옆으로 밀어 둔 것 포함)에 있는 게 있으면 판과 그 조각들이 다 보이게 물러난다. 더 확대하지는 않는다 */
   function findLone() {
@@ -756,15 +773,19 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const tol = snapTol();
     if (Math.abs(into.dx) < tol && Math.abs(into.dy) < tol) { reqLock(into); return; }
     let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
-    draw(); scheduleSave();
+    checkLast(); draw(); scheduleSave();
   }
   function lockGroup(g: Group) {
     const lc = lockedLayer.getContext('2d')!;
     for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); seq.push(p.r * cut.cols + p.c); }
     const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); }
-    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true); dust.puff(outerEdges(g.pieces, cut.pw, cut.ph), pieceSide()); draw();
+    const last = lockedN + g.pieces.length === total;
+    lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true);
+    // 마지막 조각은 먼지 대신 금가루 — 조각이 환해지고 둘레에서 금빛 안개·박편이 퍼진다
+    if (last) gold.burst(g.pieces.map(slotOf), outerEdges(g.pieces, cut.pw, cut.ph), goldUnit()); else dust.puff(outerEdges(g.pieces, cut.pw, cut.ph), pieceSide());
+    draw();
     if (!room) xp.got(g.pieces.length); // 방에서는 남이 놓은 것도 여기로 오므로 내가 보낼 때(myLocked) 센다
-    if (lockedN === total) finish(); else scheduleSave();
+    if (lockedN === total) finish(); else { checkLast(); scheduleSave(); }
   }
   // ── 완성 연출: 팡파르 + 색종이 + 빛 쓸기, 끝나면 결과로 (레벨업 다이얼로그도 같은 것을 쓴다 — lib/celebrate.ts)
   function celebrate(done: () => void) { const r = wrap.getBoundingClientRect(); fanfare(); confetti($('jg-fx') as HTMLCanvasElement, r.width, r.height, done); }
@@ -1122,7 +1143,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function finish() {
     running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
     complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge').hidden = true; $('jg-full').hidden = true; setPeek(false); closePops(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
-    requestAnimationFrame(() => { resize(); fit(); });
+    // 시야는 금가루가 퍼지는 동안(0.9초) 그 자리에 두었다가 판 전체가 보이게 부드럽게 물러난다 — 바로 fit() 하면 확대해서 놓은 마지막 조각의 연출이
+    // 손톱만 하게 줄어든다(폰에서 1000조각). 트레이가 사라져 캔버스가 커지는 resize 는 바로. 움직임 줄이기면 전처럼 바로 맞춘다
+    const myGen = gen; requestAnimationFrame(() => { resize(); if (matchMedia('(prefers-reduced-motion: reduce)').matches) fit(); else setTimeout(() => { if (complete && gen === myGen) fitSmooth(); }, 900); });
     const t1 = performance.now(); const fade = () => { completeAlpha = Math.min(1, (performance.now() - t1) / 900); draw(); if (completeAlpha < 1) requestAnimationFrame(fade); }; requestAnimationFrame(fade);
     navigator.vibrate?.([10, 40, 20]);
     // 공개 판은 여기서 끝나지 않는다 — 개인 기록이 아니라 다 같이 맞춘 판이라, 결과 화면 대신 완성작을 두고 서버가 보내 줄 다음 회차를 기다린다
@@ -1186,7 +1209,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
   // 방에서는 사람이 트레이에서 꺼내 제자리에 놓은 것처럼 take → lock 을 서버에 청한다. early = 스냅이 서버 확인보다 먼저 끝난 것(서버와 먼 접속). drop = 소켓이 소리 없이 죽은 것(재접속)
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, last: gold.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

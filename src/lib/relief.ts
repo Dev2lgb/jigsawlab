@@ -9,10 +9,10 @@ export interface ReliefOpts { chunk?: number; alive?: () => boolean; onProgress?
 export function reliefPiece(ctx: CanvasRenderingContext2D, img: CanvasImageSource, cut: Cut, r: number, c: number, k: number, look?: PieceLook) {
   ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); paintPiece(ctx, img, cut, r, c, k, look); ctx.restore();
 }
-/** 이음매 — 조각 사이의 가는 틈. 전체를 한 번에. 조각의 단면 선(paintPiece)이 양쪽에서 이미 어둡게 만나므로 여기서는 실낱만 */
+/** 이음매 — 조각 사이의 가는 틈. 전체를 한 번에. 조각의 단면 선(paintPiece)이 양쪽에서 이미 만나므로 여기서는 옅은 실낱만 — 처음 42% 로 두었더니 실물보다 검었다 */
 export function seams(ctx: CanvasRenderingContext2D, cut: Cut, k: number) {
   const side = Math.min(cut.pw, cut.ph) * k;
-  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.lineWidth = Math.max(0.6, Math.min(1.4, side * 0.006)) / k; ctx.strokeStyle = 'rgba(10,8,4,.42)'; ctx.lineJoin = 'round';
+  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.lineWidth = Math.max(0.6, Math.min(1.2, side * 0.005)) / k; ctx.strokeStyle = 'rgba(10,8,4,.2)'; ctx.lineJoin = 'round';
   for (let r = 0; r < cut.rows; r++) for (let c = 0; c < cut.cols; c++) ctx.stroke(piecePath(cut, r, c));
   ctx.restore();
 }

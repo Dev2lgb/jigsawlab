@@ -105,10 +105,11 @@ export function paintPiece(ctx: CanvasRenderingContext2D, img: CanvasImageSource
   for (const [f, a] of [[1, 0.07], [0.55, 0.1], [0.25, 0.13]] as const) {
     const L = bev * f, d = L / 2 / k; ctx.lineWidth = L / k;
     ctx.save(); ctx.translate(d, d); ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.stroke(path); ctx.restore();
-    ctx.save(); ctx.translate(-d, -d); ctx.strokeStyle = `rgba(0,0,0,${a * 1.6})`; ctx.stroke(path); ctx.restore();
+    ctx.save(); ctx.translate(-d, -d); ctx.strokeStyle = `rgba(0,0,0,${a * 1.3})`; ctx.stroke(path); ctx.restore();
   }
+  // 단면 선은 옅게 — 맞춘 자리에서는 양쪽 조각의 선이 나란히 놓여 겹으로 보이고, 그 위에 이음매(relief.ts)까지 얹힌다. 40% 였을 때 이음매가 실물보다 검었다
   const edge = Math.max(0.9, Math.min(2.4, side * 0.012));
-  ctx.lineWidth = (edge * 2) / k; ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.stroke(path);
+  ctx.lineWidth = (edge * 2) / k; ctx.strokeStyle = 'rgba(0,0,0,.22)'; ctx.stroke(path);
   ctx.restore();
 }
 /** 조각 비트맵(탭 여백 포함). scale = 비트맵 px / 보드 단위. 그릴 때는 (x + ox, y + oy) 에 w×h 로 */

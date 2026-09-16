@@ -2,7 +2,7 @@
 // 조각은 판 위 조각과 같은 그리기(jigsaw.ts 의 paintPiece — 가는 단면·좁은 모서리 빛과 그늘·조각마다 옅게 다른 밝기)로 오려 넣고,
 // 그 위에 조각 사이의 이음매를 가는 어두운 실선으로 긋는다 — 맞춘 퍼즐을 내려다보면 조각 사이 틈으로 그늘이 보인다.
 // 전에는 shadowBlur 로 넓은 빛·그늘 띠(조각 변의 4.5%)를 깔았는데 조각이 베개처럼 부풀고 이음매가 밝게 벌어져 보였다
-import { paintPiece, piecePath, type Cut, type PieceLook } from './jigsaw';
+import { drawPart, paintPiece, piecePath, type Cut, type PieceLook } from './jigsaw';
 export interface ReliefOpts { chunk?: number; alive?: () => boolean; onProgress?: (done: number, total: number) => void; look?: PieceLook }
 
 /** 조각 (r, c) 하나. k = 캔버스 픽셀 / 그림 픽셀 (변환은 안에서 잡는다) */
@@ -29,5 +29,5 @@ export async function renderRelief(canvas: HTMLCanvasElement, img: CanvasImageSo
 /** 다 새긴 완성본(still)에서 조각 하나를 옮겨 그린다 — 타임랩스가 조각을 하나씩 드러낼 때. 두 캔버스는 같은 크기·같은 k */
 export function copyPiece(dst: CanvasRenderingContext2D, still: HTMLCanvasElement, cut: Cut, r: number, c: number, k: number) {
   const { pw, ph, padX, padY } = cut; const x = (c * pw - padX) * k, y = (r * ph - padY) * k, w = (pw + padX * 2) * k, h = (ph + padY * 2) * k;
-  dst.save(); dst.setTransform(k, 0, 0, k, 0, 0); dst.clip(piecePath(cut, r, c)); dst.setTransform(1, 0, 0, 1, 0, 0); dst.drawImage(still, x, y, w, h, x, y, w, h); dst.restore();
+  dst.save(); dst.setTransform(k, 0, 0, k, 0, 0); dst.clip(piecePath(cut, r, c)); dst.setTransform(1, 0, 0, 1, 0, 0); drawPart(dst, still, still.width, still.height, x, y, w, h); dst.restore();
 }

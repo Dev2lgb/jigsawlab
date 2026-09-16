@@ -66,6 +66,17 @@ export function piecePath(cut: Cut, r: number, c: number): Path2D {
 export interface PieceBitmap { canvas: HTMLCanvasElement; ox: number; oy: number; w: number; h: number }
 const imgSize = (img: CanvasImageSource) => { const a = img as HTMLImageElement & HTMLCanvasElement & HTMLVideoElement; return [a.naturalWidth || a.videoWidth || a.width, a.naturalHeight || a.videoHeight || a.height] as [number, number]; };
 /**
+ * img 를 판 좌표 0..W × 0..H 에 깔았을 때의 (x, y, w, h) 부분만 제자리에 그린다. 사각형은 그림 안으로 잘라서 넘긴다 —
+ * 사파리는 원본 사각형이 그림 밖으로 나가면 아무것도 안 그린다(크롬은 스펙대로 잘라서 그린다). 탭 여백 때문에 테두리 조각은 늘 밖으로 나가서,
+ * 아이폰에서 테두리 조각이 그림 없이 빛·그늘 덧칠만 남아 회색으로 떴다
+ */
+export function drawPart(ctx: CanvasRenderingContext2D, img: CanvasImageSource, W: number, H: number, x: number, y: number, w: number, h: number) {
+  const [iw, ih] = imgSize(img), x0 = Math.max(0, x), y0 = Math.max(0, y), x1 = Math.min(W, x + w), y1 = Math.min(H, y + h);
+  if (x1 <= x0 || y1 <= y0) return;
+  const sx = (x0 * iw) / W, sy = (y0 * ih) / H;
+  ctx.drawImage(img, sx, sy, Math.min(iw, (x1 * iw) / W) - sx, Math.min(ih, (y1 * ih) / H) - sy, x0, y0, x1 - x0, y1 - y0);
+}
+/**
  * 조각 하나를 실물 퍼즐처럼 그린다 — 판 위 조각(renderPiece)·완성 보기(relief.ts)가 같이 쓴다. ctx 에는 판 좌표 변환이 걸려 있고
  * k 는 그 배율(px / 판 단위) — 선 굵기를 px 로 잡기 위해. 실물 조각은 두께 2mm 남짓의 판지라 두툼하게 부풀지 않는다. 얹는 것은 셋뿐:
  *  ① 잘린 단면 — 둘레를 따라 가늘고 또렷한 어두운 선(클립이 바깥 반을 잘라 안쪽 반만 남는다)
@@ -88,10 +99,10 @@ function linen() {
 }
 export function paintPiece(ctx: CanvasRenderingContext2D, img: CanvasImageSource, cut: Cut, r: number, c: number, k: number, look: PieceLook = {}) {
   const { pw, ph, padX, padY, W, H } = cut, path = piecePath(cut, r, c);
-  const x = c * pw - padX, y = r * ph - padY, w = pw + padX * 2, h = ph + padY * 2, [iw, ih] = imgSize(img);
+  const x = c * pw - padX, y = r * ph - padY, w = pw + padX * 2, h = ph + padY * 2;
   const side = Math.min(pw, ph) * k, { linen: ln = 0.07, tilt = 0.025, shade = 0.03 } = look;
   ctx.save(); ctx.clip(path);
-  ctx.drawImage(img, (x * iw) / W, (y * ih) / H, (w * iw) / W, (h * ih) / H, x, y, w, h);
+  drawPart(ctx, img, W, H, x, y, w, h);
   // 조각마다 옅게 다른 밝기 + 저마다 다른 쪽으로 살짝 기운 빛 — 맞춘 퍼즐을 내려다보면 조각이 완전히 평평하게 눕지 않아 이음매 양쪽 밝기가 조금씩 다르다
   const hsh = ((r * 7 + c * 13) % 11) / 11, ang = (((r * 31 + c * 17) % 23) / 23) * Math.PI * 2;
   if (shade && hsh) { ctx.fillStyle = `rgba(0,0,0,${(hsh * shade).toFixed(3)})`; ctx.fillRect(x, y, w, h); }

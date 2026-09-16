@@ -413,7 +413,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
-    const bmpScale = Math.min(1, MAXSIDE / Math.max(imgW, imgH));
+    // 작은 조각은 비트맵을 원본보다 크게 뜬다(총 1600만 px = 64MB 안에서 최대 2배) — 확대했을 때 단면·모서리 빛이 덜 뭉개지게. 1000조각이면 1.5배쯤.
+    // 그림 자체는 원본(1600px) 해상도가 한계라 더 또렷해지지 않는다 — 확대 때 또렷해야 하는 선(윤곽선·이음매·단면)은 drawNow 가 벡터로 긋는다
+    const bmpScale = Math.min(2, Math.max(Math.min(1, MAXSIDE / Math.max(imgW, imgH)), Math.sqrt(16e6 / (total * (cut.pw + cut.padX * 2) * (cut.ph + cut.padY * 2)))));
     let i = 0;
     for (let r = 0; r < g.rows; r++) { grid[r] = []; for (let c = 0; c < g.cols; c++) {
       const bmp = renderPiece(cut, r, c, img, bmpScale); const [hue, lum, sat] = avgColor(bmp.canvas);
@@ -670,11 +672,14 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     ctx.fillStyle = BG[bgName].area; ctx.fillRect(0, 0, cut.W, cut.H);
     if ((showHint || peek) && img) { ctx.globalAlpha = peek ? 1 : 0.3; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = BG[bgName].line; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
-    if (!complete) ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H);
+    // 확대해서 윤곽선 층(1600px)·조각 비트맵이 1.5배 넘게 늘어나면 뭉개진다 — 그때는 화면에 보이는 칸만 벡터로 긋는다: 윤곽선은 조각 밑, 이음매는 잠긴 층 위, 느슨한 조각의 단면은 조각 위(drawGroup)
+    const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); crisp = !complete && view.s > 1.5;
+    if (!complete) { if (crisp) strokeCells(false, vx0, vy0, vx1, vy1); else ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H); }
     ctx.drawImage(lockedLayer, 0, 0);
+    if (crisp) strokeCells(true, vx0, vy0, vx1, vy1);
     if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
     // 화면 밖 조각은 건너뜀. 판 위 느슨한 조각이 적을 때는 옅은 그림자를 깔아 다 맞춰진 그림 위에 얹혀도 눈에 띄게
-    const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); let looseN = 0; for (const g of groups) looseN += g.pieces.length; restShadow = looseN <= 48;
+    let looseN = 0; for (const g of groups) looseN += g.pieces.length; restShadow = looseN <= 48;
     const lone = sparkle.on ? loneItems(vx0, vy0, vx1, vy1) : []; sparkle.back(ctx, now, lone, view.s); // 반짝임의 금빛 번짐은 조각 밑에, 테·빛줄기·별은 위에(뭉치에 깔린 조각도 드러나게)
     gold.back(ctx, now, view.s); // 마지막 빈자리의 금빛 웅덩이 — 조각 밑(끌어다 대면 조각이 덮는다)
     for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
@@ -685,27 +690,43 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
     if (tweens.size || dusty || goldy || sparkly || viewTw) draw();
   }
+  let crisp = false; // 확대 중 — 선을 벡터로 (drawNow 가 프레임마다 정한다)
+  const seamW = () => Math.max(0.9, Math.min(2.4, pieceSide() * 0.012)); // 단면·이음매 굵기(판 px) — paintPiece 의 edge 와 같은 식
+  const cellVisible = (p: Piece, vx0: number, vy0: number, vx1: number, vy1: number) => { const x = p.c * cut.pw, y = p.r * cut.ph, mx = cut.padX, my = cut.padY; return !(x + cut.pw + mx < vx0 || y + cut.ph + my < vy0 || x - mx > vx1 || y - my > vy1); };
+  /** 확대 때의 벡터 선 — 빈 칸의 윤곽선(outlineCanvas 와 같은 홈 모양) 또는 잠긴 칸 사이의 이음매. 화면에 보이는 칸만 */
+  function strokeCells(locked: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
+    ctx.save(); ctx.lineJoin = 'round';
+    if (!locked) {
+      const k = Math.min(1, 1600 / Math.max(cut.W, cut.H)), lw = Math.min(Math.max(1, Math.min(2, pieceSide() * k * 0.012)) / k, 2.4 / view.s), d = lw * 0.7; ctx.lineWidth = lw; // 화면에서 2.4px 를 안 넘게 — 판 단위 그대로면 최대 확대에서 굵어진다
+      ctx.translate(d, d); ctx.strokeStyle = BG[bgName].olite; for (const p of pieces) if (!p.locked && cellVisible(p, vx0, vy0, vx1, vy1)) ctx.stroke(pathOf(p));
+      ctx.translate(-d, -d); ctx.strokeStyle = BG[bgName].outline; for (const p of pieces) if (!p.locked && cellVisible(p, vx0, vy0, vx1, vy1)) ctx.stroke(pathOf(p));
+    } else { ctx.lineWidth = Math.max(1 / view.s, Math.min(seamW(), 2.4 / view.s)); ctx.strokeStyle = 'rgba(10,8,4,.3)'; for (const p of pieces) if (p.locked && cellVisible(p, vx0, vy0, vx1, vy1)) ctx.stroke(pathOf(p)); }
+    ctx.restore();
+  }
   function drawGroup(g: Group, lifted: boolean, vx0: number, vy0: number, vx1: number, vy1: number) {
     const shadow = g.pieces.length <= 40 && (lifted || restShadow);
     if (shadow) { ctx.save(); ctx.shadowColor = lifted ? 'rgba(15,18,34,.45)' : 'rgba(15,18,34,.4)'; ctx.shadowBlur = (lifted ? 16 : 6) / view.s; ctx.shadowOffsetY = (lifted ? 6 : 2) / view.s; }
     for (const p of g.pieces) { const b = p.bmp, x = px(p) + b.ox, y = py(p) + b.oy; if (x + b.w < vx0 || y + b.h < vy0 || x > vx1 || y > vy1) continue; ctx.drawImage(b.canvas, x, y, b.w, b.h); }
     if (shadow) ctx.restore();
+    // 확대 중엔 비트맵의 단면 선이 뭉개지므로 조각 안쪽 가장자리에 또렷한 선을 한 번 더 — 뭉치 안의 조각 사이 이음매도 같이
+    if (crisp) { ctx.save(); ctx.translate(g.dx, g.dy); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1 / view.s, Math.min(seamW(), 2.4 / view.s)) * 2; ctx.strokeStyle = 'rgba(10,8,4,.26)'; for (const p of g.pieces) { if (!cellVisible(p, vx0 - g.dx, vy0 - g.dy, vx1 - g.dx, vy1 - g.dy)) continue; const path = pathOf(p); ctx.save(); ctx.clip(path); ctx.stroke(path); ctx.restore(); } ctx.restore(); }
   }
   // ── 판 위 조각 찾기 — 아직 아무 데도 안 붙은 한 조각짜리를 5초 동안 반짝인다(뭉치는 이미 자리를 잡아 가는 중이라 뺀다).
   //  목록은 프레임마다 다시 뽑는다 — 그사이 붙거나 잠긴 조각은 바로 꺼지고, 끌면 반짝임이 따라온다
   const lonePath = new WeakMap<Piece, Path2D>();
+  /** 조각의 제자리 외곽 경로(격자 좌표) — 한 번 만들어 둔다. 찾기·마지막 조각·확대 때의 벡터 선이 같이 쓴다 */
+  const pathOf = (p: Piece) => { let path = lonePath.get(p); if (!path) lonePath.set(p, (path = piecePath(cut, p.r, p.c))); return path; };
   function loneItems(vx0: number, vy0: number, vx1: number, vy1: number): Lone[] {
     const out: Lone[] = [], mx = cut.padX + 48 / view.s, my = cut.padY + 48 / view.s; // 번짐·별이 조각 밖으로 나가는 만큼 넉넉히
     for (const g of groups) {
       if (g.pieces.length !== 1) continue; const p = g.pieces[0], x = px(p), y = py(p);
       if (x + cut.pw + mx < vx0 || y + cut.ph + my < vy0 || x - mx > vx1 || y - my > vy1) continue;
-      let path = lonePath.get(p); if (!path) lonePath.set(p, (path = piecePath(cut, p.r, p.c)));
-      out.push({ id: p, path, dx: g.dx, dy: g.dy, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph });
+      out.push({ id: p, path: pathOf(p), dx: g.dx, dy: g.dy, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph });
     }
     return out;
   }
   // ── 마지막 조각 (lib/gold.ts) — 남은 조각이 하나(또는 여섯 이하가 전부 한 뭉치)면 그 빈자리에서 금빛 티끌이 피어오르고, 들어가는 순간 금가루가 퍼진다
-  const slotOf = (p: Piece): Slot => { let path = lonePath.get(p); if (!path) lonePath.set(p, (path = piecePath(cut, p.r, p.c))); return { path, x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph }; };
+  const slotOf = (p: Piece): Slot => ({ path: pathOf(p), x: p.c * cut.pw, y: p.r * cut.ph, w: cut.pw, h: cut.ph });
   /** 연출의 크기 기준 — 조각 한 변이되, 손톱만 한 조각(1000조각+)에서는 판 짧은 변의 8% 로 올려 잡는다 */
   const goldUnit = () => Math.max(pieceSide(), Math.min(cut.W, cut.H) * 0.08);
   /** 잠그기·붙이기·판 깔기 뒤에 본다. 방에서는 남이 놓은 것도 여기로 오므로 누가 마지막을 쥐었든 빈자리는 같다 */

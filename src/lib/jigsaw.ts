@@ -64,15 +64,59 @@ export function piecePath(cut: Cut, r: number, c: number): Path2D {
 }
 
 export interface PieceBitmap { canvas: HTMLCanvasElement; ox: number; oy: number; w: number; h: number }
+const imgSize = (img: CanvasImageSource) => { const a = img as HTMLImageElement & HTMLCanvasElement & HTMLVideoElement; return [a.naturalWidth || a.videoWidth || a.width, a.naturalHeight || a.videoHeight || a.height] as [number, number]; };
+/**
+ * 조각 하나를 실물 퍼즐처럼 그린다 — 판 위 조각(renderPiece)·완성 보기(relief.ts)가 같이 쓴다. ctx 에는 판 좌표 변환이 걸려 있고
+ * k 는 그 배율(px / 판 단위) — 선 굵기를 px 로 잡기 위해. 실물 조각은 두께 2mm 남짓의 판지라 두툼하게 부풀지 않는다. 얹는 것은 셋뿐:
+ *  ① 잘린 단면 — 둘레를 따라 가늘고 또렷한 어두운 선(클립이 바깥 반을 잘라 안쪽 반만 남는다)
+ *  ② 모서리의 빛·그늘 — 인쇄면이 단면으로 꺾이는 좁은 띠. 왼쪽 위 변은 살짝 밝고 오른쪽 아래 변은 살짝 어둡다. 흐림(shadowBlur) 대신 띠를 빛
+ *     방향으로 반 폭만큼 옮겨 그린 것을 세 겹(넓고 옅은 것부터) 겹친다 — 옮긴 만큼 반대쪽 변에서는 클립 밖으로 나가 안 찍힌다. 1000조각을 깔 때도 싸다.
+ *     띠 폭은 조각 변의 4%(작은 조각은 1.2px 아래로 안 내려가 1000조각도 두께가 보인다). 실물도 2mm 단면이 작은 조각에서 더 큰 몫이다
+ *  ③ 조각마다 아주 옅게 다른 밝기와 저마다 다른 쪽으로 기운 빛(tilt) — 맞춘 퍼즐도 조각이 완전히 평평하게 눕지 않아 이음매 양쪽이 조금씩 다르다
+ *  ④ 인쇄면의 리넨 결(linen) — overlay 7%, 실 간격은 조각 변의 2%. 물러나면 사라지고 확대해야 보인다
+ * 세기는 그림이 또렷이 보이는 선에서 — 진하면 사진 위에 테를 두른 것처럼 보이고 완성 보기가 부풀어 보였다(전에 그랬다)
+ */
+export interface PieceLook { linen?: number; tilt?: number; shade?: number }
+let linenTile: HTMLCanvasElement | null = null;
+/** 리넨 결 타일(64px) — 가로·세로 실이 4px 마다, 그 사이 약한 잡음. overlay 로 얹어 중간 회색(128)은 그대로, 실은 살짝 밝게 */
+function linen() {
+  if (linenTile) return linenTile;
+  const S = 64, cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d')!, im = c.createImageData(S, S), d = im.data;
+  let seed = 7; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const th = (x % 4 === 0 ? 14 : 0) + (y % 4 === 0 ? 14 : 0), v = 128 + th - 10 + (rnd() - 0.5) * 18; const i = (y * S + x) * 4; d[i] = d[i + 1] = d[i + 2] = Math.max(0, Math.min(255, Math.round(v))); d[i + 3] = 255; }
+  c.putImageData(im, 0, 0); return (linenTile = cv);
+}
+export function paintPiece(ctx: CanvasRenderingContext2D, img: CanvasImageSource, cut: Cut, r: number, c: number, k: number, look: PieceLook = {}) {
+  const { pw, ph, padX, padY, W, H } = cut, path = piecePath(cut, r, c);
+  const x = c * pw - padX, y = r * ph - padY, w = pw + padX * 2, h = ph + padY * 2, [iw, ih] = imgSize(img);
+  const side = Math.min(pw, ph) * k, { linen: ln = 0.07, tilt = 0.025, shade = 0.03 } = look;
+  ctx.save(); ctx.clip(path);
+  ctx.drawImage(img, (x * iw) / W, (y * ih) / H, (w * iw) / W, (h * ih) / H, x, y, w, h);
+  // 조각마다 옅게 다른 밝기 + 저마다 다른 쪽으로 살짝 기운 빛 — 맞춘 퍼즐을 내려다보면 조각이 완전히 평평하게 눕지 않아 이음매 양쪽 밝기가 조금씩 다르다
+  const hsh = ((r * 7 + c * 13) % 11) / 11, ang = (((r * 31 + c * 17) % 23) / 23) * Math.PI * 2;
+  if (shade && hsh) { ctx.fillStyle = `rgba(0,0,0,${(hsh * shade).toFixed(3)})`; ctx.fillRect(x, y, w, h); }
+  if (tilt) { const cx = x + w / 2, cy = y + h / 2, dx = (Math.cos(ang) * w) / 2, dy = (Math.sin(ang) * h) / 2; const g = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy); g.addColorStop(0, `rgba(255,255,255,${tilt})`); g.addColorStop(1, `rgba(0,0,0,${tilt})`); ctx.fillStyle = g; ctx.fillRect(x, y, w, h); }
+  // 인쇄면의 리넨 결 — 실 간격은 조각 변의 2%. 확대해야 보이고, 물러나면 사라진다
+  if (ln && side >= 40) { const ts = (side * 0.02) / 4 / k; ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = ln; ctx.translate(x, y); ctx.scale(ts, ts); ctx.fillStyle = ctx.createPattern(linen(), 'repeat')!; ctx.fillRect(0, 0, w / ts, h / ts); ctx.restore(); }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const bev = Math.max(1.2, Math.min(10, side * 0.04));
+  // 모든 변에 아주 옅은 그늘 — 판지 모서리가 살짝 눌려 둥근 만큼(빛 방향과 무관). 두께감은 거의 이게 낸다
+  for (const [f, a] of [[2, 0.045], [1.1, 0.06]] as const) { ctx.lineWidth = (bev * f) / k; ctx.strokeStyle = `rgba(0,0,0,${a})`; ctx.stroke(path); }
+  for (const [f, a] of [[1, 0.07], [0.55, 0.1], [0.25, 0.13]] as const) {
+    const L = bev * f, d = L / 2 / k; ctx.lineWidth = L / k;
+    ctx.save(); ctx.translate(d, d); ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.stroke(path); ctx.restore();
+    ctx.save(); ctx.translate(-d, -d); ctx.strokeStyle = `rgba(0,0,0,${a * 1.6})`; ctx.stroke(path); ctx.restore();
+  }
+  const edge = Math.max(0.9, Math.min(2.4, side * 0.012));
+  ctx.lineWidth = (edge * 2) / k; ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.stroke(path);
+  ctx.restore();
+}
 /** 조각 비트맵(탭 여백 포함). scale = 비트맵 px / 보드 단위. 그릴 때는 (x + ox, y + oy) 에 w×h 로 */
-export function renderPiece(cut: Cut, r: number, c: number, img: CanvasImageSource, scale: number): PieceBitmap {
+export function renderPiece(cut: Cut, r: number, c: number, img: CanvasImageSource, scale: number, look?: PieceLook): PieceBitmap {
   const { pw, ph, padX, padY } = cut; const w = pw + padX * 2, h = ph + padY * 2, x = c * pw - padX, y = r * ph - padY;
   const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.ceil(w * scale)); cv.height = Math.max(1, Math.ceil(h * scale));
   const ctx = cv.getContext('2d')!; ctx.scale(scale, scale); ctx.translate(-x, -y);
-  const path = piecePath(cut, r, c);
-  ctx.save(); ctx.clip(path); ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.restore();
-  ctx.lineJoin = 'round'; ctx.lineWidth = 2 / scale; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.stroke(path);
-  ctx.lineWidth = 1 / scale; ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.stroke(path);
+  paintPiece(ctx, img, cut, r, c, scale, look);
   return { canvas: cv, ox: -padX, oy: -padY, w, h };
 }
 

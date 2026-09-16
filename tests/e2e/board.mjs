@@ -75,11 +75,17 @@ let N1 = 0;
   const lv0 = await level(page); await demo(page, 60); await page.waitForTimeout(1500); ok((await hud(page))?.includes('90'), 'weight(294조각): 60개 → HUD +90', String(await hud(page)));
   const lv1 = await level(page); ok(lv1.xp - lv0.xp === 90, 'weight(294조각): 서버 +90', JSON.stringify({ before: lv0.xp, after: lv1.xp }));
   await ctx.close(); }
-// F. 윤곽선·밑그림 켜고 끈 것은 기기에 남는다 — 48조각(윤곽선 기본 켜짐)에서 윤곽선 끄고 밑그림 켠 뒤 다른 판을 열어도 그대로
-{ const { ctx, page } = await newPage(br); const st = () => page.evaluate(() => ['jg-outline', 'jg-hint'].map((id) => document.getElementById(id).getAttribute('aria-pressed')).join(','));
-  await page.goto(`${BASE}/board/?k=wave&n=48`); await waitPlay(page); const s0 = await st(); ok(s0 === 'true,false', `prefs: 처음엔 기본값 — 윤곽선 켜짐·밑그림 꺼짐 (${s0})`);
-  await page.click('#jg-outline'); await page.click('#jg-hint');
-  await page.goto(`${BASE}/board/?k=arnolfini&n=48`); await waitPlay(page); const s1 = await st(); ok(s1 === 'false,true', `prefs: 다른 판에서도 윤곽선 꺼짐·밑그림 켜짐 (${s1})`);
+// F. 밑그림 켜고 끈 것은 기기에 남는다 — 밑그림 켠 뒤 다른 판을 열어도 그대로. 윤곽선 토글은 없고(늘 켜짐) 테두리 조각만은 HUD 가 아니라 다이얼에
+{ const { ctx, page } = await newPage(br); const st = () => page.$eval('#jg-hint', (e) => e.getAttribute('aria-pressed'));
+  await page.goto(`${BASE}/board/?k=wave&n=48`); await waitPlay(page); const s0 = await st(); ok(s0 === 'false', `prefs: 처음엔 밑그림 꺼짐 (${s0})`);
+  ok(!(await page.$('#jg-outline')) && !!(await page.$('#jg-dial #jg-edge')) && !(await page.$('.hud #jg-edge')), 'hud: 윤곽선 토글 없음, 테두리 조각만은 다이얼 안');
+  await page.click('#jg-hint');
+  await page.goto(`${BASE}/board/?k=arnolfini&n=48`); await waitPlay(page); const s1 = await st(); ok(s1 === 'true', `prefs: 다른 판에서도 밑그림 켜짐 (${s1})`);
+  // 테두리 조각만 켠 채 테두리 조각(24)을 마우스로 하나씩 판 위로 끌어내면 저절로 풀려 전체(24)가 보인다
+  { const vis = () => page.$$eval('#jg-tray .tp:not([hidden])', (els) => els.length); await page.click('#jg-fab'); await page.waitForSelector('#jg-edge:visible'); await page.click('#jg-edge'); await page.waitForTimeout(200);
+    const edgeN = await vis(); const wr = await (await page.$('#jg-boardwrap')).boundingBox(); let guard = 0;
+    while (guard++ < 40) { const el = await page.$('#jg-tray .tp:not([hidden])'); if (!el) break; const b = await el.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await page.mouse.move(b.x + b.width / 2, b.y - 30, { steps: 4 }); await page.mouse.move(wr.x + 60 + (guard % 8) * 30, wr.y + wr.height - 80 - Math.floor(guard / 8) * 30, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(60); if ((await page.$eval('#jg-edge', (e) => e.getAttribute('aria-pressed'))) === 'false') break; }
+    ok(edgeN === 24 && (await page.$eval('#jg-edge', (e) => e.getAttribute('aria-pressed'))) === 'false' && (await vis()) === 48 - 24, `edge: 테두리 조각 ${edgeN}개를 다 꺼내면 토글이 풀려 전체(${await vis()})`); }
   await ctx.close(); }
 // G. 스피드 다이얼·판 배경·단축키·모양순·전체 화면 버튼 (비회원, 데스크톱 뷰포트)
 { const { ctx, page } = await newPage(br);
@@ -92,9 +98,10 @@ let N1 = 0;
   ok((await page.evaluate(() => localStorage.getItem('board:bg'))) === 'dark' && (await page.$eval('.scene.play', (e) => e.dataset.bg)) === 'dark', 'bg: 어두움 선택 → 저장·적용');
   await page.keyboard.press('b'); ok((await page.$eval('.scene.play', (e) => e.dataset.bg)) === 'sepia', 'bg: B 키로 다음(세피아)');
   await page.keyboard.press('h'); ok((await page.$eval('#jg-hint', (e) => e.getAttribute('aria-pressed'))) === 'true', 'keys: H 밑그림');
-  const o0 = await page.$eval('#jg-outline', (e) => e.getAttribute('aria-pressed')); await page.keyboard.press('o'); ok((await page.$eval('#jg-outline', (e) => e.getAttribute('aria-pressed'))) !== o0, `keys: O 윤곽선 토글 (${o0} → 반대)`);
   await page.keyboard.press('e'); const edgeN = await vis(); ok((await page.$eval('#jg-edge', (e) => e.getAttribute('aria-pressed'))) === 'true' && edgeN > 0 && edgeN < N, `keys: E 테두리 → 트레이 ${edgeN}/${N}`);
   await page.keyboard.press('e'); ok((await vis()) === N, 'keys: E 다시 → 전체');
+  await tool('#jg-edge'); ok((await page.$eval('#jg-edge', (e) => e.getAttribute('aria-pressed'))) === 'true' && (await vis()) === edgeN && !(await page.$eval('#jg-dial', (e) => e.classList.contains('open'))), 'dial: 테두리 조각만 토글 → 트레이 거르고 닫힘');
+  await tool('#jg-edge'); ok((await vis()) === N, 'dial: 테두리 조각만 다시 → 전체');
   // 모양순: 같은 실루엣끼리 — 트레이 순서가 모양 키(테두리 → 톱니 수 → 배치) 오름차순
   await tool('#jg-shape'); await page.waitForTimeout(300);
   const ks = await page.evaluate(() => window.__jigsaw.state().trayShape); ok(ks.length === N && ks.every((v, i) => i === 0 || v >= ks[i - 1]) && ks[0] < 1000 && ks[ks.length - 1] >= 2000, `shape: 트레이가 모양순 (${ks.slice(0, 5).join(',')} … ${ks.slice(-2).join(',')})`);

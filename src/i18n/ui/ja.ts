@@ -1,7 +1,7 @@
 // ja 언어팩 — 모양은 ko.ts 의 UIStrings 를 따른다
 import type { UIStrings } from './ko';
 export const JA: UIStrings = {
-  name: 'jigsawlab', altName: '', tagline: 'オンラインジグソーパズル。名画と自分の写真で、スマホでも。', langName: '日本語', seoTitle: 'jigsawlab — 名画と自分の写真で遊ぶ無料オンラインジグソーパズル', seoDesc: (n: number) => `名画・写真${n}点や自分の写真で作る無料のオンラインジグソーパズル。リンク一つで友だちを呼んで一緒に組め、合うピースはくっつき、途中の盤面は保存。48〜1000ピース、登録不要。`,
+  name: 'jigsawlab', altName: '', tagline: 'オンラインジグソーパズル。名画と自分の写真で、スマホでも。', langName: '日本語', langGo: '日本語で見る', langStay: '閉じる', seoTitle: 'jigsawlab — 名画と自分の写真で遊ぶ無料オンラインジグソーパズル', seoDesc: (n: number) => `名画・写真${n}点や自分の写真で作る無料のオンラインジグソーパズル。リンク一つで友だちを呼んで一緒に組め、合うピースはくっつき、途中の盤面は保存。48〜1000ピース、登録不要。`,
   nav: { daily: '今日のパズル', catalog: 'パズル', together: 'みんなのパズル', photo: '自分の写真で', play: '今すぐ遊ぶ', about: 'サイトについて', my: 'マイパズル', rank: 'ランキング' },
   app: { install: 'アプリを入れる', installTitle: 'アプリとしてインストール', iosLead: 'Safari 下部の共有ボタンを押して「ホーム画面に追加」を選ぶと、ホーム画面からアプリのように開けます', iosStep1: '共有ボタン', iosStep2: 'ホーム画面に追加', otherLead: 'このブラウザは直接インストールに対応していません。Chrome・Edge か iPhone の Safari で開くとホーム画面にアプリとして追加できます', samsungLead: 'Samsung インターネットでは今インストールできません — Android が「古いバージョン向けアプリ」として拒否します(Samsung 側の問題)。Chrome で開いてインストールしてください', openChrome: 'Chrome で開く' },
   hero: { today: '今日の絵', pieces: (n: number) => `${n}ピース`, cta: '今日のパズルを解く', photo: '自分の写真で作る', h1: '本物のジグソーを、\nスマホでも。', sub: '合うピースはくっついて塊で動き、色ごとに山に分け、途中の盤面は保存されます。リンク一つで友だちと一緒に組めます。', feats: ['合うピースはくっついて塊に', '色ごとに山を分ける', '途中の盤面はそのまま保存', '48ピースから1000ピースまで', 'リンク一つで友だちと一緒に', '自分の写真でも'], pick: 'パズルを選ぶ', statPuzzles: 'パズル', statSolved: '完成した盤面', todayLink: (t: string) => `今日の絵 · ${t} · 一緒に組む` },

@@ -20,6 +20,8 @@ const nav = [
 // Cloudflare Web Analytics — 쿠키 없이 방문 수만 센다. 대시보드 Web Analytics 에서 사이트 추가 후 나온 토큰을 여기에
 const CF_BEACON = '34fd6584be234e4b8b1e580413d95d1f';
 const langPath = stripLang(Astro.url.pathname);
+// 첫 방문 언어 안내 배너의 문구 — 권하는 쪽 언어로 보여 주는 것이라 5개를 다 싣는다(짧은 문자열 열 개)
+const langBar = Object.fromEntries(LANGS.map((l) => [l, [UI[l].langGo, UI[l].langStay]]));
 // 홈에만 구조화 데이터 — 한글 브랜드명(직소랩)을 alternateName 으로 알려 주고, 게임 앱이라는 것도 함께
 const isHome = stripLang(path) === '/'; // 언어 코드를 손으로 나열하면 de·es 가 조용히 빠진다
 const brand = { name: 'jigsawlab', ...(T.altName ? { alternateName: T.altName } : {}) };
@@ -73,6 +75,11 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="menu"><span></span><span></span><span></span></button>
     </div>
   </header>
+  <!-- 첫 방문 언어 안내. 자동으로 옮기지 않는 이유는 아래 스크립트 주석에 -->
+  <div class="langbar" id="langbar" hidden data-t={JSON.stringify(langBar)}>
+    <a id="langbar-go" href="/"></a>
+    <button type="button" id="langbar-x">&#215;</button>
+  </div>
   <div class="gdlg" id="auth-dlg" hidden>
     <div class="gdlg-bg" id="auth-bg"></div>
     <div class="gdlg-box auth" role="dialog" aria-modal="true" aria-labelledby="auth-h">
@@ -211,9 +218,27 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     // 언어 드롭다운 — 바깥을 누르거나 Esc 로 닫는다
     const lsel = document.getElementById('langsel') as HTMLDetailsElement | null;
     if (lsel) { addEventListener('click', (e) => { if (lsel.open && !lsel.contains(e.target as Node)) lsel.open = false; }); addEventListener('keydown', (e) => { if (e.key === 'Escape') lsel.open = false; }); }
-    // 언어: 직접 고르면 기억, 첫 방문이면 브라우저 언어로
+    // 언어: 직접 고르면 기억한다 (첫 방문 안내는 그 아래 배너)
     document.querySelectorAll<HTMLAnchorElement>('a[data-lang]').forEach((a) => a.addEventListener('click', () => { try { localStorage.setItem('lang', a.dataset.lang!); } catch {} }));
-    try { const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang'); const want = saved || (navigator.language || '').slice(0, 2); if ((LANGS as string[]).includes(want) && want !== pageLang && !saved) { localStorage.setItem('lang', want); const path = location.pathname.replace(new RegExp('^/(' + LANGS.filter((l) => l !== 'ko').join('|') + ')(?=/|$)'), '') || '/'; location.replace((want === 'ko' ? '' : '/' + want) + path + location.search); } } catch {}
+    // 첫 방문이면 브라우저 언어를 권하기만 한다 — 자동으로 옮기지 않는다.
+    // location.replace 로 옮기면 Googlebot 에게는(en-US 이고 렌더링마다 localStorage 를 비운다)
+    // ko·ja·de·es 페이지 2,592장이 전부 /en/ 으로 가는 리디렉션이 되어 색인에서 통째로 빠진다 —
+    // 2026-09-17 GSC 에 리디렉션 419건, ko 홈까지 /en/ 으로 튕겨 한국어 검색에 설 자리가 없었다
+    try {
+      const pageLang = document.documentElement.lang, saved = localStorage.getItem('lang');
+      const want = saved || (navigator.language || '').slice(0, 2);
+      const bar = document.getElementById('langbar');
+      if (bar && !saved && (LANGS as string[]).includes(want) && want !== pageLang) {
+        const [go, stay] = JSON.parse(bar.dataset.t!)[want] as [string, string];
+        const a = document.getElementById('langbar-go') as HTMLAnchorElement, x = document.getElementById('langbar-x')!;
+        const path = location.pathname.replace(new RegExp('^/(' + LANGS.filter((l) => l !== 'ko').join('|') + ')(?=/|$)'), '') || '/';
+        a.textContent = go; a.lang = want; a.href = (want === 'ko' ? '' : '/' + want) + path + location.search;
+        a.addEventListener('click', () => { try { localStorage.setItem('lang', want); } catch {} });
+        x.setAttribute('aria-label', stay); x.title = stay;
+        x.addEventListener('click', () => { try { localStorage.setItem('lang', pageLang); } catch {} bar.hidden = true; }); // 닫으면 이 언어로 보겠다는 뜻
+        bar.hidden = false;
+      }
+    } catch {}
   </script>
 </body>
 </html>
@@ -357,6 +382,14 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .85rem; font-weight: 600; white-space: nowrap; }
   .input { width: 100%; min-height: 46px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 16px; } .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
   .muted { color: var(--muted); }
+  /* 첫 방문 언어 안내 — JS 로 켜므로 자리를 미리 못 잡는다. fixed 로 띄워 레이아웃(CLS)을 안 민다. 토스트는 가운데라 안 겹친다 */
+  .langbar { position: fixed; left: var(--gutter); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 45; display: flex; align-items: center; gap: 2px; padding: 4px; background: var(--ink); color: #fff; border-radius: 999px; box-shadow: 0 16px 40px -14px rgba(15,18,34,.5); max-width: calc(100% - var(--gutter) * 2); }
+  .langbar[hidden] { display: none; }
+  .langbar a { color: #fff; padding: 8px 14px; border-radius: 999px; font-size: .9rem; font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .langbar a:hover { background: rgba(255,255,255,.14); }
+  .langbar button { flex: none; width: 32px; height: 32px; border: 0; background: none; color: rgba(255,255,255,.65); font-size: 1.15rem; line-height: 1; cursor: pointer; border-radius: 999px; font-family: inherit; }
+  .langbar button:hover { background: rgba(255,255,255,.14); color: #fff; }
+  html[data-play="on"] .langbar { display: none; }
   .toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: .92rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); z-index: 50; box-shadow: 0 16px 40px -12px rgba(15,18,34,.5); } .toast.show { opacity: 1; transform: translate(-50%, 0); }
   /* XP 안내 알약 — 조각 수를 고르는 자리마다 받을 XP 를 보여 준다 (여러 컴포넌트가 쓰므로 전역) */
   .xp-tip { display: none; }

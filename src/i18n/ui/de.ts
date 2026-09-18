@@ -66,7 +66,7 @@ export const DE: UIStrings = {
     merged: (xp: string, lv: number) => `Deine früheren Bretter ergeben ${xp} XP · Lv ${lv}`,
     homeTitle: 'Es summiert sich',
     homeLead: 'Jedes gelegte Teil bringt XP. Dein Level klettert, Abzeichen gehen auf, und dein Name steht auf dem Brett dieser Woche. Melde dich mit Google an, dann geht es sofort los.',
-    homeCards: [['Größere Bretter bringen mehr pro Teil', 'Bei 1000 Teilen zählt jedes Teil 3 XP — gelöst sind das 3.000 XP'], ['99 Level', 'Jede Stufe hat einen Namen'], ['24 Abzeichen', 'Vom leergeräumten Regal bis zum Puzzeln um 3 Uhr nachts']] as [string, string][],
+    homeCards: [['Größere Bretter bringen mehr pro Teil', 'Bei 1000 Teilen zählt jedes Teil 3 XP — gelöst sind das 3.000 XP'], ['99 Level', 'Jede Stufe hat einen Namen'], ['51 Abzeichen', 'Von Leveln und großen Brettern bis zum Puzzeln um 3 Uhr nachts']] as [string, string][],
     awAll: (n: number) => `Alle ${n} Abzeichen ansehen`, awLess: 'Weniger zeigen',
     awLevel: 'Level geschafft!', awBadge: (n: number) => (n > 1 ? `${n} neue Abzeichen!` : 'Abzeichen freigeschaltet!'), awNew: 'Neue Abzeichen', awClose: 'Schön', awJump: (a: number, b: number) => `Lv ${a} → Lv ${b}`,
     homeRank: 'Diese Woche', homeMe: (r: number, lv: number) => `Du: Nr. ${r} · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,

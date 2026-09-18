@@ -65,7 +65,7 @@ export const JA: UIStrings = {
     merged: (xp: string, lv: number) => `これまでの記録が ${xp} XP · Lv ${lv} になりました`,
     homeTitle: '解くほど貯まる',
     homeLead: 'ピースをはめるたびにXPが貯まります。レベルが上がり、実績が開き、今週のランキングに名前が載ります。Googleログインだけですぐ始まります。',
-    homeCards: [['大きな盤ほど1ピースのXPが増えます', '1000ピースは1ピース3 XP、仕上げれば3,000 XP'], ['最高99レベル', '区間ごとに名前がつきます'], ['実績24種類', '棚の制覇から夜ふかしパズルまで']] as [string, string][],
+    homeCards: [['大きな盤ほど1ピースのXPが増えます', '1000ピースは1ピース3 XP、仕上げれば3,000 XP'], ['最高99レベル', '区間ごとに名前がつきます'], ['実績51種類', 'レベルや大きな盤、棚の制覇から夜ふかしパズルまで']] as [string, string][],
     awAll: (n: number) => `実績${n}種類をすべて見る`, awLess: '閉じる',
     awLevel: 'レベルアップ！', awBadge: (n: number) => (n > 1 ? `実績${n}個 達成！` : '実績を達成！'), awNew: '新しい実績', awClose: 'OK', awJump: (a: number, b: number) => `Lv ${a} → Lv ${b}`,
     homeRank: '今週のランキング', homeMe: (r: number, lv: number) => `あなた ${r}位 · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,

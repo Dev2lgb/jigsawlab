@@ -1,6 +1,6 @@
 // 서버 전용 — 완성 기록을 받아 XP·누적 지표·업적·주간 랭킹에 반영한다. 규칙 자체는 lib/level.ts
 import { WORK_BY_KEY, WORKS } from '../data/works';
-import { EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, rateFor, weekOf, xpFor, type Kind, type Solve, type Stats } from './level';
+import { BIG_BOARD, EMPTY_STATS, DAY_CAP, earnedCodes, kstDay, kstHour, levelOf, plausible, prevDay, rateFor, weekOf, xpFor, type Kind, type Solve, type Stats } from './level';
 
 /** 카테고리(진열대)마다 그림이 몇 점인지 — '진열대 완주' 판정용 */
 const CAT_TOTAL: Record<string, number> = {};
@@ -17,7 +17,7 @@ export interface Row extends Stats { last_day: string | null; day_xp: number; da
 const ZERO: Row = { ...EMPTY_STATS, last_day: null, day_xp: 0, day_key: null };
 const SELECT = 'SELECT * FROM user_stats WHERE user_id = ?';
 // user_stats 에서 완성 정산이 통째로 덮어쓰는 칸 (xp·day_xp·day_key 는 빼고 — 그 셋은 addXp 만 만진다)
-const STAT_COLS = ['solved', 'pieces', 'best_n', 'works', 'shelves', 'daily_n', 'streak', 'streak_best', 'last_day', 'photo_n', 'room_n', 'live_n', 'night_n', 'fast_n'] as const;
+const STAT_COLS = ['solved', 'pieces', 'best_n', 'works', 'shelves', 'daily_n', 'streak', 'streak_best', 'last_day', 'photo_n', 'room_n', 'live_n', 'night_n', 'fast_n', 'big_n', 'cat_best'] as const;
 
 /** D1 행 → 화면·업적 판정에 쓰는 지표만 (없으면 0) */
 export const pickStats = (r: Partial<Record<keyof Stats, unknown>> | null | undefined): Stats => { const s = { ...EMPTY_STATS }; if (r) for (const k of Object.keys(EMPTY_STATS) as (keyof Stats)[]) s[k] = Number(r[k] ?? 0); return s; };
@@ -80,16 +80,18 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
   const now = Date.now(), today = kstDay(now);
   const keys = [...new Set(solves.flatMap((s) => (s.kind === 'gallery' ? [s.key] : s.kind === 'daily' ? [s.key, dailyKey(s)] : [])))];
 
-  const [brow, crow, krow] = await Promise.all([
+  const [brow, crow, krow, bigRow] = await Promise.all([
     DB.prepare('SELECT code FROM user_badges WHERE user_id = ?').bind(uid).all<{ code: string }>(),
     keys.length ? DB.prepare('SELECT cat, COUNT(*) AS c FROM user_cleared WHERE user_id = ? GROUP BY cat').bind(uid).all<{ cat: string; c: number }>() : Promise.resolve({ results: [] as { cat: string; c: number }[] }),
     keys.length ? DB.prepare(`SELECT key, n FROM user_cleared WHERE user_id = ? AND key IN (${keys.map(() => '?').join(',')})`).bind(uid, ...keys).all<{ key: string; n: number }>() : Promise.resolve({ results: [] as { key: string; n: number }[] }),
+    keys.length ? DB.prepare('SELECT COUNT(*) AS c FROM user_cleared WHERE user_id = ? AND cat <> ? AND n >= ?').bind(uid, DAILY_CAT, BIG_BOARD).first<{ c: number }>() : Promise.resolve(null),
   ]);
 
   const s: Row = { ...ZERO, ...(srow ?? {}) };
   const had = new Set((brow.results ?? []).map((r) => r.code));
   const catCount = new Map<string, number>((crow.results ?? []).map((r) => [r.cat, r.c]));
   const cleared = new Map<string, number>((krow.results ?? []).map((r) => [r.key, r.n]));
+  let bigCount = Number(bigRow?.c ?? 0); // 1000조각 이상으로 깬 그림 수 — 아래 루프에서 새로 올라간 그림만 더한다
 
   // 하루 XP 상한 — 이 요청에서 생기는 XP 는 기록의 날짜를 가리지 않고 전부 서버의 오늘 몫으로 센다.
   // 기록의 at 별로 나눠 세면 클라이언트가 날짜만 바꿔 보내 상한을 날짜 수만큼 곱해 갈 수 있다
@@ -137,6 +139,7 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
       const prev = cleared.get(sv.key);
       if (prev === undefined) { catCount.set(work.cat, (catCount.get(work.cat) ?? 0) + 1); newWorks = true; }
       if (prev === undefined || n > prev) { cleared.set(sv.key, Math.max(prev ?? 0, n)); writeCleared.set(sv.key, { cat: work.cat, n: Math.max(prev ?? 0, n), at }); }
+      if (n >= BIG_BOARD && (prev ?? 0) < BIG_BOARD) bigCount += 1; // 같은 그림을 더 큰 판으로 다시 깨도 한 번만
     }
   }
 
@@ -144,19 +147,22 @@ export async function award(DB: D1Database, uid: string, solves: Solve[]): Promi
     const cats = [...catCount.entries()].filter(([cat]) => cat !== DAILY_CAT);
     s.works = cats.reduce((a, [, c]) => a + c, 0);
     s.shelves = cats.filter(([cat, c]) => c >= (CAT_TOTAL[cat] ?? Infinity)).length;
+    s.cat_best = cats.reduce((m, [, c]) => Math.max(m, c), 0); // 한 진열대에서 깬 최대 그림 수
   }
+  if (keys.length) s.big_n = bigCount; // 그림 기록이 없는 요청(사진·모두의 퍼즐만)에서는 옛 값을 건드리지 않는다
 
-  const stats = pickStats(s);
-  const freshBadges = earnedCodes(stats).filter((c) => !had.has(c));
-  const nowSec = Math.floor(now / 1000);
-
-  // XP 는 다른 칸과 갈라 따로 얹는다(addXp — 상한 검사와 증가가 한 문장). 아래 UPSERT 는 xp 를 건드리지 않는다
+  // XP 는 다른 칸과 갈라 따로 얹는다(addXp — 상한 검사와 증가가 한 문장). 아래 UPSERT 는 xp 를 건드리지 않는다.
+  // 업적 판정보다 먼저 올린다 — 레벨 업적(lv20…)이 xp 로 걸려 있어 옛 값으로 재면 한 판 늦게 붙는다
   let newXp = prevXp;
   if (gained > 0) {
     const r = await addXp(DB, uid, gained, today);
     if (r !== null) newXp = r;
     else { capped = true; gained = 0; weekXp.clear(); } // 그 사이 다른 요청이 상한을 채웠다
   }
+
+  const stats = pickStats({ ...s, xp: newXp });
+  const freshBadges = earnedCodes(stats).filter((c) => !had.has(c));
+  const nowSec = Math.floor(now / 1000);
 
   const w: D1PreparedStatement[] = [
     DB.prepare(`INSERT INTO user_stats (user_id, ${STAT_COLS.join(', ')}, updated_at) VALUES (?, ${STAT_COLS.map(() => '?').join(', ')}, unixepoch())
@@ -195,6 +201,14 @@ export async function awardPieces(DB: D1Database, uid: string, p: { kind: Kind; 
   // 하루 상한은 addXp 가 한 문장으로 건다. 못 들어가면 이 묶음은 0 (capped)
   const newXp = await addXp(DB, uid, want, day);
   if (newXp === null) return result(stats, s.xp, 0, { capped: true, rate });
-  await DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, want).run();
-  return result(stats, newXp - want, want, { rate });
+  const w: D1PreparedStatement[] = [DB.prepare('INSERT INTO user_week (user_id, week, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, week) DO UPDATE SET xp = xp + excluded.xp').bind(uid, week, want)];
+  // 레벨 업적만은 여기서도 붙는다 — XP 는 대부분 조각을 놓는 동안 쌓이므로 완성 때만 재면 판을 안 끝낸 사람에게 영영 안 붙는다.
+  // 차집합은 xp 로 걸린 업적에서만 생기니(다른 지표는 그대로다) 레벨이 오르는 그 한 묶음에서만 쓰기가 늘어난다
+  const before = new Set(earnedCodes(stats));
+  const climbed = earnedCodes({ ...stats, xp: newXp }).filter((c) => !before.has(c));
+  const nowSec = Math.floor(Date.now() / 1000);
+  for (const code of climbed) w.push(DB.prepare('INSERT OR IGNORE INTO user_badges (user_id, code, at) VALUES (?, ?, ?)').bind(uid, code, nowSec));
+  const rs = await DB.batch(w);
+  const badges = climbed.filter((_, i) => rs[i + 1]?.meta.changes); // 다른 요청이 먼저 넣었으면 또 알리지 않는다
+  return result(stats, newXp - want, want, { rate, badges });
 }

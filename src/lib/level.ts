@@ -1,8 +1,8 @@
 // 레벨·XP·업적 규칙 (순수 계산). 서버(award.ts·api)와 브라우저(/my/·/rank/·완성 화면)가 같이 쓴다.
 // 서버가 계산한 값만 진짜다 — 브라우저 쪽은 잠긴 업적을 회색으로 그리거나 다음 레벨까지 남은 양을 보여 주는 용도
 
-export { TOTAL_WORKS } from '../data/counts';
-import { TOTAL_WORKS } from '../data/counts';
+export { TOTAL_WORKS, TOTAL_SHELVES } from '../data/counts';
+import { TOTAL_WORKS, TOTAL_SHELVES } from '../data/counts';
 
 // ── XP
 // 조각 하나를 제자리에 놓으면 XP. 큰 판일수록 조각 하나 놓기가 어려우므로(후보가 많고 조각이 작다) 조각당 XP 가 단계로 오른다 —
@@ -62,38 +62,77 @@ export const tierOf = (level: number) => { let i = 0; for (let k = 0; k < TIERS.
 export interface Stats {
   xp: number; solved: number; pieces: number; best_n: number; works: number; shelves: number;
   daily_n: number; streak: number; streak_best: number; photo_n: number; room_n: number; live_n: number; night_n: number; fast_n: number;
+  big_n: number;    // 1000조각 이상으로 깬 그림 수
+  cat_best: number; // 한 진열대에서 깬 최대 그림 수
 }
-export const EMPTY_STATS: Stats = { xp: 0, solved: 0, pieces: 0, best_n: 0, works: 0, shelves: 0, daily_n: 0, streak: 0, streak_best: 0, photo_n: 0, room_n: 0, live_n: 0, night_n: 0, fast_n: 0 };
+export const EMPTY_STATS: Stats = { xp: 0, solved: 0, pieces: 0, best_n: 0, works: 0, shelves: 0, daily_n: 0, streak: 0, streak_best: 0, photo_n: 0, room_n: 0, live_n: 0, night_n: 0, fast_n: 0, big_n: 0, cat_best: 0 };
 
-export interface BadgeDef { code: string; icon: string; group: 'solve' | 'size' | 'daily' | 'collect' | 'social' | 'quirk'; goal: (s: Stats) => number; need: number }
+/** '큰 판' 으로 치는 조각 수 — big_n(1000조각 이상 깬 그림 수) 의 문턱 */
+export const BIG_BOARD = 1000;
+export interface BadgeDef { code: string; icon: string; group: 'level' | 'solve' | 'size' | 'daily' | 'collect' | 'social' | 'quirk'; goal: (s: Stats) => number; need: number }
 const b = (code: string, icon: string, group: BadgeDef['group'], need: number, goal: (s: Stats) => number): BadgeDef => ({ code, icon, group, need, goal });
 /** 순서 = 화면에 놓이는 순서 */
 export const BADGES: BadgeDef[] = [
+  // 레벨 — xp 로 판정한다(xpAtLevel 과 같은 값). 조각을 놓기만 해도 오르므로 완성 지표와 결이 다르다
+  b('lv20', '⭐', 'level', xpAtLevel(20), (s) => s.xp),
+  b('lv35', '🌟', 'level', xpAtLevel(35), (s) => s.xp),
+  b('lv50', '💫', 'level', xpAtLevel(50), (s) => s.xp),
+  b('lv70', '☀️', 'level', xpAtLevel(70), (s) => s.xp),
+  // 완성한 판 수
   b('first', '🧩', 'solve', 1, (s) => s.solved),
   b('solve10', '🎯', 'solve', 10, (s) => s.solved),
   b('solve50', '🏅', 'solve', 50, (s) => s.solved),
   b('solve100', '🏆', 'solve', 100, (s) => s.solved),
+  b('solve200', '🎖️', 'solve', 200, (s) => s.solved),
   b('solve500', '👑', 'solve', 500, (s) => s.solved),
+  // 판 크기와 조각 수
   b('p300', '📐', 'size', 300, (s) => s.best_n),
   b('p500', '🧠', 'size', 500, (s) => s.best_n),
   b('p1000', '🗻', 'size', 1000, (s) => s.best_n),
+  b('p1500', '⛰️', 'size', 1500, (s) => s.best_n),
   b('p2000', '🌋', 'size', 2000, (s) => s.best_n),
+  b('big5', '🗿', 'size', 5, (s) => s.big_n),
+  b('big20', '🏔️', 'size', 20, (s) => s.big_n),
   b('pieces10k', '✨', 'size', 10_000, (s) => s.pieces),
+  b('pieces25k', '🪐', 'size', 25_000, (s) => s.pieces),
+  b('pieces50k', '🛰️', 'size', 50_000, (s) => s.pieces),
   b('pieces100k', '🌌', 'size', 100_000, (s) => s.pieces),
+  // 오늘의 퍼즐 — 앞의 다섯은 연속 일수(streak_best), 뒤의 둘은 판 수(daily_n)
   b('daily7', '🔥', 'daily', 7, (s) => s.streak_best),
+  b('daily14', '⏳', 'daily', 14, (s) => s.streak_best),
   b('daily30', '☄️', 'daily', 30, (s) => s.streak_best),
+  b('daily60', '🌒', 'daily', 60, (s) => s.streak_best),
+  b('daily365', '🎆', 'daily', 365, (s) => s.streak_best),
+  b('daily50', '📆', 'daily', 50, (s) => s.daily_n),
   b('daily100', '📅', 'daily', 100, (s) => s.daily_n),
+  // 모으기 — 그림 수 / 한 진열대의 깊이(cat_best) / 완주한 진열대 수
+  b('works25', '🖌️', 'collect', 25, (s) => s.works),
   b('works50', '🖼️', 'collect', 50, (s) => s.works),
+  b('works100', '🏺', 'collect', 100, (s) => s.works),
   b('works150', '🏛️', 'collect', 150, (s) => s.works),
+  b('works300', '🏰', 'collect', 300, (s) => s.works),
   b('worksAll', '🎨', 'collect', TOTAL_WORKS, (s) => s.works),
+  b('cat25', '🗃️', 'collect', 25, (s) => s.cat_best),
+  b('cat50', '🎭', 'collect', 50, (s) => s.cat_best),
   b('shelf1', '📚', 'collect', 1, (s) => s.shelves),
+  b('shelf3', '📖', 'collect', 3, (s) => s.shelves),
   b('shelf5', '🗂️', 'collect', 5, (s) => s.shelves),
+  b('shelf10', '🗄️', 'collect', 10, (s) => s.shelves),
+  b('shelfAll', '🎓', 'collect', TOTAL_SHELVES, (s) => s.shelves),
+  // 같이
   b('photo1', '📷', 'social', 1, (s) => s.photo_n),
+  b('photo10', '📸', 'social', 10, (s) => s.photo_n),
   b('room1', '🤝', 'social', 1, (s) => s.room_n),
+  b('room10', '👥', 'social', 10, (s) => s.room_n),
   b('live1', '🌍', 'social', 1, (s) => s.live_n),
+  b('live300', '🌐', 'social', 300, (s) => s.live_n),
+  // 별난 것
   b('night5', '🌙', 'quirk', 5, (s) => s.night_n),
+  b('night20', '🦉', 'quirk', 20, (s) => s.night_n),
   b('fast1', '⚡', 'quirk', 1, (s) => s.fast_n),
+  b('fast10', '🚀', 'quirk', 10, (s) => s.fast_n),
 ];
+
 export const BADGE_BY_CODE: Record<string, BadgeDef> = Object.fromEntries(BADGES.map((x) => [x.code, x]));
 /** 지금 지표로 조건을 채운 업적 코드 */
 export const earnedCodes = (s: Stats): string[] => BADGES.filter((x) => x.goal(s) >= x.need).map((x) => x.code);

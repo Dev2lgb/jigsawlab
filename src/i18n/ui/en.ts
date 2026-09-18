@@ -65,7 +65,7 @@ export const EN: UIStrings = {
     merged: (xp: string, lv: number) => `Your past boards came to ${xp} XP · Lv ${lv}`,
     homeTitle: 'It all adds up',
     homeLead: 'Every piece you place earns XP. Your level climbs, badges open up, and your name goes on this week\'s board. Sign in with Google and it starts right away.',
-    homeCards: [['Bigger boards pay more per piece', 'A 1000-piece board is 3 XP a piece — 3,000 XP when finished'], ['99 levels', 'Each tier has a name'], ['24 badges', 'From clearing a shelf to solving at 3am']] as [string, string][],
+    homeCards: [['Bigger boards pay more per piece', 'A 1000-piece board is 3 XP a piece — 3,000 XP when finished'], ['99 levels', 'Each tier has a name'], ['51 badges', 'From levels and big boards to clearing a shelf at 3am']] as [string, string][],
     awAll: (n: number) => `See all ${n} badges`, awLess: 'Show less',
     awLevel: 'Level up!', awBadge: (n: number) => (n > 1 ? `${n} new badges!` : 'Badge unlocked!'), awNew: 'New badges', awClose: 'Nice', awJump: (a: number, b: number) => `Lv ${a} → Lv ${b}`,
     homeRank: 'This week', homeMe: (r: number, lv: number) => `You: #${r} · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,

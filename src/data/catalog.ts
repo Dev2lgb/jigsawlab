@@ -1,5 +1,6 @@
 // 퍼즐 카테고리(진열대). 각 작품의 cat 이 여기 id 와 맞아야 한다. 순서 = 홈 진열 순서
 import type { Penta } from '../i18n/langs';
+import { TOTAL_SHELVES } from './counts';
 export interface Category { id: string; name: Penta; daily?: boolean }
 export const CATEGORIES: Category[] = [
   { id: 'masters', name: ['명작 컬렉션', 'Masterpieces', '名作コレクション', 'Meisterwerke', 'Obras maestras'], daily: true },
@@ -21,3 +22,4 @@ export const CATEGORIES: Category[] = [
   { id: 'pattern', name: ['패턴과 직물', 'Patterns & Textiles', '模様と織物', 'Muster & Textilien', 'Estampados y tejidos'] },
   { id: 'modern', name: ['근대와 추상', 'Modern & Abstract', '近代と抽象', 'Moderne & Abstraktion', 'Moderno y abstracto'] },
 ];
+if (CATEGORIES.length !== TOTAL_SHELVES) throw new Error(`catalog: 진열대가 ${CATEGORIES.length}개인데 counts.ts 에는 ${TOTAL_SHELVES} 입니다 — counts.ts 를 맞추세요`);

@@ -67,7 +67,7 @@ export const KO = {
     merged: (xp: string, lv: number) => `그동안 맞춘 기록이 ${xp} XP · Lv ${lv} 로 쌓였어요`,
     homeTitle: '맞출수록 쌓여요',
     homeLead: '조각을 놓을 때마다 XP 가 쌓여요. 레벨이 오르고 업적이 열리고, 이번 주 랭킹에 이름이 올라갑니다. Google 로그인만 하면 바로 시작돼요.',
-    homeCards: [['큰 판일수록 조각당 XP 가 커요', '1000조각은 조각 하나에 3 XP, 다 맞추면 3,000 XP'], ['최고 99레벨', '구간마다 이름이 붙어요'], ['업적 24가지', '진열대 완주부터 새벽 퍼즐까지']] as [string, string][],
+    homeCards: [['큰 판일수록 조각당 XP 가 커요', '1000조각은 조각 하나에 3 XP, 다 맞추면 3,000 XP'], ['최고 99레벨', '구간마다 이름이 붙어요'], ['업적 51가지', '레벨과 큰 판, 진열대 완주부터 새벽 퍼즐까지']] as [string, string][],
     awAll: (n: number) => `업적 ${n}가지 모두 보기`, awLess: '접기',
     awLevel: '레벨 업!', awBadge: (n: number) => (n > 1 ? `업적 ${n}개 달성!` : '업적 달성!'), awNew: '새 업적', awClose: '확인', awJump: (a: number, b: number) => `Lv ${a} → Lv ${b}`,
     homeRank: '이번 주 랭킹', homeMe: (r: number, lv: number) => `내 순위 ${r}위 · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,

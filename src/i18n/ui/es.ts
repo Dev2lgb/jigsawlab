@@ -67,7 +67,7 @@ export const ES: UIStrings = {
     merged: (xp: string, lv: number) => `Tus tableros anteriores suman ${xp} XP · Nv ${lv}`,
     homeTitle: 'Todo va sumando',
     homeLead: 'Cada pieza que colocas da XP. Tu nivel sube, se abren insignias y tu nombre entra en la tabla de esta semana. Entra con Google y empieza al momento.',
-    homeCards: [['Los tableros grandes valen más por pieza', 'Con 1000 piezas cada pieza son 3 XP: 3.000 XP al terminarlo'], ['99 niveles', 'Cada tramo tiene su nombre'], ['24 insignias', 'Desde vaciar una estantería hasta armar a las 3 de la madrugada']] as [string, string][],
+    homeCards: [['Los tableros grandes valen más por pieza', 'Con 1000 piezas cada pieza son 3 XP: 3.000 XP al terminarlo'], ['99 niveles', 'Cada tramo tiene su nombre'], ['51 insignias', 'Desde niveles y tableros grandes hasta armar a las 3 de la madrugada']] as [string, string][],
     awAll: (n: number) => `Ver las ${n} insignias`, awLess: 'Ver menos',
     awLevel: '¡Has subido de nivel!', awBadge: (n: number) => (n > 1 ? `¡${n} insignias nuevas!` : '¡Insignia desbloqueada!'), awNew: 'Insignias nuevas', awClose: 'Genial', awJump: (a: number, b: number) => `Nv ${a} → Nv ${b}`,
     homeRank: 'Esta semana', homeMe: (r: number, lv: number) => `Tú: n.º ${r} · Nv ${lv}`, homeMeNone: (lv: number) => `Nv ${lv}`,

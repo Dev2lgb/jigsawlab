@@ -4,6 +4,7 @@
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { WORKS } from '../data/works';
+import { icon } from '../lib/icons';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), li = LI[lang], M = T.my, A = T.acct, V = T.lv;
 const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title[li], w.artist[li], w.year]])));
@@ -31,6 +32,16 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     <section class="blk"><h2>{M.inProgress}<small id="c-prog"></small></h2><div class="cards" id="l-prog"></div><p class="empty muted" id="e-prog" hidden>{M.emptyProgress}</p></section>
     <section class="blk"><h2>{M.done}<small id="c-done"></small></h2><div class="cards" id="l-done"></div><p class="empty muted" id="e-done" hidden>{M.emptyDone}</p></section>
     <section class="blk"><h2>{M.favs}<small id="c-fav"></small></h2><div class="cards" id="l-fav"></div><p class="empty muted" id="e-fav" hidden>{M.emptyFavs}</p></section>
+  </div>
+  <!-- 내 사진 퍼즐은 완성 보기(/done/)가 없다 — 사진이 기기 밖으로 안 나가고 완성과 함께 지워지므로 -->
+  <div class="gdlg" id="ph-dlg" hidden>
+    <div class="gdlg-bg" id="ph-bg"></div>
+    <div class="gdlg-box" role="dialog" aria-modal="true" aria-labelledby="ph-h">
+      <button type="button" class="gdlg-x" id="ph-x" aria-label={A.close}><Fragment set:html={icon('x', 18)} /></button>
+      <h2 id="ph-h">{M.photoDlg}</h2>
+      <p class="auth-lead">{M.photoDlgLead}</p>
+      <div class="aw-cta"><button type="button" class="btn primary" id="ph-ok">{V.awClose}</button></div>
+    </div>
   </div>
   <script is:inline define:vars={{ meta }}>window.__meta = JSON.parse(meta);</script>
   <style>
@@ -73,6 +84,10 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     .cards :global(.mc) { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); overflow: hidden; color: var(--ink); text-decoration: none; transition: transform .2s var(--ease), box-shadow .2s; }
     .cards :global(.mc:hover) { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(15,18,34,.5); text-decoration: none; }
     .cards :global(.mc img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--board); display: block; }
+    /* 내 사진 퍼즐 — 완성과 함께 사진을 지우므로 썸네일이 없다. 회색 바탕에 로고를 흐리게 깔고, 카드는 링크가 아니라 안내 다이얼로그를 여는 버튼 */
+    .cards :global(button.mc) { padding: 0; font: inherit; text-align: left; cursor: pointer; }
+    .cards :global(.mc .ph) { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--board); }
+    .cards :global(.mc .ph-logo) { width: 38%; max-width: 88px; fill: var(--ink); stroke: var(--board); stroke-width: 6; stroke-linejoin: round; paint-order: stroke; opacity: .16; filter: blur(.6px); }
     .cards :global(.mc .bar) { height: 4px; background: var(--line); } .cards :global(.mc .bar i) { display: block; height: 100%; background: var(--accent); }
     .cards :global(.mc .t) { padding: 10px 12px 2px; font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .cards :global(.mc .s) { padding: 0 12px 12px; color: var(--muted); font-size: .8rem; }
     .cards :global(.mc .s b) { color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -93,9 +108,18 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
     let remote: { done: DoneEntry[]; saves: SaveMeta[] } = { done: [], saves: [] };
     const meta = (window as any).__meta as Record<string, string[]>;
     const $ = (id: string) => document.getElementById(id)!;
-    const card = (o: { href?: string; img: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void }) => {
-      const a = document.createElement(o.href ? 'a' : 'div') as HTMLAnchorElement; a.className = 'mc'; if (o.href) a.href = o.href;
-      const im = document.createElement('img'); im.src = o.img; im.alt = ''; im.loading = 'lazy'; a.appendChild(im);
+    // 사진 퍼즐 카드의 썸네일 자리에 깔 로고 (public/favicon.svg 와 같은 조각 네 장 — 이음매는 CSS 가 바탕색으로 긋는다)
+    const PH_LOGO = '<svg class="ph-logo" viewBox="-6 -6 112 112" aria-hidden="true"><path d="M0 0L50 0C50 10 45 25 55 20C65 15 65 35 55 30C45 25 50 40 50 50C40 50 25 55 30 45C35 35 15 35 20 45C25 55 10 50 0 50Z"/><path d="M50 0L100 0L100 50C90 50 75 45 80 55C85 65 65 65 70 55C75 45 60 50 50 50C50 40 45 25 55 30C65 35 65 15 55 20C45 25 50 10 50 0Z"/><path d="M50 50C60 50 75 45 70 55C65 65 85 65 80 55C75 45 90 50 100 50L100 100L50 100C50 90 55 75 45 80C35 85 35 65 45 70C55 75 50 60 50 50Z"/><path d="M0 50C10 50 25 55 20 45C15 35 35 35 30 45C25 55 40 50 50 50C50 60 55 75 45 70C35 65 35 85 45 80C55 75 50 90 50 100L0 100Z"/></svg>';
+    const phDlg = $('ph-dlg');
+    const setPhDlg = (on: boolean) => { phDlg.hidden = !on; document.documentElement.classList.toggle('dlg-open', !!document.querySelector('.gdlg:not([hidden])')); };
+    for (const id of ['ph-bg', 'ph-x', 'ph-ok']) $(id).addEventListener('click', () => setPhDlg(false));
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') setPhDlg(false); });
+    const card = (o: { href?: string; img?: string; title: string; sub: string; bar?: number; badge?: string; onDel?: () => void; ph?: boolean; onClick?: () => void }) => {
+      const a = o.href ? document.createElement('a') : o.onClick ? document.createElement('button') : document.createElement('div');
+      a.className = 'mc'; if (a instanceof HTMLAnchorElement) a.href = o.href!;
+      if (a instanceof HTMLButtonElement) { a.type = 'button'; a.addEventListener('click', o.onClick!); }
+      if (o.ph) { const d = document.createElement('div'); d.className = 'ph'; d.innerHTML = PH_LOGO; a.appendChild(d); }
+      else { const im = document.createElement('img'); im.src = o.img!; im.alt = ''; im.loading = 'lazy'; a.appendChild(im); }
       if (o.bar !== undefined) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = `<i style="width:${o.bar}%"></i>`; a.appendChild(b); }
       const t = document.createElement('div'); t.className = 't'; t.textContent = o.title; const s = document.createElement('div'); s.className = 's'; s.innerHTML = o.sub; a.appendChild(t); a.appendChild(s);
       if (o.badge) { const b = document.createElement('span'); b.className = 'badge'; b.textContent = o.badge; a.appendChild(b); }
@@ -111,7 +135,7 @@ const meta = JSON.stringify(Object.fromEntries(WORKS.map((w) => [w.key, [w.title
       const box = $('l-done'); box.innerHTML = ''; const local = getDone(); const seen = new Set(local.map((d) => d.at)); const list = [...local, ...remote.done.filter((d) => !seen.has(d.at))].sort((a, b) => b.at - a.at);
       $('e-done').hidden = !!list.length; $('c-done').textContent = list.length ? M.doneCount(list.length) : '';
       // 카드를 누르면 다시 맞추기가 아니라 완성 보기 페이지(/done/?at=) — 맞춘 그림을 조각 모양째 구경하고 순서를 되돌려 본다. 다시 맞추기는 그 페이지 안에
-      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? '' : thumbUrl(d.key), title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
+      for (const d of list) { const m = meta[d.key]; const isPhoto = d.kind === 'photo'; box.appendChild(card({ href: isPhoto || !m ? undefined : `${P}/done/?at=${d.at}`, img: isPhoto ? undefined : thumbUrl(d.key), ph: isPhoto, onClick: isPhoto ? () => setPhDlg(true) : undefined, title: isPhoto ? M.photo : (m ? m[0] : d.name), sub: `<b>${fmtSec(d.sec)}</b> · ${M.pieces(d.n)} · ${new Date(d.at).toLocaleDateString()}`, badge: d.kind === 'daily' ? '📅' : undefined })); }
     }
     function renderFav() {
       const box = $('l-fav'); box.innerHTML = ''; const list = favs().filter((k) => meta[k]);

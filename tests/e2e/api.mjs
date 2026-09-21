@@ -97,5 +97,14 @@ try {
   A2.close(); const lv = await next(B, 'leave'); ok(lv.id === init2.you.id, 'ws: leave');
   B.close();
   const info = await get(`/api/room/${rid}`); ok(info.locked === 1 && info.players === 0, 'room: 잠긴 조각 1, 접속 0', JSON.stringify(info));
+  // 이미 다 맞춘 방의 초대 링크 — 들어가도 꺼낼 조각이 없으니 '같이 맞추기'가 아니라 같은 그림을 혼자 맞추러 보낸다
+  { const { body } = await post('/api/room', { key: 'wave', n: 48 }); const did = body.id;
+    const D = await open(did); send(D, { t: 'hello', nick: 'D' }); await next(D, 'init');
+    for (let i = 0; i < 48; i++) { send(D, { t: 'take', g: i, dx: 0, dy: 0 }); send(D, { t: 'lock', g: String(i), dx: 0, dy: 0 }); await new Promise((r) => setTimeout(r, 8)); }
+    await next(D, 'done', 4000); D.close(); await new Promise((r) => setTimeout(r, 300));
+    const r = await head(`/i/?room=${did}`);
+    ok(r.html.includes('이미 완성된 판이에요'), 'i: 완성된 방은 초대가 아니라 완성을 알린다');
+    ok(r.html.includes(`/board/?k=wave&amp;n=48`) && !r.html.includes(`/board/?room=${did}`), 'i: 같은 그림으로 나도 해보기 (방으로 들여보내지 않는다)');
+    ok(r.html.includes('<title>가나가와 해변의 높은 파도 아래 · 이미 완성된 판이에요'), 'i: 완성된 방은 링크 미리보기 제목도 완성'); }
 } catch (e) { ok(false, 'ws: ' + e.message); }
 finish();

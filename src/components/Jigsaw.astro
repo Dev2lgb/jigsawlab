@@ -56,12 +56,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <div class="left-n" id="jg-left"><b id="jg-left-n">0</b><span id="jg-left-tot"></span></div>
       <canvas class="fx" id="jg-fx"></canvas>
       <div class="emofx" id="jg-emofx" aria-hidden="true"></div>
-      <!-- 트레이 도구 — 판 오른쪽 아래의 둥근 FAB 하나. 누르면 위로 둥근 버튼 여섯이 차례로 튀어나온다(가까운 것부터). 순서는 쓰는 흐름대로, 손에 가까운 쪽부터:
-           테두리 조각만(토글) → 색상순 → 모양순 → 섞기 → 판 위 조각 찾기 → 판 배경. 퍼즐은 테두리부터 고르고 색으로 나누니 그 둘이 맨 아래, 설정(배경)은 맨 위.
+      <!-- 트레이 도구 — 판 오른쪽 아래의 둥근 FAB 하나. 누르면 위로 둥근 버튼 일곱이 차례로 튀어나온다(가까운 것부터). 순서는 쓰는 흐름대로, 손에 가까운 쪽부터:
+           테두리 조각만(토글) → 색상순 → 모양순 → 섞기 → 판 위 조각 찾기 → 조각 윤곽선(토글) → 판 배경. 퍼즐은 테두리부터 고르고 색으로 나누니 그 둘이 맨 아래, 보기 설정(윤곽선·배경)은 맨 위.
            트레이 바에 늘어놓으면 폰에서 자리가 안 났고, HUD 도 390px 폰에서 꽉 차 있어 테두리 토글을 여기로 내렸다(2026-09-16) -->
       <div class="dial" id="jg-dial">
         <div class="dial-items" id="jg-dial-items">
-          <div class="di" style="--i: 5"><span class="di-l">{t.bg}</span><button type="button" class="db" id="jg-bg" title={t.bg}><Fragment set:html={icon('drop', 18)} /></button></div>
+          <div class="di" style="--i: 6"><span class="di-l">{t.bg}</span><button type="button" class="db" id="jg-bg" title={t.bg}><Fragment set:html={icon('drop', 18)} /></button></div>
+          <div class="di" style="--i: 5" id="jg-outline-item"><span class="di-l">{U.play.outline}</span><button type="button" class="db" id="jg-outline" title={U.play.outline} aria-pressed="true"><Fragment set:html={icon('grid', 18)} /></button></div>
           <div class="di" style="--i: 4"><span class="di-l">{t.find}</span><button type="button" class="db" id="jg-find" title={t.find}><Fragment set:html={icon('sparkles', 18)} /></button></div>
           <div class="di" style="--i: 3"><span class="di-l">{U.play.shuffle}</span><button type="button" class="db" id="jg-shuffle" title={U.play.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
           <div class="di" style="--i: 2"><span class="di-l">{U.play.sortShape}</span><button type="button" class="db" id="jg-shape" title={U.play.sortShape}><Fragment set:html={icon('shapes', 18)} /></button></div>
@@ -194,13 +195,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .fab-i { grid-area: 1 / 1; display: grid; place-items: center; transition: transform .28s var(--ease), opacity .18s; }
   .fab-close { opacity: 0; transform: rotate(-90deg) scale(.5); } .fab[aria-expanded="true"] .fab-open { opacity: 0; transform: rotate(90deg) scale(.5); } .fab[aria-expanded="true"] .fab-close { opacity: 1; transform: none; }
   .dial-items { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-  .di { display: flex; align-items: center; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(14px) scale(.5); transform-origin: right center; transition: opacity .16s, transform .3s var(--ease), visibility 0s .3s; transition-delay: calc((5 - var(--i)) * 35ms), calc((5 - var(--i)) * 35ms), .3s; }
+  .di { display: flex; align-items: center; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(14px) scale(.5); transform-origin: right center; transition: opacity .16s, transform .3s var(--ease), visibility 0s .3s; transition-delay: calc((6 - var(--i)) * 35ms), calc((6 - var(--i)) * 35ms), .3s; }
   .dial.open .di { opacity: 1; visibility: visible; transform: none; transition: opacity .16s, transform .32s var(--ease), visibility 0s; transition-delay: calc(var(--i) * 40ms), calc(var(--i) * 40ms), 0s; }
   .di-l { padding: 5px 11px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: .8rem; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 16px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); }
   .db { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; display: grid; place-items: center; box-shadow: 0 8px 18px -8px rgba(15,18,34,.6), 0 0 0 1px var(--line); transition: transform .15s var(--ease), background .15s; }
   .db:hover { transform: scale(1.08); } .db:active { transform: scale(.94); }
-  .db[aria-pressed="true"] { background: var(--accent); color: #fff; } /* 테두리 조각만 — 켜져 있으면 강조색 */
-  /* 판이 낮으면(가로 폰 — 판이 200px 남짓) 위로 여섯을 세울 자리가 없어 위쪽 항목이 화면 밖으로 나갔다. 이름 알약을 접고 FAB 왼쪽으로 가로로 편다(openDial 이 판 높이를 재서 .row) */
+  .db[aria-pressed="true"] { background: var(--accent); color: #fff; } /* 토글(테두리 조각만·조각 윤곽선) — 켜져 있으면 강조색 */
+  /* 판이 낮으면(가로 폰 — 판이 200px 남짓) 위로 일곱을 세울 자리가 없어 위쪽 항목이 화면 밖으로 나갔다. 이름 알약을 접고 FAB 왼쪽으로 가로로 편다(openDial 이 판 높이를 재서 .row) */
   .dial.row { flex-direction: row; align-items: center; } .dial.row .dial-items { flex-direction: row; }
   .dial.row .di-l { display: none; } .dial.row .di { transform: translateX(14px) scale(.5); transform-origin: center; } .dial.row.open .di { transform: none; }
   @media (prefers-reduced-motion: reduce) { .di, .dial.open .di, .fab, .fab-i { transition: none; } }
@@ -349,10 +350,10 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
   // 탭마다 고정된 접속 id — 재접속하면 서버가 같은 pid 의 옛 소켓을 닫아 목록에 내가 여럿으로 남지 않는다. 탭이 다르면 다른 사람(같은 브라우저 두 탭은 둘)
   const PID = (() => { const fresh = () => Math.random().toString(36).slice(2, 10); try { let p = sessionStorage.getItem('jl:pid'); if (!p) { p = fresh(); sessionStorage.setItem('jl:pid', p); } return p; } catch { return fresh(); } })();
-  let outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선 — 늘 켜져 있다(토글은 2026-09-16 에 뺐다)
-  // 윤곽선·밑그림을 켜고 끈 것은 기기에 기억한다 — 판을 열 때마다 다시 눌러야 했다. null = 한 번도 안 건드림(윤곽선은 작은 판만 켠 채로)
-  const pref = (k: 'hint') => { try { const v = localStorage.getItem(`board:${k}`); return v === null ? null : v === '1'; } catch { return null; } };
-  const setPref = (k: 'hint', on: boolean) => { try { localStorage.setItem(`board:${k}`, on ? '1' : '0'); } catch {} };
+  let outline = true, outlineLayer: HTMLCanvasElement | null = null; // 판 위 조각 윤곽선 — 기본은 켜짐, 다이얼에서 끌 수 있다
+  // 윤곽선·밑그림을 켜고 끈 것은 기기에 기억한다 — 판을 열 때마다 다시 눌러야 했다. null = 한 번도 안 건드림(그때는 윤곽선 켜짐·밑그림 꺼짐)
+  const pref = (k: 'outline' | 'hint') => { try { const v = localStorage.getItem(`board:${k}`); return v === null ? null : v === '1'; } catch { return null; } };
+  const setPref = (k: 'outline' | 'hint', on: boolean) => { try { localStorage.setItem(`board:${k}`, on ? '1' : '0'); } catch {} };
   let seq: number[] = []; // 제자리에 들어간 순서(조각 번호) — 결과 화면 타임랩스. 저장(SaveData.seq)에 실려 이어하기에도 이어진다
   let cut: Cut, pieces: Piece[] = [], order: Piece[] = [], grid: Piece[][] = [], total = 0, lockedN = 0, moves = 0, t0 = 0, timer = 0, lockedLayer: HTMLCanvasElement, showHint = false, peek = false, running = false, gen = 0;
   let groups: Group[] = []; // 보드 위 뭉치 (배열 순서 = z 순서)
@@ -408,8 +409,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     cutSeed = rs ? rs.seed : src.kind === 'daily' ? src.seed! : (Math.random() * 2 ** 32) >>> 0;
     cut = makeCut(imgW, imgH, g.cols, g.rows, seeded(cutSeed)); outlineLayer = null;
     if (!rs && !room) await forgetSave();
-    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge-item').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
-    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); gold.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; if (!keep) { myLocked = 0; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; } laid = rs?.id ?? ''; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); showHint = pref('hint') ?? false; $('jg-hint').setAttribute('aria-pressed', String(showHint));
+    closeSetup(); roomNote(null); $('jg-hud-name').textContent = src.name; complete = false; completeAlpha = 0; $('jg-roombar').hidden = !room; $('jg-emo').hidden = !room; $('jg-restart').hidden = !!room; $('jg-tosolo-invite').hidden = !!room; $('jg-cloud').hidden = true; $('jg-traybar').hidden = false; hidePal(); tray.hidden = false; $('jg-edge-item').hidden = false; $('jg-outline-item').hidden = false; $('jg-hint').hidden = false; $('jg-full').hidden = false; setPeek(false);
+    scenes.go('play'); if (!room) fullLoad(false); $('jg-loading').hidden = false; $('jg-loading').textContent = T.loading; tray.innerHTML = ''; pieces = []; groups = []; grid = []; tweens.clear(); dust.clear(); gold.clear(); sparkle.stop(); viewTw = null; dragging = null; lifting = null; lockedN = 0; moves = rs?.moves ?? 0; running = false; if (!keep) { myLocked = 0; xp.reset(rs?.paid ?? 0, localRate()); liveRep = { mine: 0, paid: 0 }; } laid = rs?.id ?? ''; saveVer++; lockReq.clear(); edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); closeDial(); outline = pref('outline') ?? true; showHint = pref('hint') ?? false; $('jg-outline').setAttribute('aria-pressed', String(outline)); $('jg-hint').setAttribute('aria-pressed', String(showHint));
     lockedLayer = document.createElement('canvas'); lockedLayer.width = imgW; lockedLayer.height = imgH;
     resize(); fit(); updateHud();
     await new Promise((r) => setTimeout(r, 30));
@@ -491,7 +492,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const dialOpen = () => dial.classList.contains('open');
   function closeDial() { if (!dialOpen()) return; dial.classList.remove('open'); fab.setAttribute('aria-expanded', 'false'); }
   const outsideDial = (e: Event) => { if ((e.target as HTMLElement).closest('#jg-dial')) { document.addEventListener('pointerdown', outsideDial, { once: true }); return; } closeDial(); };
-  function openDial() { if (dialOpen()) return closeDial(); dial.classList.toggle('row', wrap.clientHeight < 420); dial.classList.add('open'); fab.setAttribute('aria-expanded', 'true'); setTimeout(() => document.addEventListener('pointerdown', outsideDial, { once: true }), 0); }
+  function openDial() { if (dialOpen()) return closeDial(); dial.classList.toggle('row', wrap.clientHeight < 470); dial.classList.add('open'); fab.setAttribute('aria-expanded', 'true'); setTimeout(() => document.addEventListener('pointerdown', outsideDial, { once: true }), 0); }
   fab.addEventListener('click', openDial);
 
   // ── 판 배경 — 밤 풍경·우주 같은 어두운 그림은 밝은 판에서 조각 경계가 안 보인다. 네 가지에서 고르고 기기에 남긴다(board:bg).
@@ -674,7 +675,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     ctx.setLineDash([8 / view.s, 6 / view.s]); ctx.lineWidth = 2 / view.s; ctx.strokeStyle = BG[bgName].line; ctx.strokeRect(0, 0, cut.W, cut.H); ctx.setLineDash([]);
     // 확대해서 윤곽선 층(1600px)·조각 비트맵이 1.5배 넘게 늘어나면 뭉개진다 — 그때는 화면에 보이는 칸만 벡터로 긋는다: 윤곽선은 조각 밑, 이음매는 잠긴 층 위, 느슨한 조각의 단면은 조각 위(drawGroup)
     const { x0: vx0, y0: vy0, x1: vx1, y1: vy1 } = viewRect(); crisp = !complete && view.s > 1.5;
-    if (!complete) { if (crisp) strokeCells(false, vx0, vy0, vx1, vy1); else ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H); }
+    if (outline && !complete) { if (crisp) strokeCells(false, vx0, vy0, vx1, vy1); else ctx.drawImage(outlineCanvas(), 0, 0, cut.W, cut.H); }
     ctx.drawImage(lockedLayer, 0, 0);
     if (crisp) strokeCells(true, vx0, vy0, vx1, vy1);
     if (complete && img) { ctx.globalAlpha = completeAlpha; ctx.drawImage(img, 0, 0, cut.W, cut.H); ctx.globalAlpha = 1; }
@@ -884,6 +885,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   /** 테두리 조각만 보는 중에 테두리 조각을 다 꺼냈으면 저절로 풀어 전체를 보인다 — 안 그러면 트레이가 텅 빈 채 남는다. 꺼낼 때(dropLift·방의 take)마다 본다 */
   function edgeAutoOff() { if (!edgeOnly) return; for (const p of order) if (!p.locked && !p.g && isEdge(p)) return; edgeOnly = false; $('jg-edge').setAttribute('aria-pressed', 'false'); applyTrayFilter(); }
   $('jg-edge').addEventListener('click', () => { toggleEdge(); closeDial(); });
+  const toggleOutline = () => { outline = !outline; setPref('outline', outline); $('jg-outline').setAttribute('aria-pressed', String(outline)); draw(); };
+  $('jg-outline').addEventListener('click', () => { toggleOutline(); closeDial(); });
   const toggleHint = () => { showHint = !showHint; setPref('hint', showHint); $('jg-hint').setAttribute('aria-pressed', String(showHint)); draw(); };
   // ── 전체 화면 (데스크톱). 판 화면은 어차피 화면을 다 쓰니 문서 전체를 올린다. 폰은 CSS 가 버튼을 숨긴다
   const fsBtn = $('jg-fs') as HTMLButtonElement;
@@ -891,8 +894,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   const toggleFs = () => { if (!document.fullscreenEnabled) return; if (fsOn()) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen({ navigationUI: 'hide' } as FullscreenOptions).catch(() => {}); };
   if (document.fullscreenEnabled) { fsBtn.hidden = false; fsBtn.addEventListener('click', toggleFs); document.addEventListener('fullscreenchange', () => fsBtn.setAttribute('aria-pressed', String(fsOn()))); }
   // ── 단축키 (데스크톱) — 판 화면에서만, 글자를 치는 중이거나 다이얼로그가 떠 있으면 무시.
-  //  H 밑그림 · E 테두리 조각만 · B 판 배경(차례로) · S 색상순 · F 전체 화면 · Space 원본(누르고 있는 동안) · Esc 팝오버 닫기
-  const KEYS: Record<string, () => void> = { h: toggleHint, e: toggleEdge, b: () => applyBg(BG_NAMES[(BG_NAMES.indexOf(bgName) + 1) % BG_NAMES.length]), s: () => sortTray('color'), f: toggleFs };
+  //  H 밑그림 · E 테두리 조각만 · O 조각 윤곽선 · B 판 배경(차례로) · S 색상순 · F 전체 화면 · Space 원본(누르고 있는 동안) · Esc 팝오버 닫기
+  const KEYS: Record<string, () => void> = { h: toggleHint, e: toggleEdge, o: toggleOutline, b: () => applyBg(BG_NAMES[(BG_NAMES.indexOf(bgName) + 1) % BG_NAMES.length]), s: () => sortTray('color'), f: toggleFs };
   const typing = (e: KeyboardEvent) => { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable); };
   const keysOk = () => scenes.current === 'play' && running && !complete && setup.hidden && $('jg-gate').hidden && $('jg-pldlg').hidden;
   addEventListener('keydown', (e) => {
@@ -903,7 +906,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   });
   addEventListener('keyup', (e) => { if (e.key === ' ' && e.target !== fullBtn) setPeek(false); });
   // 마우스 쓰는 기기에서만 버튼 설명에 단축키를 덧붙인다
-  if (matchMedia('(pointer: fine)').matches) for (const [id, k] of [['jg-hint', 'H'], ['jg-edge', 'E'], ['jg-bg', 'B'], ['jg-sort', 'S'], ['jg-fs', 'F'], ['jg-full', 'Space']] as const) { const b = $(id); b.title = `${b.title} · ${T.keyHint(k)}`; }
+  if (matchMedia('(pointer: fine)').matches) for (const [id, k] of [['jg-hint', 'H'], ['jg-edge', 'E'], ['jg-outline', 'O'], ['jg-bg', 'B'], ['jg-sort', 'S'], ['jg-fs', 'F'], ['jg-full', 'Space']] as const) { const b = $(id); b.title = `${b.title} · ${T.keyHint(k)}`; }
   $('jg-restart').addEventListener('click', async () => { if (!running || !src) return; if (!confirm(U.restartAsk)) return; await xp.flush(true); running = false; await forgetSave(); pendingSave = null; start(); });
   $('jg-cloud').addEventListener('click', async (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; const ok = await saveNow(true); toast(ok ? U.cloudSaved : U.cloudFail); b.disabled = false; });
   $('jg-quit').addEventListener('click', async () => { if (room && photoBlob && src?.kind === 'photo' && room.players.size > 1 && !confirm(U.quitHostAsk)) return; if (running && !complete) { await xp.flush(true); await saveNow(true); } await reportLive(false); running = false; clearInterval(timer); gen++; leaveRoom(); goPick(); });
@@ -1173,7 +1176,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   // ── 완성
   function finish() {
     running = false; clearInterval(timer); clearTimeout(saveT); const sec = Math.max(1, Math.round((performance.now() - t0) / 1000));
-    complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge-item').hidden = true; $('jg-full').hidden = true; setPeek(false); closePops(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
+    complete = true; if (src && !room) { forgetSave(); if (src.kind === 'photo' && src.photoId && hasIDB()) images.del(src.photoId).catch(() => {}); } tray.hidden = true; $('jg-hint').hidden = true; $('jg-edge-item').hidden = true; $('jg-outline-item').hidden = true; $('jg-full').hidden = true; setPeek(false); closePops(); showHint = false; $('jg-hint').setAttribute('aria-pressed', 'false');
     // 시야는 금가루가 퍼지는 동안(0.9초) 그 자리에 두었다가 판 전체가 보이게 부드럽게 물러난다 — 바로 fit() 하면 확대해서 놓은 마지막 조각의 연출이
     // 손톱만 하게 줄어든다(폰에서 1000조각). 트레이가 사라져 캔버스가 커지는 resize 는 바로. 움직임 줄이기면 전처럼 바로 맞춘다
     const myGen = gen; requestAnimationFrame(() => { resize(); if (matchMedia('(prefers-reduced-motion: reduce)').matches) fit(); else setTimeout(() => { if (complete && gen === myGen) fitSmooth(); }, 900); });
@@ -1240,7 +1243,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
   // 방에서는 사람이 트레이에서 꺼내 제자리에 놓은 것처럼 take → lock 을 서버에 청한다. early = 스냅이 서버 확인보다 먼저 끝난 것(서버와 먼 접속). drop = 소켓이 소리 없이 죽은 것(재접속)
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, last: gold.on, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, last: gold.on, outline, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

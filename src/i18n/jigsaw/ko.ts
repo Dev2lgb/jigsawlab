@@ -7,7 +7,7 @@ export const KO = {
   pick: '내 사진 고르기', drop: '눌러서 고르거나 여기에 끌어다 놓기', daily: '오늘의 퍼즐', dailyCap: (title: string, n: number) => `${title} · ${n}조각`, pieces: '조각 수', custom: '직접 입력', gridLabel: (c: number, r: number, n: number) => `${c}×${r} = ${n}조각`, noImg: '먼저 그림을 골라 주세요', chosen: '선택한 그림', myPhoto: '내 사진',
   start: '시작', privacy: '사진은 폰 밖으로 나가지 않아요', loading: '조각 자르는 중…', opening: '퍼즐 여는 중…', saveGone: '저장된 퍼즐이 없어요',
   moves: '놓은 횟수', left: (n: number) => `남은 조각 ${n}`, edgeOnly: '테두리 조각만', hint: '밑그림', original: '원본 그림 보기 (누르고 있는 동안)', trayHint: '조각을 위로 끌어 올려 놓기',
-  done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', retry: '한 번 더', another: '다른 퍼즐', toTitle: '처음으로',
+  done: '완성!', resTime: '걸린 시간', resPieces: '조각', resMoves: '놓은 횟수', best: (s: string) => `내 최고 기록 ${s}`, newBest: '새 기록!', roomDone: '다 맞춘 판이에요', roomDoneSub: (n: number) => `친구들이 ${n}조각을 모두 맞췄어요`, roomDoneMine: '나도 맞춰 보기', retry: '한 번 더', another: '다른 퍼즐', toTitle: '처음으로',
   share: '결과 공유', shareTitle: (n: number, t: string) => `직소 퍼즐 ${n}조각을 ${t}에 완성! 🧩`, shareText: '너도 해봐 🧩', shareDaily: (n: number, t: string, title: string) => `오늘의 퍼즐 「${title}」 ${n}조각을 ${t}에 완성! 🧩 넌?`,
   bg: '판 배경', bgNames: ['밝음', '회색', '어두움', '세피아'] as [string, string, string, string], fullscreen: '전체 화면', keyHint: (k: string) => `단축키 ${k}`,
   tools: '트레이 도구', find: '조각 찾기', findNone: '판 위에 따로 떨어진 조각이 없어요',

@@ -21,6 +21,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <p class="gate-or"><span>{U.play.gate.or}</span></p>
       <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
       <p class="muted gate-sub">{U.play.gate.guestSub}</p>
+      <button type="button" class="btn primary lg gate-see" id="jg-gate-see">{U.play.gate.doneBtn}</button>
     </div>
   </div>
 <div class="modal" id="jg-setup" hidden>
@@ -96,12 +97,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   <div class="res-wrap">
     <div class="res-art"><canvas id="jg-res-img" width="320" height="240"></canvas><span class="stamp">{t.done}</span></div>
     <div class="res-info">
-      <p class="res-kicker">{t.done}</p>
+      <p class="res-kicker" id="jg-res-kicker">{t.done}</p>
       <h2 class="res-title" id="jg-res-name"></h2>
-      <div class="res-stats"><div><b id="jg-res-time">0:00</b><small>{t.resTime}</small></div><div><b id="jg-res-n">0</b><small>{t.resPieces}</small></div><div><b id="jg-res-m">0</b><small>{t.resMoves}</small></div></div>
+      <div class="res-stats" id="jg-res-stats"><div><b id="jg-res-time">0:00</b><small>{t.resTime}</small></div><div><b id="jg-res-n">0</b><small>{t.resPieces}</small></div><div><b id="jg-res-m">0</b><small>{t.resMoves}</small></div></div>
       <p class="best-line" id="jg-res-best"></p>
       <div class="res-xp" id="jg-res-xp" hidden></div>
       <div class="row">
+        <a class="btn primary" id="jg-res-mine" href={`${P}/play/`} hidden>{t.roomDoneMine}</a>
         <button class="btn primary" id="jg-retry">{t.retry}</button>
         <button class="btn share-btn" data-title="" data-text="">{t.share}</button>
         <a class="btn" id="jg-res-view" href={`${P}/my/`} hidden>{U.my.view}</a>
@@ -152,6 +154,10 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .gate .gate-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: .8rem; } .gate .gate-or::before, .gate .gate-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
   .gate .gate-guest { display: flex; gap: 8px; } .gate .gate-guest .input { flex: 1; min-width: 0; } .gate .gate-guest .btn { flex: none; }
   .gate[data-noauth="1"] .gate-login, .gate[data-noauth="1"] .gate-login + .gate-sub, .gate[data-noauth="1"] .gate-or { display: none; }
+  /* 이미 다 맞춘 방 — 들어가서 할 것이 없으니 닉네임 대신 완성작으로 가는 버튼 하나만 */
+  .gate .gate-see { display: none; width: 100%; }
+  .gate[data-done="1"] .gate-login, .gate[data-done="1"] .gate-login + .gate-sub, .gate[data-done="1"] .gate-or, .gate[data-done="1"] .gate-guest, .gate[data-done="1"] .gate-guest + .gate-sub { display: none; }
+  .gate[data-done="1"] .gate-see { display: flex; align-items: center; justify-content: center; }
   .note-solo { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: .82rem; }
   /* 사진 방장이 나갔을 때 판 위에 계속 떠 있는 안내 */
   .roomnote { margin: 0; padding: 7px max(12px, env(safe-area-inset-right)) 7px max(12px, env(safe-area-inset-left)); background: #fff6e5; color: #7a4b00; border-bottom: 1px solid #f2dcb0; font-size: .82rem; font-weight: 600; line-height: 1.35; text-align: center; }
@@ -997,6 +1003,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     let info: RoomInfo & { error?: string }; try { info = await (await fetch(`/api/room/${id}`)).json<RoomInfo & { error?: string }>(); } catch { return bail(); }
     if (!info || info.error) return bail();
     const isPhoto = !!info.photo; const w = isPhoto ? null : WORKS.find((x) => x.key === info.key); if (!isPhoto && !w) return bail();
+    // 이미 다 맞춘 초대 방 — 들어가도 꺼낼 조각이 없다. 소켓을 열지 않고(정원·DO 요청도 안 쓴다) 완성작만 보여 준다.
+    // 모두의 퍼즐은 예외 — 완성 25초 뒤 서버가 다음 그림으로 갈아 끼우므로 평소처럼 들어가 기다린다
+    if (info.done && !live) {
+      let seen = false; try { seen = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
+      if (!seen && (await roomGate(info, w ?? null, true)) === null) return bailOut();
+      return showRoomDone(info, w ?? null);
+    }
     // 진입 화면: 로그인(선택) 또는 닉네임만 적고 손님으로. 로그인했거나 이 방에 이미 들어온 적 있으면 건너뜀
     const u = await me(); let entered = false; try { entered = sessionStorage.getItem(`entered:${id}`) === '1'; } catch {}
     if (!u && !entered) { const n = await roomGate(info, w ?? null); if (n === null) { fullLoad(false); goPick(); return; } setNick(n); try { sessionStorage.setItem(`entered:${id}`, '1'); } catch {} fullLoad(true, U.joining); }
@@ -1016,18 +1029,44 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     roomBail = bail; connectRoom(bail);
     history.replaceState(null, '', `${location.pathname}?room=${id}`);
   }
-  function roomGate(info: RoomInfo, w: (typeof WORKS)[number] | null): Promise<string | null> {
+  /** 방 진입 화면. peek = 이미 다 맞춘 방이라 닉네임 대신 완성작으로 가는 버튼 하나만 (누르면 빈 문자열, 닫으면 null) */
+  function roomGate(info: RoomInfo, w: (typeof WORKS)[number] | null, peek = false): Promise<string | null> {
     return new Promise((res) => {
-      fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1';
-      $('jg-gate-k').textContent = info.live ? L.gateKicker : U.gate.kicker;
-      const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = thumbUrl(w.key); $('jg-gate-h').textContent = w ? workName(w) : T.myPhoto; $('jg-gate-sub').textContent = `${info.total} · ${U.gate.online(info.players ?? 0)}`;
+      fullLoad(false); const g = $('jg-gate'); g.hidden = false; const dlg = g.querySelector('.gate') as HTMLElement; dlg.dataset.noauth = authAvailable() ? '0' : '1'; dlg.dataset.done = peek ? '1' : '0';
+      $('jg-gate-k').textContent = peek ? U.gate.doneKicker : info.live ? L.gateKicker : U.gate.kicker;
+      const gi = $('jg-gate-img') as HTMLImageElement; gi.hidden = !w; if (w) gi.src = thumbUrl(w.key); $('jg-gate-h').textContent = w ? workName(w) : T.myPhoto;
+      $('jg-gate-sub').textContent = `${info.total} · ${peek ? U.gate.doneNote : U.gate.online(info.players ?? 0)}`;
       $('jg-gate-login').onclick = () => openLogin(location.pathname + location.search);
-      const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement;
-      const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; res(v); };
+      const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement; const see = $('jg-gate-see');
+      const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; see.onclick = null; res(v); };
       form.onsubmit = (e) => { e.preventDefault(); const n = inp.value.trim().slice(0, 12); if (!n) { inp.focus(); return; } done(n); };
+      see.onclick = () => done('');
       g.querySelector('.modal-bg')!.addEventListener('click', () => done(null), { once: true });
-      setTimeout(() => inp.focus(), 50);
+      setTimeout(() => (peek ? see : inp).focus(), 50);
     });
+  }
+  /** 이미 끝난 방: 판을 깔지 않고 결과 화면을 구경용으로 채운다 — 내 기록이 아니므로 시간·수순·공유·XP 는 없다 */
+  async function showRoomDone(info: RoomInfo, w: (typeof WORKS)[number] | null) {
+    fullLoad(true, U.joining);
+    $('jg-res-kicker').textContent = T.roomDone; $('jg-res-name').textContent = w ? workName(w) : T.myPhoto;
+    $('jg-res-stats').hidden = true; $('jg-res-xp').hidden = true; $('jg-retry').hidden = true; $('jg-res-view').hidden = true;
+    (document.querySelector('.share-btn') as HTMLElement).hidden = true;
+    $('jg-res-best').textContent = T.roomDoneSub(info.total);
+    const mine = $('jg-res-mine') as HTMLAnchorElement; mine.hidden = !w; if (w) mine.href = `${PFX}/board/?k=${w.key}&n=${info.n}`;
+    const rc = $('jg-res-img') as HTMLCanvasElement; const art = rc.closest('.res-art') as HTMLElement; art.hidden = !w;
+    // 완성작은 판 없이 새긴다 — 방의 seed·격자로 같은 컷을 다시 만들어 /done/ 과 같은 그림을 그린다 (내 사진 방은 사진이 없어 건너뛴다)
+    if (w) {
+      const im = new Image(); im.crossOrigin = 'anonymous'; im.src = artUrl(w.key);
+      try { await im.decode(); } catch {}
+      if (im.naturalWidth) {
+        const cut = makeCut(im.naturalWidth, im.naturalHeight, info.cols, info.rows, seeded(info.seed));
+        const k = Math.min(1200 / cut.W, 900 / cut.H, 1); rc.width = Math.round(cut.W * k); rc.height = Math.round(cut.H * k);
+        const c = rc.getContext('2d')!; c.drawImage(im, 0, 0, rc.width, rc.height);
+        const myGen = gen; renderRelief(rc, im, cut, k, { alive: () => gen === myGen });
+      } else art.hidden = true;
+    }
+    fullLoad(false); scenes.go('result');
+    history.replaceState(null, '', `${location.pathname}?room=${info.id}`);
   }
   // ── 내 사진 방 클라이언트: 사진을 가진 쪽은 needphoto 를 받으면 보내고, 없는 쪽은 받을 때까지 판을 만들지 않는다
   const peers = new Map<string, Peer>(); let recv: (Peer & { blob: Promise<Blob> }) | null = null, recvFrom = ''; let photoTries = 0, photoT = 0; let roomBail: ((msg?: string) => void) | null = null;

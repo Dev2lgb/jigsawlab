@@ -77,4 +77,26 @@ await A.ctx.close(); await B.ctx.close();
     await A.page.waitForTimeout(1500); const lv1 = await level(A.page); const d = { xp: lv1.xp - lv0.xp, pieces: lv1.stats.pieces - lv0.stats.pieces, live: lv1.stats.live_n - lv0.stats.live_n };
     ok(d.xp === 6 && d.pieces === 2 && d.live === 1 && (await mine(A.page)) === 0, 'rotate: 지난 회차의 2조각을 알리고(XP 6·조각 2) 새 회차는 0 부터', JSON.stringify(d));
     await A.ctx.close(); await B.ctx.close(); } }
+// 이미 다 맞춘 초대 방 — 들어가도 꺼낼 조각이 없으니 게이트가 완성을 알리고, 판을 깔지 않고 완성작만 보여 준다(소켓도 안 연다)
+{ const r2 = await fetch(`${BASE}/api/room`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'wave', n: 48 }) }); const { id: did } = await r2.json();
+  const ws = new WebSocket(`${BASE.replace(/^http/, 'ws')}/api/room/${did}/ws`); const inbox = []; ws.onmessage = (e) => inbox.push(JSON.parse(e.data));
+  await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }); ws.send(JSON.stringify({ t: 'hello', nick: 'solo' }));
+  await new Promise((res) => { const t = setInterval(() => { if (inbox.some((m) => m.t === 'init')) { clearInterval(t); res(); } }, 20); });
+  for (let i = 0; i < 48; i++) { ws.send(JSON.stringify({ t: 'take', g: i, dx: 0, dy: 0 })); ws.send(JSON.stringify({ t: 'lock', g: String(i), dx: 0, dy: 0 })); await new Promise((r) => setTimeout(r, 10)); }
+  await new Promise((r) => setTimeout(r, 500)); ws.close(); await new Promise((r) => setTimeout(r, 300));
+  const { page, ctx } = await newPage(br);
+  await page.goto(`${BASE}/board/?room=${did}`); await page.waitForSelector('#jg-gate:not([hidden])', { timeout: 20000 });
+  ok(await page.$eval('#jg-gate .gate', (e) => e.dataset.done === '1'), 'done방: 게이트가 완성을 알린다');
+  ok(await page.$eval('#jg-gate-see', (e) => getComputedStyle(e).display !== 'none') && (await page.$eval('#jg-gate-form', (e) => getComputedStyle(e).display === 'none')), 'done방: 닉네임 대신 완성작 보기 버튼');
+  await page.click('#jg-gate-see'); await page.waitForSelector('.scene.result.active', { timeout: 20000 });
+  ok((await tray(page)) === 0, 'done방: 판을 깔지 않는다');
+  const info2 = await (await fetch(`${BASE}/api/room/${did}`)).json(); ok(info2.players === 0, 'done방: 소켓을 안 열어 접속자 0', JSON.stringify(info2.players));
+  const res = await page.evaluate(() => ({ mine: document.getElementById('jg-res-mine')?.getAttribute('href'), mineShown: !document.getElementById('jg-res-mine')?.hidden, stats: document.getElementById('jg-res-stats')?.hidden, retry: document.getElementById('jg-retry')?.hidden, share: document.querySelector('.share-btn')?.hidden }));
+  ok(res.mineShown && /[?&]k=wave&n=48/.test(res.mine), 'done방: 같은 그림·조각 수로 나도 맞춰 보기', JSON.stringify(res.mine));
+  ok(res.stats && res.retry && res.share, 'done방: 내 기록이 아니라 시간·수순·공유는 없다', JSON.stringify(res));
+  // 완성 순간 같이 있던 사람이 새로고침하면(이 방에 들어온 적 있는 탭) 게이트 없이 바로 완성작
+  await page.evaluate((i) => sessionStorage.setItem(`entered:${i}`, '1'), did); await page.reload();
+  await page.waitForSelector('.scene.result.active', { timeout: 20000 });
+  ok(await page.$eval('#jg-gate', (e) => e.hidden), 'done방: 들어온 적 있는 탭은 새로고침해도 바로 완성작');
+  await ctx.close(); }
 await br.close(); finish();

@@ -346,7 +346,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   type Group = { id: number; dx: number; dy: number; pieces: Piece[]; sid?: string };
   type Piece = { r: number; c: number; bmp: PieceBitmap; g: Group | null; locked: boolean; el?: HTMLElement; thumbed?: boolean; hue: number; lum: number; sat: number };
   // 멀티 방
-  let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player & { x?: number; y?: number }>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
+  let room: { id: string; live: boolean; ws: WebSocket | null; me: Player | null; players: Map<string, Player>; holders: Map<string, string>; bySid: Map<string, Group> } | null = null;
   const send = (m: ClientMsg) => { if (room?.ws && room.ws.readyState === 1) room.ws.send(JSON.stringify(m)); };
   // 탭마다 고정된 접속 id — 재접속하면 서버가 같은 pid 의 옛 소켓을 닫아 목록에 내가 여럿으로 남지 않는다. 탭이 다르면 다른 사람(같은 브라우저 두 탭은 둘)
   const PID = (() => { const fresh = () => Math.random().toString(36).slice(2, 10); try { let p = sessionStorage.getItem('jl:pid'); if (!p) { p = fresh(); sessionStorage.setItem('jl:pid', p); } return p; } catch { return fresh(); } })();
@@ -686,8 +686,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     for (const g of groups) drawGroup(g, g === dragging || g === lifting, vx0, vy0, vx1, vy1);
     const sparkly = sparkle.front(ctx, now, lone, view.s);
     const dusty = dust.render(ctx, now), goldy = gold.front(ctx, now, view.s);
-    if (room) { for (const g of groups) { const h = g.sid && room.holders.get(g.sid); if (!h || h === room.me?.id) continue; const pl = room.players.get(h); const p0 = g.pieces[0]; ctx.save(); ctx.strokeStyle = pl?.color ?? '#888'; ctx.lineWidth = 3 / view.s; ctx.setLineDash([6 / view.s, 4 / view.s]); ctx.strokeRect(px(p0) - cut.padX, py(p0) - cut.padY, cut.pw + cut.padX * 2, cut.ph + cut.padY * 2); ctx.restore(); }
-      for (const pl of room.players.values()) { if (pl.x === undefined || pl.id === room.me?.id) continue; ctx.save(); ctx.translate(pl.x, pl.y!); ctx.scale(1 / view.s, 1 / view.s); ctx.fillStyle = pl.color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 18); ctx.lineTo(5, 13); ctx.lineTo(12, 13); ctx.closePath(); ctx.fill(); ctx.font = '700 12px "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif'; const w = ctx.measureText(pl.nick).width + 12; ctx.fillStyle = pl.color; ctx.beginPath(); ctx.roundRect(14, 4, w, 20, 10); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, 20, 18); ctx.restore(); } }
+    if (room) for (const g of groups) { const h = g.sid && room.holders.get(g.sid); if (!h || h === room.me?.id) continue; const pl = room.players.get(h); const p0 = g.pieces[0]; ctx.save(); ctx.strokeStyle = pl?.color ?? '#888'; ctx.lineWidth = 3 / view.s; ctx.setLineDash([6 / view.s, 4 / view.s]); ctx.strokeRect(px(p0) - cut.padX, py(p0) - cut.padY, cut.pw + cut.padX * 2, cut.ph + cut.padY * 2); ctx.restore(); }
     for (const g of finished) { const tw = tweens.get(g)!; tweens.delete(g); g.dx = tw.x1; g.dy = tw.y1; tw.done(); }
     if (tweens.size || dusty || goldy || sparkly || viewTw) draw();
   }
@@ -843,7 +842,6 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     }
     if (dragging) { const b = toBoard(e.clientX, e.clientY); dragging.dx = b.x - dragOff.x; dragging.dy = b.y - dragOff.y; draw(); hoverReturn(e.clientX, e.clientY); if (room && dragging.sid) netMove(dragging); }
     else if (ptrs.size === 1) { view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; draw(); }
-    if (room && !dragging && !lifting) netCursor(e.clientX, e.clientY); // 끄는 중엔 조각 자체가 보이므로 커서는 생략
   });
   const up = (e: PointerEvent) => {
     if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
@@ -964,14 +962,13 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   }
 
   // ── 멀티 방: 연결·수신·전송
-  let mvT = 0, curT = 0;
+  let mvT = 0;
   // 조각을 끄는 동안 보내는 좌표. 웹소켓 메시지 하나가 곧 Durable Object 요청 하나라 간격이 그대로 비용이 된다.
   // 100ms(10/s)로 띄엄띄엄 보내고, 받는 쪽에서 그 사이를 선형으로 메워 부드럽게 보이게 한다
   const MV_MS = 100;
   function netMove(g: Group) { if (!g.sid) return; const now = performance.now(); if (now - mvT < MV_MS) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   /** 남이 끄는 조각을 다음 좌표까지 선형으로 미끄러뜨린다(도착점은 drop 이 정확히 맞춰 준다) */
   function netGlide(g: Group, x: number, y: number) { tweens.set(g, { x0: g.dx, y0: g.dy, x1: x, y1: y, t0: performance.now(), dur: MV_MS * 1.15, lin: true, done: () => {} }); draw(); }
-  function netCursor(cx: number, cy: number) { const now = performance.now(); if (now - curT < 200) return; curT = now; const b = toBoard(cx, cy); send({ t: 'cur', x: Math.round(b.x), y: Math.round(b.y) }); }
   function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) { renderPlayers(); const n = $('jg-plnote'); n.hidden = src?.kind !== 'photo'; n.textContent = U.photoHostNote; } };
   // 방을 만들자마자 퍼즐 화면만 떠서 초대를 해야 하는 줄 모르는 경우가 많다. 방을 연 사람이
@@ -1132,13 +1129,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       case 'nophoto': { if (!img) { toast(U.photoWait); photoRetry(8000); } return; }
       case 'nick': { const pl = room.players.get(m.id); if (pl) { pl.nick = m.nick; if (room.me && m.id === room.me.id) room.me.nick = m.nick; renderPlayers(); draw(); } return; }
       case 'leave': room.players.delete(m.id); for (const [g, h] of room.holders) if (h === m.id) room.holders.delete(g); renderPlayers(); draw(); return;
-      case 'cur': { const pl = room.players.get(m.id); if (pl) { pl.x = m.x; pl.y = m.y; draw(); } return; }
       case 'emo': showEmo(m.e, room.players.get(m.id)); return;
-      // 끄는 동안은 커서를 안 보내므로(netCursor) 화살표를 지운다 — 안 지우면 잡은 자리에 얼어붙어 조각은 움직이는데 마우스는 딴 데 있는 것처럼 보인다. 다음 cur 에 다시 그린다
-      case 'grab': { room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); const pl = room.players.get(m.id); if (pl) pl.x = undefined; const g = room.bySid.get(m.g); if (g) { toFront(g); if (g === dragging) { endDrag(); toast(U.heldBy(pl?.nick ?? '')); } } draw(); return; }
+      case 'grab': { room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); const pl = room.players.get(m.id); const g = room.bySid.get(m.g); if (g) { toFront(g); if (g === dragging) { endDrag(); toast(U.heldBy(pl?.nick ?? '')); } } draw(); return; }
       case 'release': { room.holders.delete(m.g); const g = room.bySid.get(m.g); if (g) tweens.delete(g); draw(); return; }
       // 이미 내 판에 있는 조각을 남이 꺼냈다고 하면 서버와 어긋난 것 — 상태를 다시 받는다
-      case 'take': { const p = pieces[Number(m.g)]; if (!p) return; if (p.locked || p.g) { reqSync(); return; } p.el?.remove(); p.el = undefined; edgeAutoOff(); const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); { const pl = room.players.get(m.id); if (pl) pl.x = undefined; } draw(); return; }
+      case 'take': { const p = pieces[Number(m.g)]; if (!p) return; if (p.locked || p.g) { reqSync(); return; } p.el?.remove(); p.el = undefined; edgeAutoOff(); const g = makeGroup(p, m.dx, m.dy); g.sid = m.g; room.bySid.set(m.g, g); room.holders.set(m.g, m.id); holdT.set(m.g, performance.now()); draw(); return; }
       case 'untake': { const g = room.bySid.get(m.g); if (!g || g.pieces.length !== 1) return; const p = g.pieces[0]; ungroup(g); room.bySid.delete(m.g); room.holders.delete(m.g); toTray(p); applyTrayFilter(); draw(); return; }
       // 서버가 거절 — 예전엔 조각을 지우기만 해서 트레이에도 판에도 없이 사라졌다. 트레이로 되돌리고 상태를 다시 받는다
       // 트레이에서 꺼낸 것(take)이 거절되면 트레이로 되돌리고, 판 위 뭉치를 잡은 것(grab)이 거절되면 판에 그대로 둔다 — 서버에는 남이 잡은 채로 판 위에 있다

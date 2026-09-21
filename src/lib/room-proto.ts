@@ -14,7 +14,6 @@ export type ClientMsg =
   | { t: 'nick'; nick: string }
   | { t: 'take'; g: string | number; dx: number; dy: number }   // 트레이에서 꺼냄
   | { t: 'untake'; g: string }                                   // 한 조각짜리를 트레이로 되돌림
-  | { t: 'cur'; x: number; y: number }                           // 커서 (판 좌표)
   | { t: 'emo'; e: number }                                      // 이모지 (EMOJIS 의 번호). 서버가 범위·연타를 거른다
   | { t: 'grab'; g: string }                                     // 판 위 뭉치를 잡음
   | { t: 'mv'; g: string; dx: number; dy: number }
@@ -28,7 +27,6 @@ export type ClientMsg =
 export type ServerMsg =
   | { t: 'init'; state: RoomState; you: Player; players: Player[]; holders: Record<string, string>; hasPhoto: boolean; dead: boolean }
   | { t: 'join'; p: Player } | { t: 'leave'; id: string } | { t: 'nick'; id: string; nick: string }
-  | { t: 'cur'; id: string; x: number; y: number }
   | { t: 'emo'; id: string; e: number }
   | { t: 'take'; id: string; g: string; dx: number; dy: number } | { t: 'untake'; g: string }
   | { t: 'grab'; id: string; g: string } | { t: 'deny'; g: string } | { t: 'release'; g: string }

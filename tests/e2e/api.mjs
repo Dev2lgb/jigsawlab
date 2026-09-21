@@ -70,7 +70,8 @@ try {
   send(A, { t: 'mv', g: '0', dx: 15, dy: 25 }); const mv = await next(B, 'mv'); ok(mv.g === '0' && mv.dx === 15 && mv.dy === 25, 'ws: mv');
   send(B, { t: 'grab', g: '0' }); const dn = await next(B, 'deny'); ok(dn.g === '0', 'ws: 남이 잡은 뭉치 grab → deny');
   send(B, { t: 'mv', g: '0', dx: 99, dy: 99 }); ok(await none(A, 'mv'), 'ws: 남이 잡은 뭉치 mv 는 무시');
-  send(A, { t: 'cur', x: 'abc', y: 12.7 }); const cu = await next(B, 'cur'); ok(cu.x === 0 && cu.y === 13, 'ws: cur 숫자 검증', JSON.stringify(cu));
+  // 커서 중계는 뺐다(2026-09-21) — 묵은 탭이 보내는 cur 은 default 없는 switch 를 그냥 빠져나가야 한다
+  send(A, { t: 'cur', x: 1, y: 2 }); ok(await none(B, 'cur'), 'ws: 옛 클라이언트의 cur 은 조용히 무시');
   // 이모지 — 목록 번호만 중계, 보낸 사람에겐 안 돌려주고(클라이언트가 바로 띄운다), 600ms 안 연타·범위 밖은 조용히 버린다
   send(A, { t: 'emo', e: 2 }); const em = await next(B, 'emo'); ok(em.e === 2 && em.id === init.you.id, 'ws: emo 브로드캐스트', JSON.stringify(em));
   send(A, { t: 'emo', e: 3 }); ok(await none(B, 'emo'), 'ws: emo 연타(600ms 안) 거절'); ok(!A.inbox.some((m) => m.t === 'emo'), 'ws: emo 는 보낸 사람에게 안 돌아옴');

@@ -418,6 +418,8 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .ntag[data-plate="3"] { color: #3a2400; text-shadow: 0 1px 0 rgba(255,246,210,.75); }
   .ntag[data-plate="4"] { color: #24405c; text-shadow: 0 1px 0 rgba(255,255,255,.8); }
   .ntag[data-plate="5"] { color: #35284c; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+  .ntag[data-plate="6"] { color: #f0cb6e; } /* 흑요석 — 금박 글씨(그라디언트를 글자 모양으로 오린다), 돌에 박힌 듯 아래로 검은 그늘 */
+  .ntag[data-plate="6"] .nt-t { background: linear-gradient(180deg, #fff4cc 0%, #f2cd72 42%, #c28a26 62%, #f3d68a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
   /* 헤더 — 판이 있으면 알약 테두리는 겹으로 보여 빼고, 글자 칸의 overflow 를 풀어 판 둘레의 두께·반짝이가 잘리지 않게(말줄임은 .nt-t 가 맡는다) */
   .acct span { min-width: 0; } .acct:has(.ntag[data-plate]) { border-color: transparent; padding: 4px 4px 4px 8px; } .acct:has(.ntag[data-plate]) span { overflow: visible; }
 

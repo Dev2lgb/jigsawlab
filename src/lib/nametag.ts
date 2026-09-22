@@ -1,4 +1,5 @@
-// 회원 네임태그 — 10레벨마다 판 재질이 오른다: 판지(1~9) · 동판(10) · 은판(20) · 금판(30) · 크리스털판(40, '다이아') · 진주빛판(50, '무지개'). 비회원은 그냥 글자.
+// 회원 네임태그 — 10레벨마다 판 재질이 오른다: 판지(1~9) · 동판(10) · 은판(20) · 금판(30) · 크리스털판(40, '다이아') · 진주빛판(50, '무지개') · 금빛 흑요석(60). 비회원은 그냥 글자.
+// 흑요석은 밝은 판들 사이에서 유일하게 어두운 판 — 최상위가 목록에서 한눈에 보이게. 검게 닦은 돌 안쪽의 금빛 광채 결이 빛을 따라 일렁이고, 금 상감 테두리·금박 글씨
 // 판지는 실물 퍼즐 조각의 재료 — 무광 크라프트에 종이 결만, 빛도 안개도 없다(움직이지 않아 rAF 도 안 돈다). 판 번호는 level.ts 의 plateOf 와 같고 판지만 0
 // 모양은 직소 조각 하나 — 왼쪽은 홈, 오른쪽은 톱니(엔진 tabSegs 와 같은 곡선·비율이라 판 위 조각·로더와 한 식구로 보인다).
 // 판은 캔버스에 그리고 글자는 HTML 로 얹는다: 글자는 선명하고 말줄임이 되며, 판은 CSS 로는 안 나오는 것 — 브러시드 금속의 헤어라인 결·얇은 두께·
@@ -11,7 +12,7 @@ import { plateOf } from './level';
 import { noiseSprite } from './dust';
 
 export { plateOf };
-type Plate = 0 | 1 | 2 | 3 | 4 | 5; // 0 = 판지(회원 1~9레벨)
+type Plate = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = 판지(회원 1~9레벨), 6 = 금빛 흑요석(60~)
 
 // ── 모양: 엔진 tabSegs(T=0.1, 흔들림 0) — [c1, c2, 끝점], u 는 변을 따라 0..1, v 는 변에 수직(변 길이 단위)
 const T = 0.1;
@@ -79,7 +80,8 @@ const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 
 // 판 둘레의 안개 한 점 — dust.ts 의 P 와 같은 움직임(밖으로 밀리며 부풀고 살짝 떠오르다 옅어진다). grain 은 잔 알갱이(색 점, 반짝임 tw)
 type Puff = { grain: boolean; x: number; y: number; vx: number; vy: number; rise: number; wob: number; ph: number; rot: number; spin: number; r0: number; r1: number; a0: number; t0: number; life: number; spr: number; col: string; tw: number };
-interface Tag { el: HTMLElement; cv: HTMLCanvasElement; plate: Plate; W: number; H: number; M: number; dpr: number; base: HTMLCanvasElement | null; over: HTMLCanvasElement | null; path: Path2D | null; facets: Facet[]; puffs: Puff[]; acc: number; last: number; lx: number; vis: boolean; seed: number }
+type Streak = { x: number; y: number; l: number; w: number; k: number }; // 흑요석 안쪽의 금빛 광채 결 한 가닥
+interface Tag { el: HTMLElement; cv: HTMLCanvasElement; plate: Plate; W: number; H: number; M: number; dpr: number; base: HTMLCanvasElement | null; over: HTMLCanvasElement | null; path: Path2D | null; facets: Facet[]; streaks: Streak[]; puffs: Puff[]; acc: number; last: number; lx: number; vis: boolean; seed: number }
 type Facet = { pts: [number, number][]; n: number; tint: number; hue: number };
 const facetPath = (c: CanvasRenderingContext2D, pts: [number, number][]) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
 
@@ -182,13 +184,15 @@ function makeFacets(W: number, H: number, rand: () => number): Facet[] {
 }
 
 // 크리스털·진주빛 태그의 안개 색 — dust.ts 의 PLATE_DUST 와 같은 결(밝은 페이지 위에서 보이게 중간 밝기). grains 는 잔 알갱이 색
-const HAZE: Record<4 | 5, { tones: string[]; grains: string[]; rate: number }> = {
+type Hazy = 4 | 5 | 6;
+const HAZE: Record<Hazy, { tones: string[]; grains: string[]; rate: number }> = {
   4: { tones: ['80,138,208', '116,172,232', '158,206,246'], grains: ['255,255,255', '150,206,255', '60,130,225'], rate: 13 },
   5: { tones: ['236,110,130', '242,160,70', '228,206,60', '90,196,124', '80,150,230', '168,112,226'], grains: ['255,100,125', '255,180,60', '250,228,70', '80,208,120', '80,150,255', '176,100,255', '255,255,255'], rate: 18 },
+  6: { tones: ['200,146,48', '226,178,76', '176,120,30'], grains: ['255,214,110', '255,238,180', '214,150,40'], rate: 16 }, // 금가루
 };
 const HV = 3; // 톤마다 모양 3가지
-const hazeSpr: Partial<Record<4 | 5, HTMLCanvasElement[]>> = {};
-const hz = (p: 4 | 5, i: number) => (hazeSpr[p] ??= HAZE[p].tones.flatMap((t) => Array.from({ length: HV }, () => noiseSprite(t))))[i];
+const hazeSpr: Partial<Record<Hazy, HTMLCanvasElement[]>> = {};
+const hz = (p: Hazy, i: number) => (hazeSpr[p] ??= HAZE[p].tones.flatMap((t) => Array.from({ length: HV }, () => noiseSprite(t))))[i];
 
 function hsl(h: number, s: number, l: number) { // → 'r,g,b'
   s /= 100; l /= 100; const k = (n: number) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
@@ -216,8 +220,14 @@ function paintBase(t: Tag) {
   } else if (plate === 4) {
     body(c, path, '#8fb0cc', 'rgba(30,60,100,.25)');
     t.facets = makeFacets(W, H, rand);
-  } else {
+  } else if (plate === 5) {
     body(c, path, '#9a8fb4', 'rgba(70,50,110,.25)');
+  } else {
+    c.save(); c.shadowColor = 'rgba(232,172,60,.45)'; c.shadowBlur = 7; c.fillStyle = '#060508'; c.fill(path); c.restore(); // 금빛 번짐
+    body(c, path, '#050407', 'rgba(0,0,0,.35)');
+    // 광채 결 — 돌 안쪽에 가로로 누운 가는 금빛 가닥. 빛의 자리에 가까운 것만 밝아진다(일렁임)
+    t.streaks = Array.from({ length: Math.round(W / 5) }, () => ({ x: rand() * W * 1.1 - W * 0.05, y: H * (0.18 + rand() * 0.64), l: W * (0.12 + rand() * 0.4), w: 0.35 + rand() * 0.6, k: 0.4 + rand() * 0.6 }));
+    t.over = inlay(t, path);
   }
 }
 
@@ -242,7 +252,7 @@ function paint(t: Tag, now: number) {
     if (!still) { const u = ((now + (t.seed % P.every)) % P.every) / 760; if (u <= 1) { const e = u * u * (3 - 2 * u), x = -H + (W + H * 2.2) * e, g = c.createLinearGradient(x - H * 0.45, 0, x + H * 0.1, H); g.addColorStop(0, `rgba(${P.sweep},0)`); g.addColorStop(0.5, `rgba(${P.sweep},${0.75 * Math.sin(u * Math.PI)})`); g.addColorStop(1, `rgba(${P.sweep},0)`); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.fillRect(0, 0, W, H); } }
     c.restore(); return;
   }
-  if (plate === 4) paintCrystal(c, t, now, at, still); else paintPearl(c, t, now, at, still);
+  if (plate === 4) paintCrystal(c, t, now, at, still); else if (plate === 5) paintPearl(c, t, now, at, still); else paintObsidian(c, t, now, at, still);
 }
 
 /** 크리스털 — 서리 낀 무색 유리. 계단 면이 빛의 자리를 따라 차례로 밝아지고, 몇 면에 옅은 분산광. 채도는 아주 낮게(파란 사탕이 아니라) */
@@ -283,13 +293,51 @@ function paintPearl(c: CanvasRenderingContext2D, t: Tag, now: number, at: number
   bevel(c, path, 0.85, 0.12, 'rgba(110,90,150,.5)');
 }
 
+/** 금 상감 — 1.4px 안쪽에 1px 폭의 금선(위가 밝고 아래가 짙은 금), 그 밑에 박아 넣은 홈의 그늘. 판 외곽은 금 베젤 */
+function inlay(t: Tag, path: Path2D) {
+  const { H } = t, [cv, c] = layer(t);
+  const ring = inset(t, path, 1.4), rc = ring.getContext('2d')!; rc.globalCompositeOperation = 'destination-out'; rc.setTransform(1, 0, 0, 1, 0, 0); rc.drawImage(inset(t, path, 2.4), 0, 0);
+  const [gold, gc] = layer(t); gc.fillStyle = vgrad(gc, H, [[0, '#fff0bd'], [0.35, '#e8bd5c'], [0.6, '#b27c22'], [1, '#e6bf66']]); gc.fillRect(-t.M, -t.M, t.W + t.M * 2, H + t.M * 2);
+  gc.globalCompositeOperation = 'destination-in'; gc.setTransform(1, 0, 0, 1, 0, 0); gc.drawImage(ring, 0, 0);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(tinted(t, ring, 'rgba(0,0,0,.6)'), 0, Math.round(0.6 * t.dpr)); c.drawImage(gold, 0, 0); c.setTransform(t.dpr, 0, 0, t.dpr, t.M * t.dpr, t.M * t.dpr);
+  c.save(); c.clip(path); c.lineJoin = 'round'; c.lineWidth = 1.1; c.translate(0, 0.7); c.strokeStyle = 'rgba(255,255,255,.22)'; c.stroke(path); c.restore();
+  const bz = c.createLinearGradient(0, 0, 0, H); bz.addColorStop(0, '#f6d890'); bz.addColorStop(0.5, '#a8741e'); bz.addColorStop(1, '#d9a94a');
+  c.lineWidth = 0.9; c.strokeStyle = bz; c.stroke(path);
+  return cv;
+}
+
+/**
+ * 금빛 흑요석 — 검게 닦은 돌. 깊은 검정에 위아래로 옅은 되비침, 비친 수평선이 빛을 따라 움직이고, 돌 안쪽 금빛 광채(골드 쉰)가 빛의 자리로 번졌다 사그라든다.
+ * 금 상감 테두리(over)와 3초마다 스치는 금빛
+ */
+function paintObsidian(c: CanvasRenderingContext2D, t: Tag, now: number, at: number, still: boolean) {
+  const { W, H, M, dpr, path } = t as Tag & { path: Path2D }, b = (at - 0.5) * 0.14;
+  c.save(); c.clip(path);
+  c.fillStyle = vgrad(c, H, [[0, '#46404e'], [0.14 + b, '#25212b'], [0.48 + b, '#0c0a0f'], [0.8, '#16131a'], [1, '#2c2732']]); c.fillRect(0, 0, W, H);
+  // 광채 — 돌 속에 갇힌 금빛. 넓고 옅은 번짐 + 가닥마다 빛의 자리에 가까울수록 밝게
+  c.globalCompositeOperation = 'lighter';
+  const g = c.createLinearGradient(0, 0, W, H * 1.3); g.addColorStop(Math.max(0, at - 0.34), 'rgba(170,110,30,0)'); g.addColorStop(at, 'rgba(190,130,40,.34)'); g.addColorStop(Math.min(1, at + 0.34), 'rgba(170,110,30,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  for (const s of t.streaks) {
+    const u = (s.x + s.l / 2) / W, a = s.k * Math.exp(-((u - at) ** 2) / 0.03) * (0.75 + 0.25 * Math.sin(now / 900 + s.y));
+    if (a < 0.03) continue;
+    const sg = c.createLinearGradient(s.x, 0, s.x + s.l, 0); sg.addColorStop(0, 'rgba(230,170,70,0)'); sg.addColorStop(0.5, `rgba(240,186,86,${(a * 0.55).toFixed(3)})`); sg.addColorStop(1, 'rgba(230,170,70,0)');
+    c.fillStyle = sg; c.fillRect(s.x, s.y - s.w / 2, s.l, s.w);
+  }
+  // 닦은 면의 되비침 — 위쪽에 가는 흰 띠(빛을 따라 조금 움직인다)
+  c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(255,255,255,.1)'; c.fillRect(0, H * (0.08 + b * 0.5), W, H * 0.12);
+  // 스치는 금빛 — 3초마다
+  if (!still) { const u = ((now + (t.seed % 3000)) % 3000) / 720; if (u <= 1) { const e = u * u * (3 - 2 * u), x = -H + (W + H * 2.2) * e, sw = c.createLinearGradient(x - H * 0.45, 0, x + H * 0.1, H); sw.addColorStop(0, 'rgba(255,214,120,0)'); sw.addColorStop(0.5, `rgba(255,222,140,${0.5 * Math.sin(u * Math.PI)})`); sw.addColorStop(1, 'rgba(255,214,120,0)'); c.globalCompositeOperation = 'lighter'; c.fillStyle = sw; c.fillRect(0, 0, W, H); } }
+  c.restore();
+  c.setTransform(1, 0, 0, 1, 0, 0); if (t.over) c.drawImage(t.over, 0, 0); c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
+}
+
 /**
  * 판 둘레에서 피어오르는 색 안개 — 판 위 먼지(dust.ts)와 같은 움직임을 작게: 가장자리에서 밖으로 밀리며 부풀고, 살짝 떠오르며 옆으로 흔들리다 옅어진다.
  * 속도는 밑동 쪽에 몰아(거듭제곱) 대부분 판 곁에 머물고 몇몇만 멀리. 잔 알갱이는 색 점으로 튀어 나가며 반짝인다(별 모양은 안 쓴다 — 도식적이다).
  * 초당 rate 개 남짓(판이 길면 조금 더), 프레임 간격에 맞춰 심는다(탭이 숨었다 돌아오면 한꺼번에 쏟지 않게 0.1초까지만)
  */
 function haze(c: CanvasRenderingContext2D, t: Tag, now: number, still: boolean) {
-  const { W, H } = t, p = t.plate as 4 | 5, D = HAZE[p], x1 = W - H * KNOB;
+  const { W, H } = t, p = t.plate as Hazy, D = HAZE[p], x1 = W - H * KNOB;
   if (still) { // 움직임 줄이기 — 안개 두 점만 가만히
     c.globalAlpha = 0.3; for (const [x, y, r, i] of [[W * 0.1, -H * 0.1, H * 0.5, 0], [x1, H * 1.05, H * 0.45, HV + 1]] as const) c.drawImage(hz(p, i % (D.tones.length * HV)), x - r, y - r, r * 2, r * 2); c.globalAlpha = 1; return;
   }
@@ -366,7 +414,7 @@ function tagOnly(nick: string, level?: number | null): HTMLSpanElement {
   const p = plateOf(level) as Plate;
   el.dataset.plate = String(p);
   const cv = document.createElement('canvas'); cv.className = 'nt-cv'; cv.setAttribute('aria-hidden', 'true'); el.insertBefore(cv, el.firstChild);
-  const t: Tag = { el, cv, plate: p, W: 0, H: 0, M: margin(p), dpr: 1, base: null, over: null, path: null, facets: [], puffs: [], acc: 0, last: 0, lx: -1, vis: true, seed: hashStr(`${nick}:${p}`) };
+  const t: Tag = { el, cv, plate: p, W: 0, H: 0, M: margin(p), dpr: 1, base: null, over: null, path: null, facets: [], streaks: [], puffs: [], acc: 0, last: 0, lx: -1, vis: true, seed: hashStr(`${nick}:${p}`) };
   tags.set(el, t); ro?.observe(el); io?.observe(el);
   requestAnimationFrame(() => layout(t));
   return el;

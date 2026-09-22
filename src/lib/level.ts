@@ -57,9 +57,9 @@ export function levelProgress(xp: number) {
 /** 레벨 구간 이름 (문구는 i18n/badges.ts 의 TIER_NAMES) */
 export const TIERS = [1, 5, 10, 20, 30, 45, 60] as const;
 export const tierOf = (level: number) => { let i = 0; for (let k = 0; k < TIERS.length; k++) if (level >= TIERS[k]) i = k; return i; };
-/** 네임태그 판 — 10레벨마다 한 단계: 0 없음 · 1 동판 · 2 은판 · 3 금판 · 4 다이아판 · 5 무지개판(50 이상). 구간 이름(TIERS)과는 따로 간다.
+/** 네임태그 판 — 10레벨마다 한 단계: 0 판지(회원 1~9) · 1 동판 · 2 은판 · 3 금판 · 4 크리스털 · 5 진주빛 · 6 금빛 흑요석(60 이상). 구간 이름(TIERS)과는 따로 간다.
  *  그리기는 nametag.ts, 판 위 먼지 색은 dust.ts */
-export const PLATE_AT = [10, 20, 30, 40, 50] as const;
+export const PLATE_AT = [10, 20, 30, 40, 50, 60] as const;
 export const plateOf = (level: number) => Math.max(0, Math.min(PLATE_AT.length, Math.floor(level / 10)));
 
 // ── 업적

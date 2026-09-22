@@ -56,7 +56,7 @@ export const KO = {
     loginLead: '로그인하면 레벨과 업적이 쌓이고 랭킹에 이름이 올라가요. 이메일·이름은 받지 않아요', loginBtn: 'Google 로 로그인',
     rulesTitle: 'XP 는 이렇게 쌓여요',
     rules: ['조각 하나를 제자리에 놓으면 XP. 큰 판일수록 조각당 XP 가 올라요 — 100조각까지 1, 200·300조각 1.5, 500조각 2, 1000조각 3, 2000조각 4. 1000조각 판을 끝내면 3,000 XP', '오늘의 퍼즐은 1.5배', '이미 그만큼 깨 본 그림을 다시 맞추면 4분의 1', '방에서는 내가 놓은 조각만큼', '하루에 받는 XP 는 10,000 까지', '시간과 수순은 안 봐요 — 빨리 푼 사람이 아니라 많이 맞춘 사람이 위로 갑니다', '하루와 한 주는 한국 시간(KST) 기준이에요. 주간 랭킹은 월요일 0시에 새로 시작해요'],
-    platesTitle: '네임태그', platesLead: '레벨이 오르면 닉네임 명판이 바뀌어요. 랭킹·모두의 퍼즐·친구 방 어디서나 이 명판으로 보이고, 조각을 놓을 때 피어오르는 먼지도 명판 색을 따라가요', plateNames: ['판지', '동판', '은판', '금판', '크리스털', '진주빛'] as [string, string, string, string, string, string], plateSample: '퍼즐러', plateMine: '지금 내 명판',
+    platesTitle: '네임태그', platesLead: '레벨이 오르면 닉네임 명판이 바뀌어요. 랭킹·모두의 퍼즐·친구 방 어디서나 이 명판으로 보이고, 조각을 놓을 때 피어오르는 먼지도 명판 색을 따라가요', plateNames: ['판지', '동판', '은판', '금판', '크리스털', '진주빛', '금빛 흑요석'] as [string, string, string, string, string, string, string], plateSample: '퍼즐러', plateMine: '지금 내 명판',
     tiersTitle: '레벨', tiersLead: 'XP 가 쌓이면 레벨이 오릅니다. 최고 99레벨', fromLv: (n: number) => `Lv ${n}부터`,
     badgesTitle: '업적', badgesLead: (n: number) => `업적 ${n}가지. 딴 업적은 내 퍼즐 화면에 모여요`,
     nextIn: (n: number) => `다음 레벨까지 ${n.toLocaleString()} XP`, maxed: '최고 레벨에 닿았어요',

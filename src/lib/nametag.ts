@@ -1,4 +1,5 @@
-// 회원 네임태그 — 10레벨마다 판 재질이 오른다: 동판(10) · 은판(20) · 금판(30) · 크리스털판(40, '다이아') · 진주빛판(50, '무지개'). 10레벨 미만·비회원은 그냥 글자.
+// 회원 네임태그 — 10레벨마다 판 재질이 오른다: 판지(1~9) · 동판(10) · 은판(20) · 금판(30) · 크리스털판(40, '다이아') · 진주빛판(50, '무지개'). 비회원은 그냥 글자.
+// 판지는 실물 퍼즐 조각의 재료 — 무광 크라프트에 종이 결만, 빛도 안개도 없다(움직이지 않아 rAF 도 안 돈다). 판 번호는 level.ts 의 plateOf 와 같고 판지만 0
 // 모양은 직소 조각 하나 — 왼쪽은 홈, 오른쪽은 톱니(엔진 tabSegs 와 같은 곡선·비율이라 판 위 조각·로더와 한 식구로 보인다).
 // 판은 캔버스에 그리고 글자는 HTML 로 얹는다: 글자는 선명하고 말줄임이 되며, 판은 CSS 로는 안 나오는 것 — 브러시드 금속의 헤어라인 결·얇은 두께·
 // 모서리 빛, 크리스털의 커팅면, 진주빛 이리데슨트 — 을 그린다. 실물 퍼즐 상자에 박힌 명판처럼 **채도·대비를 낮게, 광택은 얇게** — 채도 높은 게임 버튼 광택·
@@ -10,7 +11,7 @@ import { plateOf } from './level';
 import { noiseSprite } from './dust';
 
 export { plateOf };
-type Plate = 1 | 2 | 3 | 4 | 5;
+type Plate = 0 | 1 | 2 | 3 | 4 | 5; // 0 = 판지(회원 1~9레벨)
 
 // ── 모양: 엔진 tabSegs(T=0.1, 흔들림 0) — [c1, c2, 끝점], u 는 변을 따라 0..1, v 는 변에 수직(변 길이 단위)
 const T = 0.1;
@@ -42,6 +43,27 @@ const METAL: Record<1 | 2 | 3, Metal> = {
   2: { face: [[0, '#eef0f3'], [0.5, '#c5cbd3'], [1, '#dfe3e8']], side: '#7d8592', rim: 'rgba(60,70,84,.45)', hi: 0.55, lo: 0.16, spec: 0.26, hair: 0.8 }, // 은 — 스틸
   3: { face: [[0, '#f1dea2'], [0.5, '#cfab58'], [1, '#e5c87c']], side: '#8a6a24', rim: 'rgba(110,80,20,.5)', hi: 0.42, lo: 0.18, spec: 0.24, hair: 0.6 },  // 금 — 샴페인 골드(노랑이 아니라)
 };
+
+/**
+ * 판지 — 무광 크라프트. 광택 대신 종이 결: 짧은 섬유가 제멋대로 누운 가는 선과 잔 얼룩. 모서리 빛은 아주 옅게(종이는 빛을 먹는다),
+ * 옆면은 잘린 판지의 짙은 단면
+ */
+function cardboard(c: CanvasRenderingContext2D, path: Path2D, W: number, H: number, rand: () => number) {
+  body(c, path, '#8f7556', 'rgba(60,40,20,.22)');
+  c.save(); c.clip(path);
+  c.fillStyle = vgrad(c, H, [[0, '#dcc6a2'], [1, '#cfb68e']]); c.fillRect(0, 0, W, H);
+  // 섬유 — 판 넓이에 비례해서, 짧고 가는 선을 아무 방향으로. 밝은 것과 어두운 것을 섞어 종이 표면이 일어난 듯
+  const n = Math.round((W * H) / 5); c.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const x = rand() * W, y = rand() * H, a = rand() * Math.PI, l = 1 + rand() * 3.2, dark = rand() < 0.6;
+    c.strokeStyle = dark ? `rgba(110,82,50,${0.06 + rand() * 0.1})` : `rgba(255,246,228,${0.08 + rand() * 0.14})`; c.lineWidth = 0.35 + rand() * 0.35;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+  }
+  // 잔 얼룩 — 재생지에 섞인 티
+  for (let i = 0; i < n / 8; i++) { c.fillStyle = `rgba(96,70,42,${0.05 + rand() * 0.1})`; c.beginPath(); c.arc(rand() * W, rand() * H, 0.25 + rand() * 0.5, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+  bevel(c, path, 0.18, 0.1, 'rgba(96,72,44,.42)');
+}
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function rng(seed: number) { return () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -141,7 +163,8 @@ function paintBase(t: Tag) {
   cv.width = Math.ceil((W + M * 2) * dpr); cv.height = Math.ceil((H + M * 2) * dpr);
   const c = cv.getContext('2d')!; c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
   const path = (t.path = platePath(W, H)), rand = rng(t.seed);
-  if (plate <= 3) {
+  if (plate === 0) cardboard(c, path, W, H, rand);
+  else if (plate <= 3) {
     const m = METAL[plate as 1 | 2 | 3];
     body(c, path, m.side, 'rgba(40,24,6,.28)');
     c.save(); c.clip(path); c.fillStyle = vgrad(c, H, m.face); c.fillRect(0, 0, W, H); hairlines(c, W, H, dpr, rand, m.hair); c.restore();
@@ -163,6 +186,7 @@ function paint(t: Tag, now: number) {
   // 안개는 판 뒤(먼저 그려서 판이 덮는다) — 판 앞에 두면 글자·판 위를 안개가 지나 뿌옇다
   if (plate >= 4) haze(c, t, now, still);
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(t.base, 0, 0); c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
+  if (plate === 0) return; // 판지는 빛을 먹는다 — 반사 띠 없음
   if (plate <= 3) {
     const m = METAL[plate as 1 | 2 | 3];
     c.save(); c.clip(path); sheen(c, W, H, at, m.spec);
@@ -271,7 +295,7 @@ function tick(now: number) {
   raf = 0; let any = false;
   for (const [el, t] of tags) {
     if (!el.isConnected) { tags.delete(el); ro?.unobserve(el); io?.unobserve(el); continue; }
-    if (!t.vis || !t.base) continue;
+    if (!t.vis || !t.base || t.plate === 0) continue; // 판지는 한 번 그리면 끝
     paint(t, now); any = true;
   }
   if (any && !reduced()) raf = requestAnimationFrame(tick);
@@ -279,7 +303,7 @@ function tick(now: number) {
 function kick() { if (!raf && !reduced()) raf = requestAnimationFrame(tick); }
 
 /**
- * 닉네임 태그. level 이 10 미만(또는 없음 — 비회원)이면 판 없이 글자만(.ntag 안의 .nt-t — 말줄임은 여기서).
+ * 닉네임 태그. level 이 없으면(비회원) 판 없이 글자만(.ntag 안의 .nt-t — 말줄임은 여기서), 회원은 1레벨부터 판지 명판.
  * dot 을 주면(방에서 그 사람 색) 점을 **판 밖** 왼쪽에 세운 묶음(.ntag-w)을 돌려준다 — 판 안에 넣으면 홈 자리와 겹쳐 보였다
  */
 export function nameTag(nick: string, level?: number | null, o: { dot?: string } = {}): HTMLSpanElement {
@@ -289,9 +313,9 @@ export function nameTag(nick: string, level?: number | null, o: { dot?: string }
 }
 function tagOnly(nick: string, level?: number | null): HTMLSpanElement {
   const el = document.createElement('span'); el.className = 'ntag';
-  const p = plateOf(level ?? 0) as 0 | Plate;
   const tx = document.createElement('span'); tx.className = 'nt-t'; tx.textContent = nick; el.appendChild(tx);
-  if (!p) return el;
+  if (level == null || !(level >= 1)) return el; // 비회원
+  const p = plateOf(level) as Plate;
   el.dataset.plate = String(p);
   const cv = document.createElement('canvas'); cv.className = 'nt-cv'; cv.setAttribute('aria-hidden', 'true'); el.insertBefore(cv, el.firstChild);
   const t: Tag = { el, cv, plate: p, W: 0, H: 0, M: margin(p), dpr: 1, base: null, path: null, facets: [], puffs: [], acc: 0, last: 0, lx: -1, vis: true, seed: hashStr(`${nick}:${p}`) };

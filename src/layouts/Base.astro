@@ -401,7 +401,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   .lb .rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-3); color: var(--ink-2); font-weight: 800; font-size: .85rem; font-variant-numeric: tabular-nums; flex: none; } .lb li:nth-child(1) .rank { background: var(--gold); color: #fff; } .lb li:nth-child(2) .rank { background: #c9ced9; color: #fff; } .lb li:nth-child(3) .rank { background: #d8a880; color: #fff; }
   .lb .nick { flex: 1; min-width: 0; display: flex; align-items: center; font-weight: 600; } .lb .score { font-weight: 800; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 500; }
   .lv-chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft, var(--bg-3)); color: var(--accent); font-size: .74rem; font-weight: 800; letter-spacing: .01em; flex: none; } /* 레벨 칩 — 홈 랭킹·/rank/ 공용 (JS 가 만드는 요소라 전역) */
-  /* 네임태그(lib/nametag.ts) — 10레벨부터 글자 뒤에 판(캔버스)이 깔린다: 동·은·금·다이아·무지개. 글자는 HTML 이라 선명하고 말줄임이 된다.
+  /* 네임태그(lib/nametag.ts) — 회원이면 글자 뒤에 판(캔버스)이 깔린다: 판지(1~9)·동·은·금·크리스털·진주빛. 글자는 HTML 이라 선명하고 말줄임이 된다.
      판이 있으면 자간을 좁혀 판 안에 최대한 들인다. .nt-dot 은 방에서 그 사람 색 점 */
   .ntag { position: relative; display: inline-flex; align-items: center; max-width: 100%; min-width: 0; vertical-align: middle; }
   .ntag .nt-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -412,6 +412,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   @media (max-width: 480px) { .lb .score { font-size: .88rem; } } /* 좁은 폰에서 XP 숫자를 한 치수 내려 태그에 자리를 준다 */
   .ntag .nt-cv { position: absolute; pointer-events: none; z-index: -1; }
   /* 글자는 새겨 넣은 듯 — 판보다 짙은 같은 계열 색에, 아래로 1px 옅은 빛 */
+  .ntag[data-plate="0"] { color: #4a3824; text-shadow: 0 1px 0 rgba(255,246,226,.35); } /* 판지 — 찍어 낸 잉크 */
   .ntag[data-plate="1"] { color: #3d2212; text-shadow: 0 1px 0 rgba(255,232,214,.45); }
   .ntag[data-plate="2"] { color: #2b3140; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
   .ntag[data-plate="3"] { color: #4a3509; text-shadow: 0 1px 0 rgba(255,245,215,.55); }

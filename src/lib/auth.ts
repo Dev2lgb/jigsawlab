@@ -1,5 +1,7 @@
 // 서버 인증 유틸 — 구글 OIDC 로그인(scope: openid 만), 서명 쿠키 세션. 저장하는 개인정보는 가명 ID(HMAC(sub))와 닉네임뿐
 import { env } from 'cloudflare:workers';
+import { clipNick } from './nick';
+import { levelOf } from './level';
 const enc = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 export async function hmac(msg: string, secret = env.SESSION_SECRET ?? ''): Promise<string> {
@@ -21,10 +23,11 @@ export async function sessionUid(req: Request): Promise<string | null> {
   const v = readCookie(req, COOKIE); if (!v) return null; const [uid, exp, sig] = v.split('.'); if (!uid || !exp || !sig) return null;
   if (Number(exp) < Date.now() / 1000) return null; if ((await hmac(`s:${uid}.${exp}`)) !== sig) return null; return uid;
 }
-export interface User { id: string; nick: string }
-/** 쿠키 → 유저 (DB 조회, 없으면 null) */
+export interface User { id: string; nick: string; level: number }
+/** 쿠키 → 유저 (DB 조회, 없으면 null). 레벨은 네임태그(nametag.ts) 몫 — 같은 문장에 user_stats 를 JOIN 하므로 D1 읽기가 늘지 않고, 행이 없으면(레벨 기능 전 회원) 1 */
 export async function getUser(req: Request): Promise<User | null> {
   const uid = await sessionUid(req); if (!uid) return null;
-  const r = await env.DB.prepare('SELECT id, nick FROM users WHERE id = ?').bind(uid).first<User>().catch(() => null); return r ?? null;
+  const r = await env.DB.prepare('SELECT u.id, u.nick, COALESCE(s.xp, 0) AS xp FROM users u LEFT JOIN user_stats s ON s.user_id = u.id WHERE u.id = ?').bind(uid).first<{ id: string; nick: string; xp: number }>().catch(() => null);
+  return r ? { id: r.id, nick: r.nick, level: levelOf(r.xp) } : null;
 }
-export const cleanNick = (n: unknown) => String(n ?? '').trim().replace(/\s+/g, ' ').slice(0, 12);
+export const cleanNick = (n: unknown) => clipNick(String(n ?? ''));

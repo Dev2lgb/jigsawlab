@@ -1,3 +1,4 @@
+import { clipNick } from './nick';
 /** 브라우저 저장(localStorage) + 오늘의 퍼즐 API 클라이언트 */
 export type Order = 'asc' | 'desc';
 const ls = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} } };
@@ -11,7 +12,7 @@ export function saveBest(key: string, score: number, order: Order): boolean {
   if (better) ls.set(`best:${key}`, String(score)); return better;
 }
 export const getNick = () => ls.get('nick') ?? '';
-export const setNick = (n: string) => ls.set('nick', n.trim().slice(0, 12));
+export const setNick = (n: string) => ls.set('nick', clipNick(n));
 const dayBefore = (day: string) => { const y = new Date(day + 'T00:00:00'); y.setDate(y.getDate() - 1); return `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`; };
 /** 오늘 완료 처리 → 연속 일수 */
 export function bumpStreak(day: string): number {

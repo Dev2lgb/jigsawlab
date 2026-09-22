@@ -19,7 +19,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       <button type="button" class="btn primary lg gate-login" id="jg-gate-login"><Fragment set:html={icon('user', 18)} /><span>{U.play.gate.login}</span></button>
       <p class="muted gate-sub">{U.play.gate.loginSub}</p>
       <p class="gate-or"><span>{U.play.gate.or}</span></p>
-      <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="12" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
+      <form class="gate-guest" id="jg-gate-form"><input class="input" id="jg-gate-nick" maxlength="16" placeholder={U.play.gate.nickPh} autocomplete="nickname" /><button type="submit" class="btn lg">{U.play.gate.guest}</button></form>
       <p class="muted gate-sub">{U.play.gate.guestSub}</p>
       <button type="button" class="btn primary lg gate-see" id="jg-gate-see">{U.play.gate.doneBtn}</button>
     </div>
@@ -165,7 +165,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .pldlg h3 { margin: 0 0 12px; font-size: 1.05rem; } .pldlg h3 .muted { font-weight: 600; font-size: .9rem; }
   .pl-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .pl-list :global(li) { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg-2); font-weight: 700; font-size: .92rem; }
-  .pl-list :global(li i) { width: 12px; height: 12px; border-radius: 50%; flex: none; } .pl-list :global(li b) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  .pl-list :global(li b) { flex: 1; min-width: 0; display: flex; align-items: center; font-weight: 700; } .pl-list :global(li .pl-me) { flex: none; color: var(--muted); font-weight: 600; white-space: pre; }
   .pl-list :global(li .rn) { flex: none; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: .75rem; font-weight: 600; cursor: pointer; }
   .pldlg .row { display: flex; justify-content: flex-end; } .pldlg .btn { display: inline-flex; align-items: center; gap: 6px; }
   @media (max-width: 640px) { .roombar { margin-left: 0; gap: 4px; } #jg-invite, #jg-tosolo-invite, #jg-players-btn { height: 32px; padding: 0 9px; border-radius: 10px; font-size: .9rem; } #jg-invite :global(span), #jg-tosolo-invite :global(span) { display: none; } #jg-invite, #jg-tosolo-invite { width: 32px; padding: 0; justify-content: center; } .hud { flex-wrap: nowrap; overflow: hidden; gap: 4px; } }
@@ -223,6 +223,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .emofx :global(.emo-pop > span) { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: emo-pop 1.7s var(--ease) forwards; will-change: transform, opacity; }
   .emofx :global(.emo-pop b) { font-size: 64px; line-height: 1; filter: drop-shadow(0 6px 14px rgba(15,18,34,.25)); }
   .emofx :global(.emo-pop small) { padding: 3px 9px; border-radius: 999px; color: #fff; font-size: .75rem; font-weight: 700; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .emofx :global(.emo-pop small.plated) { padding: 0; background: none; overflow: visible; max-width: 160px; font-size: .8rem; }
   @keyframes emo-pop { 0% { opacity: 0; transform: translateY(28px) scale(.4); } 18% { opacity: 1; transform: translateY(0) scale(1.18); } 30% { transform: scale(1); } 70% { opacity: 1; transform: translateY(-8px) scale(1); } 100% { opacity: 0; transform: translateY(-44px) scale(.8); } }
   @media (prefers-reduced-motion: reduce) { .emofx :global(.emo-pop > span) { animation: emo-fade 1.7s linear forwards; } @keyframes emo-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } } }
   @media (max-width: 640px) { #jg-emo span { display: none; } #jg-emo { padding: 4px 9px; } }
@@ -283,9 +284,11 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   import { me, syncDone, syncLive, syncSave, syncDelSave, fetchSync, fetchSave, authAvailable, setNickRemote, dropClearedCache, type Award, type SaveMeta } from '../lib/account';
   import { createXp } from '../lib/xp';
   import { trayOrderAfterSync } from '../lib/board';
-  import { BADGES, pieceRate, rateFor } from '../lib/level';
+  import { BADGES, pieceRate, rateFor, plateOf } from '../lib/level';
   import { click, confetti, fanfare } from '../lib/celebrate';
   import { createDust, outerEdges } from '../lib/dust';
+  import { nameTag } from '../lib/nametag';
+  import { clipNick, nickCells, NICK_CELLS } from '../lib/nick';
   import { createGold, type Slot } from '../lib/gold';
   import { createSparkle, type Lone } from '../lib/sparkle';
   import { renderRelief } from '../lib/relief';
@@ -339,6 +342,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function updateGrid() { if (!img) return; const g = gridFor(wantN, imgW / imgH), n = g.cols * g.rows; $('jg-grid').textContent = T.gridLabel(g.cols, g.rows, n); const pn = src && src.kind !== 'photo' ? bestDoneN(src.key) : null, xp = Math.round(n * rateFor(src?.kind === 'daily' ? 'daily' : 'gallery', n, pn)).toLocaleString(); $('jg-xp').textContent = pn !== null && n <= pn ? V.earnRepeat(xp) : V.earn(xp); }
   const saveId = () => { if (src!.kind === 'daily') return `daily:${src!.day}`; if (src!.kind === 'photo') return `photo:${src!.photoId}`; const g = gridFor(wantN, imgW / imgH); return `${src!.key}:${g.cols * g.rows}`; };
   // 로그인했으면 서버에 있는 하던 퍼즐 목록(메타)을 한 번 받아 두고, 로컬에 없을 때 대신 씀
+  // 내 네임태그 판(level.ts 의 plateOf) — 조각을 놓을 때 먼지 색. 방에서 남의 것은 서버가 알린 lv 로(plateOfPlayer)
+  let myPlate = 0; me().then((u) => { myPlate = plateOf(u?.level ?? 0); }).catch(() => {});
+  const plateOfPlayer = (id: string) => plateOf(room?.players.get(id)?.lv ?? 0);
   let remoteSaves: SaveMeta[] = []; let remoteReady: Promise<void> = me().then(async (u) => { if (!u) return; const r = await fetchSync(); if (r) remoteSaves = r.saves; }).catch(() => {});
   const dropRemote = (id: string) => { remoteSaves = remoteSaves.filter((m) => m.id !== id); syncDelSave(id); };
   async function checkSave() { pendingSave = null; if (!src || !img || !hasIDB() || src.kind === 'photo' || room) return; try { pendingSave = (await saves.get(saveId())) ?? null; } catch {} if (!pendingSave) { await remoteReady; const m = remoteSaves.find((x) => x.id === saveId()); if (m) { const d = await fetchSave(m.id); if (d && d.savedAt >= m.savedAt - 1) pendingSave = d; } }
@@ -537,7 +543,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     const em = EMOJIS[i]; if (!em) return; let slot = 0; for (let k = 1; emoSlots.has(slot); k++) slot = k % 2 ? Math.ceil(k / 2) : -Math.ceil(k / 2);
     emoSlots.add(slot); const pop = document.createElement('div'); pop.className = 'emo-pop'; pop.style.setProperty('--slot', String(slot));
     const inner = document.createElement('span'); const b = document.createElement('b'); b.textContent = em; inner.appendChild(b);
-    if (who) { const sm = document.createElement('small'); sm.textContent = who.nick; sm.style.background = who.color; inner.appendChild(sm); }
+    if (who) { const sm = document.createElement('small'); if (plateOf(who.lv ?? 0)) { sm.className = 'plated'; sm.appendChild(nameTag(who.nick, who.lv)); } else { sm.textContent = who.nick; sm.style.background = who.color; } inner.appendChild(sm); }
     pop.appendChild(inner); $('jg-emofx').appendChild(pop);
     const gone = () => { pop.remove(); emoSlots.delete(slot); }; inner.addEventListener('animationend', gone, { once: true }); setTimeout(gone, 2500);
   }
@@ -801,8 +807,9 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     return null;
   }
   function snap(g: Group, x1: number, y1: number, done: () => void) { tweens.set(g, { x0: g.dx, y0: g.dy, x1, y1, t0: performance.now(), dur: 140, done }); draw(); }
-  function merge(g: Group, into: Group) {
-    { const tol = snapTol(); if (Math.abs(into.dx) >= tol || Math.abs(into.dy) >= tol) dust.puff(outerEdges(g.pieces, cut.pw, cut.ph, into.dx, into.dy, into.pieces), pieceSide(), 0.5); }
+  /** plate = 놓은 사람의 네임태그 판(먼지 색). 방에서 남이 붙인 것은 case 'merge' 가 넘긴다 */
+  function merge(g: Group, into: Group, plate = myPlate) {
+    { const tol = snapTol(); if (Math.abs(into.dx) >= tol || Math.abs(into.dy) >= tol) dust.puff(outerEdges(g.pieces, cut.pw, cut.ph, into.dx, into.dy, into.pieces), pieceSide(), 0.5, plate); }
     for (const p of g.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(g), 1); toFront(into); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); if (into.sid) room.holders.delete(into.sid); }
     navigator.vibrate?.(6); click();
     // 붙고 나서 또 맞는 이웃이 있으면 연쇄로 붙임 (이미 같은 오프셋이라 트윈 없이)
@@ -811,14 +818,14 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
     let n: Group | null; while ((n = findNeighbor(into, tol))) { if (room && n.sid && into.sid) { send({ t: 'merge', g: n.sid, into: into.sid, dx: n.dx, dy: n.dy }); room.bySid.delete(n.sid); } for (const p of n.pieces) { p.g = into; into.pieces.push(p); } groups.splice(groups.indexOf(n), 1); }
     checkLast(); draw(); scheduleSave();
   }
-  function lockGroup(g: Group) {
+  function lockGroup(g: Group, plate = myPlate) {
     const lc = lockedLayer.getContext('2d')!;
     for (const p of g.pieces) { p.locked = true; p.g = null; lc.drawImage(p.bmp.canvas, p.c * cut.pw + p.bmp.ox, p.r * cut.ph + p.bmp.oy, p.bmp.w, p.bmp.h); seq.push(p.r * cut.cols + p.c); }
     const i = groups.indexOf(g); if (i >= 0) groups.splice(i, 1); if (room && g.sid) { room.bySid.delete(g.sid); room.holders.delete(g.sid); }
     const last = lockedN + g.pieces.length === total;
     lockedN += g.pieces.length; updateHud(); navigator.vibrate?.(10); click(true);
     // 마지막 조각은 먼지 대신 금가루 — 조각이 환해지고 둘레에서 금빛 안개·박편이 퍼진다
-    if (last) gold.burst(g.pieces.map(slotOf), outerEdges(g.pieces, cut.pw, cut.ph), goldUnit()); else dust.puff(outerEdges(g.pieces, cut.pw, cut.ph), pieceSide());
+    if (last) gold.burst(g.pieces.map(slotOf), outerEdges(g.pieces, cut.pw, cut.ph), goldUnit()); else dust.puff(outerEdges(g.pieces, cut.pw, cut.ph), pieceSide(), 1, plate);
     draw();
     if (!room) xp.got(g.pieces.length); // 방에서는 남이 놓은 것도 여기로 오므로 내가 보낼 때(myLocked) 센다
     if (lockedN === total) finish(); else { checkLast(); scheduleSave(); }
@@ -975,7 +982,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function netMove(g: Group) { if (!g.sid) return; const now = performance.now(); if (now - mvT < MV_MS) return; mvT = now; send({ t: 'mv', g: g.sid, dx: g.dx, dy: g.dy }); }
   /** 남이 끄는 조각을 다음 좌표까지 선형으로 미끄러뜨린다(도착점은 drop 이 정확히 맞춰 준다) */
   function netGlide(g: Group, x: number, y: number) { tweens.set(g, { x0: g.dx, y0: g.dy, x1: x, y1: y, t0: performance.now(), dur: MV_MS * 1.15, lin: true, done: () => {} }); draw(); }
-  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); e.innerHTML = `<i style="background:${pl.color}"></i>`; const b = document.createElement('b'); b.textContent = pl.nick + (pl.id === room.me?.id ? ` (${U.me})` : ''); e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
+  function renderPlayers() { if (!room) return; $('jg-pcount').textContent = String(room.players.size); $('jg-pldlg-n').textContent = String(room.players.size); $('jg-pldlg-lead').hidden = room.players.size > 1; const box = $('jg-players'); box.innerHTML = ''; for (const pl of room.players.values()) { const e = document.createElement('li'); const b = document.createElement('b'); b.appendChild(nameTag(pl.nick, pl.lv, { dot: pl.color })); if (pl.id === room.me?.id) { const s = document.createElement('span'); s.className = 'pl-me'; s.textContent = ` (${U.me})`; b.appendChild(s); } e.appendChild(b); if (pl.id === room.me?.id) { const r = document.createElement('button'); r.type = 'button'; r.className = 'rn'; r.textContent = U.rename; r.addEventListener('click', async () => { const n = await askNick(pl.nick, 'edit'); if (!n || n === pl.nick) return; setNick(n); send({ t: 'nick', nick: n }); const u = await me(); if (u) setNickRemote(n); }); e.appendChild(r); } box.appendChild(e); } }
   const openPlayers = (on: boolean) => { $('jg-pldlg').hidden = !on; if (on) { renderPlayers(); const n = $('jg-plnote'); n.hidden = src?.kind !== 'photo'; n.textContent = U.photoHostNote; } };
   // 방을 만들자마자 퍼즐 화면만 떠서 초대를 해야 하는 줄 모르는 경우가 많다. 방을 연 사람이
   // 아직 혼자면 초대 안내를 한 번 띄운다. 링크로 들어온 손님에게는 띄우지 않는다
@@ -1039,7 +1046,8 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       $('jg-gate-login').onclick = () => openLogin(location.pathname + location.search);
       const inp = $('jg-gate-nick') as HTMLInputElement; inp.value = getNick() || randomNick(LANG); const form = $('jg-gate-form') as HTMLFormElement; const see = $('jg-gate-see');
       const done = (v: string | null) => { g.hidden = true; form.onsubmit = null; see.onclick = null; res(v); };
-      form.onsubmit = (e) => { e.preventDefault(); const n = inp.value.trim().slice(0, 12); if (!n) { inp.focus(); return; } done(n); };
+      inp.oninput = () => { if (nickCells(inp.value) > NICK_CELLS) inp.value = clipNick(inp.value); };
+      form.onsubmit = (e) => { e.preventDefault(); const n = clipNick(inp.value); if (!n) { inp.focus(); return; } done(n); };
       see.onclick = () => done('');
       g.querySelector('.modal-bg')!.addEventListener('click', () => done(null), { once: true });
       setTimeout(() => (peek ? see : inp).focus(), 50);
@@ -1179,12 +1187,12 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
       case 'deny': { const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); if (lifting === g) lifting = null; if (takeReq.delete(m.g) && g.pieces.length === 1 && !g.pieces[0].locked) { const p = g.pieces[0]; ungroup(g); toTray(p); applyTrayFilter(); room.bySid.delete(m.g); } room.holders.delete(m.g); toast(U.heldBy('')); draw(); } lockReq.delete(m.g); reqSync(); return; }
       case 'mv': { holdT.set(m.g, performance.now()); const g = room.bySid.get(m.g); if (g && g !== dragging) netGlide(g, m.dx, m.dy); return; }
       case 'drop': { const g = room.bySid.get(m.g); room.holders.delete(m.g); if (g && g !== dragging) { tweens.delete(g); g.dx = m.dx; g.dy = m.dy; draw(); } return; }
-      case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) endDrag(); tweens.delete(g); merge(g, into); } else draw(); return; }
+      case 'merge': { const into = room.bySid.get(m.into); if (!into) return; const g = room.bySid.get(m.g); if (into !== dragging) { tweens.delete(into); into.dx = m.dx; into.dy = m.dy; } if (g && g !== into) { if (dragging === g) endDrag(); tweens.delete(g); merge(g, into, plateOfPlayer(m.by)); } else draw(); return; }
       // 내가 청해 둔 잠그기가 받아들여졌을 때만 내 조각으로 친다 — 남과 같은 뭉치를 동시에 놓으면 서버가 거절한다(resync).
       // 셈은 뭉치가 내 판에 아직 있는지와 따로 한다: 스냅(140ms)이 확인보다 먼저 끝나면 이미 제자리에 잠가 bySid 에서 빠진 뒤다(서버와 먼 접속·몰린 메시지 —
       // 전에는 그 조각을 안 세서 XP 도 기여도 없었다). 수는 서버가 잠근 조각(idx)으로. 완성 뒤에 온 확인은 XP 묶음에 안 넣는다 — 완성 정산이 mine − paid 로 친다(finish 가 확인을 기다린다)
       // myLocked 를 lockGroup 보다 먼저 올려야 이 조각이 마지막일 때 완성 정산이 제 수를 본다
-      case 'lock': { const k = lockReq.delete(m.g) ? m.idx.length : 0; if (k) { myLocked += k; if (!complete) xp.got(k); } const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g); } return; }
+      case 'lock': { const k = lockReq.delete(m.g) ? m.idx.length : 0; if (k) { myLocked += k; if (!complete) xp.got(k); } const g = room.bySid.get(m.g); if (g) { if (dragging === g) endDrag(); g.dx = 0; g.dy = 0; tweens.delete(g); lockGroup(g, plateOfPlayer(m.by)); } return; }
       // 공개 판: 한 판이 끝나거나 너무 오래 멈춰 있으면 서버가 다음 그림으로 갈아 끼운다
       case 'next': nextRound(m.state); return;
       case 'resync': lockReq.clear(); reqSync(); return;
@@ -1277,7 +1285,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((b) => b.addEventListener('click', async () => { const r = await share({ title: b.dataset.title!, text: b.dataset.text, url: b.dataset.url || undefined }); const I = UI[LANG].foot; if (r === 'copied') toast(I.copied); else if (r === 'failed') toast(I.shareFail); }));
   // 테스트·썸네일용: 트레이 앞 n개를 제자리에 놓음. 개발 서버에서만 — 배포본에 두면 콘솔 한 줄로 조각 XP 를 캘 수 있다
   // 방에서는 사람이 트레이에서 꺼내 제자리에 놓은 것처럼 take → lock 을 서버에 청한다. early = 스냅이 서버 확인보다 먼저 끝난 것(서버와 먼 접속). drop = 소켓이 소리 없이 죽은 것(재접속)
-  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, last: gold.on, outline, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
+  if (import.meta.env.DEV) (window as any).__jigsaw = { demo: (n: number, early = false) => { for (const p of order.filter((q) => !q.locked && !q.g).slice(0, n)) { p.el?.remove(); const g = makeGroup(p, 0, 0); if (!room) { lockGroup(g); continue; } g.sid = String(pieces.indexOf(p)); room.bySid.set(g.sid, g); room.holders.set(g.sid, room.me!.id); takeReq.add(g.sid); send({ t: 'take', g: g.sid, dx: 0, dy: 0 }); reqLock(g); if (early) { tweens.delete(g); lockGroup(g); } } }, drop: () => { try { room?.ws?.close(); } catch {} }, state: () => ({ total, lockedN, moves, mine: myLocked, me: room?.me ?? null, plate: myPlate, board: groups.length, tray: tray.children.length, trayShape: [...tray.children].map((e) => shapeKey(pieceOf.get(e as HTMLElement)!)), loose: groups.flatMap((g) => g.pieces.map((p) => ({ r: p.r, c: p.c, x: px(p), y: py(p), g: g.id }))), groups: groups.map((g) => g.pieces.length), finding: sparkle.on, last: gold.on, outline, pw: cut.pw, ph: cut.ph, view: { ...view } }) };
   tray.addEventListener('wheel', (e) => { if (tray.scrollWidth > tray.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); tray.scrollLeft += e.deltaY; } }, { passive: false });
   // ── 부팅 2단계: 한 진입점. URL 이 첫 화면을 정한다 (1단계는 head 의 PlayBoot — 같은 규칙으로 첫 페인트 전에 로딩 화면을 띄워 둔다)
   //   ?room=<id> 방 참가 · ?resume=<id> 하던 퍼즐 · ?daily=1|YYYY-MM-DD 오늘의 퍼즐(과거 판 가능) · ?k=<key>&n=<조각> 그림 · ?photo=<id>&n=<조각> /photo/ 에서 고른 사진 · 없음 → /play/ 로

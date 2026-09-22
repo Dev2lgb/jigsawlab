@@ -97,7 +97,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     <form class="gdlg-box nick" id="nick-form" role="dialog" aria-modal="true" aria-labelledby="nick-h">
       <h2 id="nick-h">{T.acct.nickTitle}</h2>
       <p class="auth-lead">{T.acct.nickLead}</p>
-      <div class="nick-wrap"><input class="input nick-in" id="nick-input" maxlength="12" autocomplete="nickname" placeholder={T.acct.nickPh} /><button type="button" class="nick-shuffle" id="nick-shuffle" title={T.acct.shuffle} aria-label={T.acct.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
+      <div class="nick-wrap"><input class="input nick-in" id="nick-input" maxlength="16" autocomplete="nickname" placeholder={T.acct.nickPh} /><button type="button" class="nick-shuffle" id="nick-shuffle" title={T.acct.shuffle} aria-label={T.acct.shuffle}><Fragment set:html={icon('shuffle', 18)} /></button></div>
       <p class="nick-hint">{T.acct.nickHint}</p>
       <div class="nick-row"><button type="button" class="btn" id="nick-cancel">{T.acct.later}</button><button type="submit" class="btn primary" id="nick-ok">{T.acct.nickStart}</button></div>
     </form>
@@ -169,17 +169,17 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
     else { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { (e.target as HTMLElement).classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }); els.forEach((e) => io.observe(e)); }
     const top = document.getElementById('top')!; const onS = () => top.classList.toggle('scrolled', scrollY > 8); onS(); addEventListener('scroll', onS, { passive: true });
     // 계정 버튼(선택 로그인). 로그인 직후 해시로 결과를 받음: new → 닉네임 정하기, ok → 이 기기 기록 합치기
-    Promise.all([import('../lib/account'), import('../lib/authui'), import('../lib/nickgen')]).then(async ([{ me, setNickRemote, mergeLocalDone, authAvailable }, { initAuthUI, openLogin, askNick }, { randomNick }]) => {
+    Promise.all([import('../lib/account'), import('../lib/authui'), import('../lib/nickgen'), import('../lib/nametag')]).then(async ([{ me, setNickRemote, mergeLocalDone, authAvailable }, { initAuthUI, openLogin, askNick }, { randomNick }, { putNameTag }]) => {
       initAuthUI();
       const a = document.getElementById('acct') as HTMLAnchorElement, nk = document.getElementById('acct-nick')!;
       const h = location.hash.match(/^#login=(\w+)/); if (h) history.replaceState(null, '', location.pathname + location.search);
       const u = await me(!!h); a.dataset.noauth = authAvailable() ? '0' : '1';
       // XP·레벨·업적은 회원만 쌓이므로 XP 안내(.xp-tip)도 회원에게만 보인다 — 화면마다 검사하지 않고 여기서 한 번에
       document.documentElement.classList.toggle('member', !!u);
-      if (u) { nk.textContent = u.nick || a.dataset.login!; }
+      if (u) { if (u.nick) putNameTag(nk, u.nick, u.level); else nk.textContent = a.dataset.login!; }
       else { nk.textContent = a.dataset.login!; a.href = '#'; a.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }); }
       if (h?.[1] === 'fail') alert(a.dataset.fail ?? 'login failed');
-      if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(docLang()); if (n && (await setNickRemote(n))) nk.textContent = n; }
+      if (u && (h?.[1] === 'new' || !u.nick)) { let cur = ''; try { cur = localStorage.getItem('nick') ?? ''; } catch {} const n = (await askNick(cur, 'new')) || cur || randomNick(docLang()); if (n && (await setNickRemote(n))) putNameTag(nk, n, u.level); }
       // 로그인한 채 맞췄는데 서버에 못 올라간 판(완성 때 전송 실패)을 올린다. 비회원으로 맞춘 판은 로그인해도 안 준다
       if (u) mergeLocalDone().then(async (a) => {
         if (!a || a.gained <= 0) return;
@@ -399,8 +399,26 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   html.member a.xp-tip:hover { text-decoration: none; box-shadow: inset 0 0 0 1px var(--gold); }
   .lb { list-style: none; margin: 0; padding: 0; } .lb li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); } .lb li:first-child { border-top: 0; } .lb li.empty { color: var(--muted); padding: 6px 0; }
   .lb .rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-3); color: var(--ink-2); font-weight: 800; font-size: .85rem; font-variant-numeric: tabular-nums; flex: none; } .lb li:nth-child(1) .rank { background: var(--gold); color: #fff; } .lb li:nth-child(2) .rank { background: #c9ced9; color: #fff; } .lb li:nth-child(3) .rank { background: #d8a880; color: #fff; }
-  .lb .nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .lb .score { font-weight: 800; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 500; }
+  .lb .nick { flex: 1; min-width: 0; display: flex; align-items: center; font-weight: 600; } .lb .score { font-weight: 800; font-variant-numeric: tabular-nums; } .lb .score small { color: var(--muted); font-weight: 500; }
   .lv-chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft, var(--bg-3)); color: var(--accent); font-size: .74rem; font-weight: 800; letter-spacing: .01em; flex: none; } /* 레벨 칩 — 홈 랭킹·/rank/ 공용 (JS 가 만드는 요소라 전역) */
+  /* 네임태그(lib/nametag.ts) — 10레벨부터 글자 뒤에 판(캔버스)이 깔린다: 동·은·금·다이아·무지개. 글자는 HTML 이라 선명하고 말줄임이 된다.
+     판이 있으면 자간을 좁혀 판 안에 최대한 들인다. .nt-dot 은 방에서 그 사람 색 점 */
+  .ntag { position: relative; display: inline-flex; align-items: center; max-width: 100%; min-width: 0; vertical-align: middle; }
+  .ntag .nt-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .ntag-w { display: inline-flex; align-items: center; gap: .45em; min-width: 0; max-width: 100%; vertical-align: middle; } /* 방에서 그 사람 색 점 + 태그 — 점은 판 밖에 */
+  .ntag-w .nt-dot { width: .62em; height: .62em; border-radius: 50%; flex: none; box-shadow: 0 0 0 1.5px rgba(255,255,255,.8); }
+  .ntag[data-plate] { font-size: .86em; padding: .16em .82em .16em .78em; line-height: 1.25; font-weight: 700; letter-spacing: -.02em; isolation: isolate; } /* 판이 있으면 글자는 한 치수 작게 — 폰에서 줄을 밀지 않게. 좌우 여백은 홈(왼쪽 안으로 .51em)·톱니(오른쪽 밖으로 .51em)를 겨우 비켜 가는 폭 */
+  @media (max-width: 640px) { .ntag[data-plate] { font-size: .8em; } }
+  @media (max-width: 480px) { .lb .score { font-size: .88rem; } } /* 좁은 폰에서 XP 숫자를 한 치수 내려 태그에 자리를 준다 */
+  .ntag .nt-cv { position: absolute; pointer-events: none; z-index: -1; }
+  /* 글자는 새겨 넣은 듯 — 판보다 짙은 같은 계열 색에, 아래로 1px 옅은 빛 */
+  .ntag[data-plate="1"] { color: #3d2212; text-shadow: 0 1px 0 rgba(255,232,214,.45); }
+  .ntag[data-plate="2"] { color: #2b3140; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+  .ntag[data-plate="3"] { color: #4a3509; text-shadow: 0 1px 0 rgba(255,245,215,.55); }
+  .ntag[data-plate="4"] { color: #24405c; text-shadow: 0 1px 0 rgba(255,255,255,.8); }
+  .ntag[data-plate="5"] { color: #35284c; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+  /* 헤더 — 판이 있으면 알약 테두리는 겹으로 보여 빼고, 글자 칸의 overflow 를 풀어 판 둘레의 두께·반짝이가 잘리지 않게(말줄임은 .nt-t 가 맡는다) */
+  .acct span { min-width: 0; } .acct:has(.ntag[data-plate]) { border-color: transparent; padding: 4px 4px 4px 8px; } .acct:has(.ntag[data-plate]) span { overflow: visible; }
 
   /* 3D 퍼즐 상자 — --w/--h/--d 로 크기. 앞면·왼쪽 옆면·윗면 세 면을 가진 큐브, 호버하면 정면으로 돌아옴 */
   /* 크기는 바깥 진열대가 --w/--h/--d 로 정한다. 여기서 직접 --w 를 선언하면 상속을 덮어써

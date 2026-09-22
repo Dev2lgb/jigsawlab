@@ -1,4 +1,5 @@
-// 랜덤 닉네임 — 형용사+동물 ("친절한고양이"). 닉네임을 안 정했거나 손님으로 들어올 때 씀. 12자 이내 조합만.
+import { nickCells, NICK_CELLS } from './nick';
+// 랜덤 닉네임 — 형용사+동물 ("친절한고양이"). 닉네임을 안 정했거나 손님으로 들어올 때 씀. 16칸(한글 8자, nick.ts) 이내 조합만.
 // 독일어·스페인어는 형용사가 명사의 성을 따라가므로 동물을 전부 여성 명사로 골라 뒀다
 // (de 는 -e 어미가 맞아떨어지고, es 는 -a/무변화 형용사가 맞는다). 어순도 언어마다 다르다
 const ADJ = {
@@ -22,6 +23,6 @@ const join = (L: NickLang, a: string, b: string) => (L === 'ko' || L === 'ja' ? 
 const FALLBACK: Record<NickLang, string> = { ko: '친절한고양이', en: 'Kind Cat', ja: 'やさしいねこ', de: 'Nette Katze', es: 'Foca Feliz' };
 export function randomNick(lang: string): string {
   const L = (lang in ADJ ? lang : 'ko') as NickLang;
-  for (let i = 0; i < 20; i++) { const n = join(L, pick(ADJ[L]), pick(ANIMAL[L])); if (n.length <= 12) return n; }
+  for (let i = 0; i < 20; i++) { const n = join(L, pick(ADJ[L]), pick(ANIMAL[L])); if (nickCells(n) <= NICK_CELLS) return n; }
   return FALLBACK[L];
 }

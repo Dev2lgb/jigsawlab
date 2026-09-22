@@ -2,7 +2,7 @@
 import { getDone, setNick } from './store';
 import type { SaveData } from './db';
 import type { Stats } from './level';
-export interface Me { id: string; nick: string }
+export interface Me { id: string; nick: string; level?: number } // level = 네임태그 판(nametag.ts). /api/me 캐시(5분)라 조금 묵을 수 있다
 const ss = { get: (k: string) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { sessionStorage.setItem(k, v); } catch {} }, del: (k: string) => { try { sessionStorage.removeItem(k); } catch {} } };
 let mep: Promise<Me | null> | null = null;
 /** 로그인한 사용자. 안 했으면 null. 로그인 직후(#login=ok|new)에는 캐시를 무시 */

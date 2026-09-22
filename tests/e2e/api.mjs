@@ -11,7 +11,7 @@ import { BASE, get, post, ok, finish, dayKST } from './lib.mjs';
 { const d = await get('/api/rank?tab=week'); ok(d.tab === 'week' && Array.isArray(d.top) && d.me === null, 'rank: 비회원'); }
 { const r = await fetch(BASE + '/api/live'); const d = await r.json(); ok(r.headers.get('cache-control') === 'no-store' && d.total > 0 && d.work?.key === d.key && !('lang' in d), 'live: DO 정보 + 제목, lang 없음', JSON.stringify(d)); }
 // ── 회원 (run.mjs 가 심은 테스트 회원, 세션 쿠키 위조)
-{ const d = await get('/api/me', true); ok(d.user?.nick === 'tester', 'me: 회원', JSON.stringify(d)); }
+{ const d = await get('/api/me', true); ok(d.user?.nick === 'tester' && d.user.level === 1, 'me: 회원 (레벨 동봉 — 네임태그)', JSON.stringify(d)); }
 { const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 100, placed: 60 }, true); const a = r.body?.award; ok(a?.gained === 60 && a.xp === 60 && a.rate === 1 && a.capped === false && a.level === 1, 'pieces: 60 → xp 60', JSON.stringify(r.body)); }
 { const r = await post('/api/sync', { action: 'pieces', kind: 'gallery', key: 'wave', n: 100, placed: 60 }, true); const a = r.body?.award; ok(a?.gained === 60 && a.xp === 120 && a.prevLevel === 1 && a.levelUp === true && a.level === 2, 'pieces: +60 → xp 120, 레벨업 2', JSON.stringify(r.body)); }
 { const r = await post('/api/sync', { action: 'done', entry: { kind: 'gallery', key: 'wave', name: 'wave', n: 100, sec: 150, moves: 100, at: Date.now(), mine: 100, paid: 120 } }, true); const a = r.body?.award;
@@ -19,6 +19,7 @@ import { BASE, get, post, ok, finish, dayKST } from './lib.mjs';
 { const d = await get('/api/level', true); ok(d.xp === 120 && d.level === 2 && d.stats.solved === 1 && d.badges.some((b) => b.code === 'first') && d.rank === 1 && d.week.rank === 1 && d.week.xp === 120, 'level: xp·업적·순위', JSON.stringify(d)); }
 { const d = await get('/api/rank?tab=week', true); ok(d.me?.rank === 1 && d.me.xp === 120 && d.me.listed === true && d.top[0]?.nick === 'tester' && d.top[0].level === 2, 'rank(week): 내 순위 1', JSON.stringify(d)); }
 { const d = await get('/api/rank?tab=all', true); ok(d.me?.rank === 1 && d.me.xp === 120 && d.top[0]?.xp === 120, 'rank(all)'); }
+{ const d = await get('/api/me', true); ok(d.user?.level === 2, 'me: 레벨이 user_stats 를 따라온다', JSON.stringify(d)); }
 // 재도전 감산: wave 는 100조각까지 깼으니 48조각 오늘의 퍼즐은 ×1.5×0.25
 { const r = await post('/api/sync', { action: 'pieces', kind: 'daily', key: 'wave', n: 48, placed: 48 }, true); const a = r.body?.award; ok(a?.rate === 0.375 && a.gained === 18 && a.xp === 138, 'pieces(daily 재도전): rate 0.375 → 18', JSON.stringify(r.body)); }
 // 조각 수 가중치: 1000조각은 조각당 3. wave 는 100조각까지만 깼으니 더 큰 판은 재도전 감산이 없다
@@ -31,7 +32,11 @@ import { BASE, get, post, ok, finish, dayKST } from './lib.mjs';
 // 진열대 진도 — 그림별 최고 조각 수(user_cleared). 오늘의 퍼즐 날짜 행(d:…)은 그림이 아니라 안 나온다
 { const d = await get('/api/sync?cleared=1', true); ok(Array.isArray(d.cleared) && d.cleared.some(([k, n]) => k === 'wave' && n === 2000) && !d.cleared.some(([k]) => String(k).startsWith('d:')), 'sync GET cleared: 그림별 최고 조각 수', JSON.stringify(d)); }
 { const r = await fetch(BASE + '/api/sync?cleared=1'); ok(r.status === 401, 'sync GET cleared: 비회원 401'); }
-{ const r = await post('/api/me', { nick: 'tester2' }, true); ok(r.body?.user?.nick === 'tester2', 'me POST: 닉네임'); await post('/api/me', { nick: 'tester' }, true); }
+{ const lv = (await get('/api/level', true)).level; const r = await post('/api/me', { nick: 'tester2' }, true); ok(r.body?.user?.nick === 'tester2' && r.body.user.level === lv, 'me POST: 닉네임 (레벨 동봉)', JSON.stringify(r.body)); }
+// 닉네임은 폭으로 자른다(lib/nick.ts) — 넓은 글자 2칸, 16칸: 한글 8자·영문 16자. 공백 정리도 같은 곳에서
+{ const r = await post('/api/me', { nick: '가나다라마바사아자차' }, true); ok(r.body?.user?.nick === '가나다라마바사아', 'me POST: 한글 10자 → 8자', JSON.stringify(r.body)); }
+{ const r = await post('/api/me', { nick: '  abcdefgh  ijklmnopqrst ' }, true); ok(r.body?.user?.nick === 'abcdefgh ijklmno', 'me POST: 영문은 16칸, 공백 정리', JSON.stringify(r.body)); }
+{ const r = await post('/api/me', { nick: '한글abc' }, true); ok(r.body?.user?.nick === '한글abc', 'me POST: 섞인 이름은 그대로'); await post('/api/me', { nick: 'tester' }, true); }
 // 계정의 오늘의 퍼즐(홈의 지난 7일 ✓·연속) — ✓ 는 판의 날짜(어제 판), 연속은 푼 날짜(오늘)로 센다
 { const r = await fetch(BASE + '/api/sync?daily=1'); ok(r.status === 401, 'sync GET daily: 비회원 401'); await r.text(); }
 { const y = dayKST(-1); await post('/api/sync', { action: 'done', entry: { kind: 'daily', key: 'wave', name: 'wave', n: 48, sec: 60, moves: 48, day: y, at: Date.now() + 2 } }, true); const d = await get('/api/sync?daily=1', true); ok(d.days?.length === 1 && d.days[0] === y && d.streak === 1, 'sync GET daily: 어제 판 → days, 연속 1', JSON.stringify(d)); }
@@ -64,7 +69,7 @@ const none = (ws, t, ms = 400) => new Promise((res) => setTimeout(() => res(!ws.
 const send = (ws, m) => ws.send(JSON.stringify(m));
 try {
   const A = await open(rid), B = await open(rid);
-  send(A, { t: 'hello', nick: 'A', pid: 'pa' }); const init = await next(A, 'init'); ok(init.state?.total === 48 && init.you?.nick === 'A' && init.hasPhoto === false, 'ws: init');
+  send(A, { t: 'hello', nick: 'A', pid: 'pa' }); const init = await next(A, 'init'); ok(init.state?.total === 48 && init.you?.nick === 'A' && init.hasPhoto === false && init.you.lv === undefined, 'ws: init (비회원은 lv 없음)');
   send(B, { t: 'hello', nick: 'B' }); await next(B, 'init'); const j = await next(A, 'join'); ok(j.p?.nick === 'B', 'ws: join 브로드캐스트');
   send(A, { t: 'take', g: 0, dx: 10.4, dy: 20.6 }); const tk = await next(B, 'take'); ok(tk.g === '0' && tk.dx === 10 && tk.dy === 21 && tk.id === init.you.id, 'ws: take (좌표 반올림)', JSON.stringify(tk));
   send(A, { t: 'mv', g: '0', dx: 15, dy: 25 }); const mv = await next(B, 'mv'); ok(mv.g === '0' && mv.dx === 15 && mv.dy === 25, 'ws: mv');
@@ -81,10 +86,10 @@ try {
   send(B, { t: 'untake', g: '0' }); const ut = await next(A, 'untake'); ok(ut.g === '0', 'ws: untake');
   send(A, { t: 'take', g: 1, dx: 0, dy: 0 }); await next(B, 'take');
   send(B, { t: 'lock', g: '1', dx: 0, dy: 0 }); const rs = await next(B, 'resync'); ok(!!rs, 'ws: 남이 잡은 뭉치 lock → resync');
-  send(A, { t: 'lock', g: '1', dx: 0, dy: 0 }); const lkA = await next(A, 'lock'), lkB = await next(B, 'lock'); ok(lkA.idx?.[0] === 1 && lkB.idx?.[0] === 1, 'ws: lock 양쪽 브로드캐스트');
+  send(A, { t: 'lock', g: '1', dx: 0, dy: 0 }); const lkA = await next(A, 'lock'), lkB = await next(B, 'lock'); ok(lkA.idx?.[0] === 1 && lkB.idx?.[0] === 1 && lkA.by === init.you.id && lkB.by === init.you.id, 'ws: lock 양쪽 브로드캐스트 (놓은 사람 by)');
   send(A, { t: 'lock', g: '9', dx: 0, dy: 0 }); ok(await none(B, 'lock'), 'ws: 없는 뭉치 lock 무시');
   send(A, { t: 'take', g: 3, dx: 0, dy: 0 }); await next(B, 'take'); send(A, { t: 'take', g: 4, dx: 0, dy: 0 }); await next(B, 'take');
-  send(A, { t: 'merge', g: '4', into: '3', dx: 0, dy: 0 }); const mgA = await next(A, 'merge'), mgB = await next(B, 'merge'); ok(mgA.g === '4' && mgA.into === '3' && mgB.into === '3', 'ws: merge');
+  send(A, { t: 'merge', g: '4', into: '3', dx: 0, dy: 0 }); const mgA = await next(A, 'merge'), mgB = await next(B, 'merge'); ok(mgA.g === '4' && mgA.into === '3' && mgB.into === '3' && mgB.by === init.you.id, 'ws: merge (놓은 사람 by)');
   send(A, { t: 'take', g: 5, dx: 500, dy: 500 }); await next(B, 'take'); send(A, { t: 'lock', g: '5', dx: 500, dy: 500 }); const rs2 = await next(A, 'resync'); ok(!!rs2, 'ws: 제자리 아닌 lock → resync');
   // 같은 탭(pid)이 다시 붙으면 옛 소켓을 그 자리에서 닫고 점유를 푼다 — 소리 없이 죽은 접속이 목록에 남아 같은 사람이 여럿으로 보이던 문제
   B.inbox = B.inbox.filter((m) => m.t !== 'join'); // A 의 첫 join 이 남아 있다(둘 다 연 뒤 hello 를 보냈으므로)

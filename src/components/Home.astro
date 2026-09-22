@@ -188,6 +188,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   import { initFavUI } from '../lib/fav';
   import { clearedMap, markBoxes } from '../lib/progress';
   import { docLang, prefix, LI as LIDX, UI } from '../i18n/ui';
+  import { nameTag } from '../lib/nametag';
   const LANG = docLang(), LI = LIDX[LANG], T = UI[LANG];
   initFavUI();
   clearedMap().then((m) => markBoxes(m, T.catalog.progress)); // 깬 그림에 리본, 진열대 제목에 진도
@@ -218,7 +219,7 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
     if (d.me) { document.getElementById('lvl-me')!.textContent = d.me.rank ? T.lv.homeMe(d.me.rank, d.me.level) : T.lv.homeMeNone(d.me.level); }
     else { const my = document.getElementById('lvl-my') as HTMLAnchorElement; my.href = '#'; my.textContent = T.lv.loginBtn; my.addEventListener('click', (e) => { e.preventDefault(); (window as any).__authui?.openLogin(); }); }
     if (!d.top.length) { box.appendChild(li('empty')).textContent = T.lv.empty; return; }
-    for (const r of d.top.slice(0, 5)) { const e = li(); e.appendChild(sp('rank', String(r.r))); e.appendChild(sp('nick', r.nick)); e.appendChild(sp('lv-chip', T.lv.lvl(r.level))); e.appendChild(sp('score', T.lv.xp(r.xp))); box.appendChild(e); }
+    for (const r of d.top.slice(0, 5)) { const e = li(); e.appendChild(sp('rank', String(r.r))); { const nk = sp('nick', ''); nk.appendChild(nameTag(r.nick, r.level)); e.appendChild(nk); } e.appendChild(sp('lv-chip', T.lv.lvl(r.level))); e.appendChild(sp('score', T.lv.xp(r.xp))); box.appendChild(e); }
   })();
   fetch('/api/stats').then((r) => r.json<any>()).then((d) => { if (d.solved > 0) { const w = document.getElementById('num-solved')!; w.hidden = false; countUp(w.querySelector('b')!, d.solved); } }).catch(() => {});
   // 상설 공개 판 — 지금 어떤 그림을 몇 %까지 맞췄는지. 못 받으면 띠를 숨긴 채로 둔다

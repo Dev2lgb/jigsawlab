@@ -2,6 +2,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import { gridFor, seeded, LIVE_ID, LIVE_PIECES } from './jigsaw';
 import { WORK_BY_KEY, DAILY_POOL } from '../data/works';
+import { getUser } from './auth';
+import { clipNick } from './nick';
 
 // 메시지·상태 타입은 room-proto.ts (클라이언트와 공유). by = 지금 이 뭉치를 잡고 있는 사람 — 상태에 같이 저장한다(절전으로 메모리가 날아가도 유지). 끊긴 사람의 점유는 holder() 가 자동으로 푼다
 import { EMOJIS, type RoomGroup, type RoomState, type Player, type RoomInfo, type ClientMsg, type ServerMsg } from './room-proto';
@@ -68,7 +70,9 @@ export class Room extends DurableObject<Cloudflare.Env> {
       await this.sweep(); if (this.socks().length >= (st.live ? LIVE_MAX : MAX_PLAYERS)) return new Response('full', { status: 429 });
       const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
       const id = Math.random().toString(36).slice(2, 8); const used = new Set(this.players().map((p) => p.color)); const color = COLORS.find((c) => !used.has(c)) ?? COLORS[Math.floor(Math.random() * COLORS.length)];
-      const att: Att = { id, nick: '', color, seen: Date.now() }; server.serializeAttachment(att); this.ctx.acceptWebSocket(server);
+      // 회원이면 레벨을 같이 — 네임태그 판·먼지 색. 클라이언트가 말하는 값을 믿으면 모두의 퍼즐에서 누구나 무지개판을 흉내 낼 수 있어 서버가 쿠키로 본다(접속마다 D1 읽기 1행)
+      const lv = (await getUser(req).catch(() => null))?.level;
+      const att: Att = { id, nick: '', color, seen: Date.now(), lv }; server.serializeAttachment(att); this.ctx.acceptWebSocket(server);
       return new Response(null, { status: 101, webSocket: client });
     }
     // hasPhoto: 지금 방 안에 사진을 가진 사람이 있는지(내 사진 방에서만 의미 있음). 없으면 새로 들어와도 사진을 받을 수 없다
@@ -77,7 +81,7 @@ export class Room extends DurableObject<Cloudflare.Env> {
   }
   /** 살아 있는 소켓들 — 내보낸 것(gone)은 뺀다. 목록·정원·점유 판정은 전부 이걸 본다 */
   socks() { return this.ctx.getWebSockets().filter((w) => !(w.deserializeAttachment() as Att | null)?.gone); }
-  players(): Player[] { return this.socks().map((ws) => { const a = ws.deserializeAttachment() as Att; return { id: a.id, nick: a.nick, color: a.color }; }); }
+  players(): Player[] { return this.socks().map((ws) => { const a = ws.deserializeAttachment() as Att; return { id: a.id, nick: a.nick, color: a.color, lv: a.lv }; }); }
   /** 소켓을 내보낸다 — 서버가 닫고 바로 leave 처리. 서버가 닫은 소켓에도 webSocketClose 가 올 수 있어 dropPlayer 는 두 번 불려도 한 번만 한다 */
   async kick(ws: WebSocket, why: string) { await this.dropPlayer(ws); try { ws.close(4000, why); } catch {} }
   /** 같은 탭(pid)의 옛 소켓을 닫는다 — 재접속하면 옛 접속이 그 자리에서 사라진다 */
@@ -97,14 +101,14 @@ export class Room extends DurableObject<Cloudflare.Env> {
   /** 서버와 판이 어긋났을 때: 이 사람만 전체 상태를 다시 받아 가게 한다 (조용히 무시하면 영영 어긋난 채로 남는다) */
   resync(ws: WebSocket) { this.sendTo(ws, { t: 'resync' }); }
   sendTo(ws: WebSocket, msg: ServerMsg) { try { ws.send(JSON.stringify(msg)); } catch {} }
-  initMsg(st: RoomState, att: Att): ServerMsg { return { t: 'init', state: st, you: { id: att.id, nick: att.nick, color: att.color }, players: this.players(), holders: this.holderMap(), hasPhoto: this.photoHere(), dead: !!st.dead }; }
+  initMsg(st: RoomState, att: Att): ServerMsg { return { t: 'init', state: st, you: { id: att.id, nick: att.nick, color: att.color, lv: att.lv }, players: this.players(), holders: this.holderMap(), hasPhoto: this.photoHere(), dead: !!st.dead }; }
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
     const st = await this.load(); if (!st || typeof raw !== 'string') return; let m: ClientMsg; try { m = JSON.parse(raw); } catch { return; } // 모양만 이렇다고 믿고, 값은 case 마다 검증한다
     const att = ws.deserializeAttachment() as Att; if (att.gone) return; const tol = Math.min(st.W / st.cols, st.H / st.rows) * 0.4;
     { const now = Date.now(); if (now - (att.seen ?? 0) > SEEN_EVERY) { att.seen = now; ws.serializeAttachment(att); } }
     switch (m.t) {
-      case 'nick': { const n = String(m.nick || '').trim().slice(0, 12); if (!n) return; att.nick = n; ws.serializeAttachment(att); this.broadcast({ t: 'nick', id: att.id, nick: n }); return; }
-      case 'hello': { att.nick = String(m.nick || '').slice(0, 12) || `#${att.id.slice(0, 3)}`; att.photo = !!m.photo; att.pid = typeof m.pid === 'string' ? m.pid.slice(0, 16) : undefined; ws.serializeAttachment(att); await this.replace(att.pid, ws); await this.sweep(ws); this.sendTo(ws, this.initMsg(st, att)); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color } }, ws); if (att.photo) this.photoBack(ws); return; }
+      case 'nick': { const n = clipNick(String(m.nick || '')); if (!n) return; att.nick = n; ws.serializeAttachment(att); this.broadcast({ t: 'nick', id: att.id, nick: n }); return; }
+      case 'hello': { att.nick = clipNick(String(m.nick || '')) || `#${att.id.slice(0, 3)}`; att.photo = !!m.photo; att.pid = typeof m.pid === 'string' ? m.pid.slice(0, 16) : undefined; ws.serializeAttachment(att); await this.replace(att.pid, ws); await this.sweep(ws); this.sendTo(ws, this.initMsg(st, att)); this.broadcast({ t: 'join', p: { id: att.id, nick: att.nick, color: att.color, lv: att.lv } }, ws); if (att.photo) this.photoBack(ws); return; }
       case 'take': { const i = Number(m.g); if (!Number.isInteger(i) || i < 0 || i >= st.total || st.locked.includes(i) || Object.values(st.groups).some((gr) => gr.idx.includes(i))) { this.sendTo(ws, { t: 'deny', g: String(i) }); return; } const g = String(i); st.groups[g] = { dx: num(m.dx, 0), dy: num(m.dy, 0), idx: [i], by: att.id, t: Date.now() }; this.broadcast({ t: 'take', id: att.id, g, dx: st.groups[g].dx, dy: st.groups[g].dy }, ws); this.scheduleSave(); return; }
       case 'untake': { const c = this.claim(st, m, att); if (!c || c.gr.idx.length !== 1) return; if (!c.mine) return this.resync(ws); delete st.groups[c.g]; this.broadcast({ t: 'untake', g: c.g }, ws); this.scheduleSave(); return; }
       // 이모지 — 상태 없이 중계만. 목록 밖 번호·연타는 조용히 버린다(클라이언트가 먼저 막으니 여기 걸리는 건 콘솔로 보낸 것뿐)
@@ -118,11 +122,11 @@ export class Room extends DurableObject<Cloudflare.Env> {
         if (!c.mine) return this.resync(ws); const { g, gr: A } = c;
         const ax = num(m.dx, A.dx), ay = num(m.dy, A.dy);
         if (Math.abs(ax - B.dx) > tol * 1.5 || Math.abs(ay - B.dy) > tol * 1.5) return this.resync(ws);
-        B.idx.push(...A.idx); release(B); delete st.groups[g]; this.broadcast({ t: 'merge', g, into, dx: B.dx, dy: B.dy }); this.scheduleSave(); return; }
+        B.idx.push(...A.idx); release(B); delete st.groups[g]; this.broadcast({ t: 'merge', g, into, dx: B.dx, dy: B.dy, by: att.id }); this.scheduleSave(); return; }
       case 'lock': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.resync(ws); const { g, gr: A } = c;
         const ax = num(m.dx, A.dx), ay = num(m.dy, A.dy);
         if (Math.abs(ax) > tol * 1.5 || Math.abs(ay) > tol * 1.5) return this.resync(ws);
-        st.locked.push(...A.idx); delete st.groups[g]; st.lastAt = Date.now(); this.broadcast({ t: 'lock', g, idx: A.idx });
+        st.locked.push(...A.idx); delete st.groups[g]; st.lastAt = Date.now(); this.broadcast({ t: 'lock', g, idx: A.idx, by: att.id });
         // 공개 판은 완성해도 끝나지 않는다. 완성작을 잠깐 같이 보고 다음 그림으로 (알람은 아무도 안 남아 있어도 깨어난다)
         if (st.locked.length >= st.total && !st.doneAt) { st.doneAt = Date.now(); this.broadcast({ t: 'done', at: st.doneAt }); await this.countSolved(); if (st.live) { await this.ctx.storage.put('state', st); await this.ctx.storage.setAlarm(Date.now() + NEXT_WAIT); } }
         this.scheduleSave(); return; }

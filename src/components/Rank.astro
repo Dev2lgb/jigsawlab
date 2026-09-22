@@ -56,12 +56,13 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     .rk-me { margin: 0 0 16px; padding: 16px 18px; border-radius: var(--r); background: var(--bg-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
     .rk-me :global(.me-row) { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .rk-me :global(.me-r) { font-family: var(--head); font-size: 1.6rem; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; flex: none; }
-    .rk-me :global(.me-n) { font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rk-me :global(.me-n) { font-weight: 800; flex: 1; min-width: 0; display: flex; align-items: center; }
     .rk-me :global(.me-x) { font-weight: 800; font-variant-numeric: tabular-nums; }
     .rk-me :global(p) { margin: 0; color: var(--ink-2); font-size: .92rem; line-height: 1.6; }
     .rk-me :global(.btn) { flex: none; }
     .rk-list { margin: 0; }
-    .rk-list :global(.b-n) { color: var(--muted); font-size: .78rem; font-weight: 600; margin-left: 8px; }
+    .rk-list :global(.b-n) { color: var(--muted); font-size: .78rem; font-weight: 600; margin-left: 8px; flex: none; white-space: nowrap; }
+    @media (max-width: 420px) { .rk-list :global(.b-n) { display: none; } } /* 좁은 폰에서는 업적 수를 접어 네임태그에 자리를 준다 */
     .rk-list :global(li.you) { background: var(--accent-soft, var(--bg-3)); border-radius: 10px; padding-inline: 10px; }
     /* 설명 블록 */
     .rk-blk { padding-top: clamp(30px, 5vw, 52px); } .rk-blk h2 { font-size: 1.3rem; margin: 0 0 10px; } .rk-sub { margin: 0 0 16px; font-size: .92rem; }
@@ -83,6 +84,7 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     import { fetchRank, authAvailable, type RankInfo } from '../lib/account';
     import { openLogin } from '../lib/authui';
     import { docLang, UI } from '../i18n/ui';
+    import { nameTag } from '../lib/nametag';
     const LANG = docLang(), V = UI[LANG].lv;
     const $ = (id: string) => document.getElementById(id)!;
     const list = $('rk-list'), meBox = $('rk-me');
@@ -93,7 +95,7 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     function row(r: { r: number; nick: string; xp: number; level: number; badges: number }, you: boolean) {
       const li = el('li', you ? 'you' : '');
       li.appendChild(el('span', 'rank', String(r.r)));
-      const nick = el('span', 'nick', r.nick);
+      const nick = el('span', 'nick'); nick.appendChild(nameTag(r.nick, r.level));
       if (r.badges > 0) { const b = el('span', 'b-n', `🏅 ${r.badges}`); nick.appendChild(b); }
       li.appendChild(nick);
       li.appendChild(el('span', 'lv-chip', V.lvl(r.level)));
@@ -110,7 +112,7 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
       }
       const r = el('div', 'me-row');
       r.appendChild(el('span', 'me-r', d.me.rank ? V.nth(d.me.rank) : V.none));
-      r.appendChild(el('span', 'me-n', d.me.nick));
+      { const mn = el('span', 'me-n'); mn.appendChild(nameTag(d.me.nick, d.me.level)); r.appendChild(mn); }
       r.appendChild(el('span', 'lv-chip', V.lvl(d.me.level)));
       r.appendChild(el('span', 'me-x', V.xp(d.me.xp)));
       meBox.appendChild(r);

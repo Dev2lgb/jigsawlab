@@ -54,6 +54,8 @@ await A.ctx.close(); await B.ctx.close();
   { const { ctx, page } = await newPage(br, { member: true });
     await page.goto(`${BASE}/board/?room=${id2}`); await waitPlay(page); const lv0 = await level(page);
     await page.evaluate(() => window.__jigsaw.demo(5)); await page.waitForTimeout(800); ok((await mine(page)) === 5, 'room(회원): 5개 → mine 5');
+    // 네임태그 — 서버가 쿠키로 확인한 레벨을 참가자(you·players)에 실어 주고, 참가자 목록은 nameTag 로 그린다(10레벨 미만이라 판은 없다)
+    { const st = await page.evaluate(() => { const s = window.__jigsaw.state(); return { lv: s.me?.lv, plate: s.plate, tag: document.querySelector('#jg-players .ntag')?.getAttribute('data-plate') ?? null, txt: document.querySelector('#jg-players .ntag .nt-t')?.textContent }; }); ok(st.lv === lv0.level && st.plate === 0 && st.tag === null && st.txt === 'tester', 'room(회원): 참가자에 레벨(lv)·네임태그', JSON.stringify(st)); }
     await reconnect(page); ok((await mine(page)) === 5 && (await tray(page)) === 43, 'room(회원): 재접속해도 mine 5·트레이 43', `${await mine(page)} ${await tray(page)}`);
     await page.evaluate(() => window.__jigsaw.demo(3, true)); await page.waitForTimeout(800); ok((await mine(page)) === 8, 'room(회원): 늦은 확인 3개도 mine 8', String(await mine(page)));
     await page.waitForTimeout(Math.max(0, 13000 - (Date.now() - made))); // 48×0.25초 (방의 경과 시간은 만든 때부터)

@@ -4,7 +4,7 @@
 export const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏', '😮', '🙏', '👋'] as const;
 export interface RoomGroup { dx: number; dy: number; idx: number[]; by?: string; t?: number } // by = 지금 잡고 있는 사람, t = 잡은 시각
 export interface RoomState { id: string; key: string; n: number; cols: number; rows: number; total: number; W: number; H: number; seed: number; groups: Record<string, RoomGroup>; locked: number[]; createdAt: number; doneAt?: number; hostLeftAt?: number; dead?: boolean; live?: boolean; round?: number; lastAt?: number }
-export interface Player { id: string; nick: string; color: string }
+export interface Player { id: string; nick: string; color: string; lv?: number } // lv = 회원 레벨(서버가 쿠키로 확인) — 네임태그 판과 조각을 놓을 때 먼지 색. 비회원은 없음
 /** GET /api/room/<id> */
 export interface RoomInfo { id: string; key: string; photo: boolean; hasPhoto: boolean; dead: boolean; w: number; h: number; n: number; cols: number; rows: number; total: number; seed: number; locked: number; players: number; done: boolean; createdAt: number; live: boolean; round: number }
 
@@ -31,7 +31,7 @@ export type ServerMsg =
   | { t: 'take'; id: string; g: string; dx: number; dy: number } | { t: 'untake'; g: string }
   | { t: 'grab'; id: string; g: string } | { t: 'deny'; g: string } | { t: 'release'; g: string }
   | { t: 'mv'; g: string; dx: number; dy: number } | { t: 'drop'; g: string; dx: number; dy: number }
-  | { t: 'merge'; g: string; into: string; dx: number; dy: number } | { t: 'lock'; g: string; idx: number[] }
+  | { t: 'merge'; g: string; into: string; dx: number; dy: number; by: string } | { t: 'lock'; g: string; idx: number[]; by: string } // by = 놓은 사람 — 받는 쪽이 그 사람 판의 먼지를 피운다
   | { t: 'done'; at: number } | { t: 'next'; state: RoomState; done: boolean; prevKey: string }
   | { t: 'resync' } | { t: 'pong' }
   | { t: 'needphoto'; id: string } | { t: 'nophoto' } | { t: 'sig'; from: string; d: unknown }

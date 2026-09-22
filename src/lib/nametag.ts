@@ -36,12 +36,19 @@ function platePath(W: number, H: number): Path2D {
   return p;
 }
 
-// ── 재질 — 브러시드 금속. 세로 그라디언트는 낮은 대비(가운데가 살짝 어둡고 위아래가 밝은 원통 반사), 그 위에 헤어라인·움직이는 반사 띠
+// ── 재질. 등급이 오를수록 색만이 아니라 **마감**이 달라진다 — 동은 결이 보이는 무광(브러시드), 은·금은 거울처럼 닦은 광택에 새김 무늬.
+// 처음엔 동·은·금을 다 같은 브러시드로 색만 바꿨더니 금이 '조금 밝은 동' 이었고, 스치는 빛도 안 보여 갖고 싶은 판이 아니었다(2026-09-22)
 type Metal = { face: [number, string][]; side: string; rim: string; hi: number; lo: number; spec: number; hair: number };
-const METAL: Record<1 | 2 | 3, Metal> = {
-  1: { face: [[0, '#dcb08c'], [0.5, '#b57c55'], [1, '#c9926c']], side: '#7a4a2c', rim: 'rgba(70,36,16,.5)', hi: 0.32, lo: 0.2, spec: 0.2, hair: 0.7 },   // 동 — 차분한 구리
-  2: { face: [[0, '#eef0f3'], [0.5, '#c5cbd3'], [1, '#dfe3e8']], side: '#7d8592', rim: 'rgba(60,70,84,.45)', hi: 0.55, lo: 0.16, spec: 0.26, hair: 0.8 }, // 은 — 스틸
-  3: { face: [[0, '#f1dea2'], [0.5, '#cfab58'], [1, '#e5c87c']], side: '#8a6a24', rim: 'rgba(110,80,20,.5)', hi: 0.42, lo: 0.18, spec: 0.24, hair: 0.6 },  // 금 — 샴페인 골드(노랑이 아니라)
+const BRONZE: Metal = { face: [[0, '#dcb08c'], [0.5, '#b57c55'], [1, '#c9926c']], side: '#7a4a2c', rim: 'rgba(70,36,16,.5)', hi: 0.32, lo: 0.2, spec: 0.2, hair: 0.7 }; // 동 — 차분한 무광 구리
+/**
+ * 광택 금속(은·금). 닦은 금속은 주변을 비춘다 — 위는 밝은 하늘, 가운데 아래로 어두운 수평선, 바닥에 되비침. 그 수평선이 빛의 자리를 따라 위아래로 움직여
+ * 기울이면(마우스를 옮기면) 판이 살아 있다. 안쪽에 새긴 테두리 선, 바탕에 기요셰(엔진 터닝 — 명품 시계 판의 가는 조각 무늬): 은은 물결, 금은 햇살.
+ * 스치는 빛(sweep)은 every 마다 한 번 또렷하게, 금은 둘레로 금빛이 은은히 번진다(glow)
+ */
+type Polish = { stops: (b: number) => [number, string][]; side: string; rim: string; glow: string | null; engrave: 'wave' | 'sun'; ink: string; sweep: string; every: number };
+const POLISH: Record<2 | 3, Polish> = {
+  2: { stops: (b) => [[0, '#ffffff'], [0.16 + b, '#eef1f4'], [0.44 + b, '#aab2bd'], [0.53 + b, '#7d8693'], [0.62 + b, '#c3c9d1'], [0.86, '#f5f7f9'], [1, '#aab2bd']], side: '#5d6572', rim: 'rgba(58,66,80,.75)', glow: null, engrave: 'wave', ink: '64,72,86', sweep: '255,255,255', every: 4200 },
+  3: { stops: (b) => [[0, '#fff8da'], [0.16 + b, '#fde796'], [0.44 + b, '#ddab42'], [0.53 + b, '#a26c14'], [0.62 + b, '#e4b852'], [0.86, '#feeba8'], [1, '#c48f2a']], side: '#7a4c0a', rim: 'rgba(100,60,4,.8)', glow: 'rgba(246,186,60,.55)', engrave: 'sun', ink: '112,70,6', sweep: '255,248,220', every: 3400 },
 };
 
 /**
@@ -72,12 +79,12 @@ const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 
 // 판 둘레의 안개 한 점 — dust.ts 의 P 와 같은 움직임(밖으로 밀리며 부풀고 살짝 떠오르다 옅어진다). grain 은 잔 알갱이(색 점, 반짝임 tw)
 type Puff = { grain: boolean; x: number; y: number; vx: number; vy: number; rise: number; wob: number; ph: number; rot: number; spin: number; r0: number; r1: number; a0: number; t0: number; life: number; spr: number; col: string; tw: number };
-interface Tag { el: HTMLElement; cv: HTMLCanvasElement; plate: Plate; W: number; H: number; M: number; dpr: number; base: HTMLCanvasElement | null; path: Path2D | null; facets: Facet[]; puffs: Puff[]; acc: number; last: number; lx: number; vis: boolean; seed: number }
+interface Tag { el: HTMLElement; cv: HTMLCanvasElement; plate: Plate; W: number; H: number; M: number; dpr: number; base: HTMLCanvasElement | null; over: HTMLCanvasElement | null; path: Path2D | null; facets: Facet[]; puffs: Puff[]; acc: number; last: number; lx: number; vis: boolean; seed: number }
 type Facet = { pts: [number, number][]; n: number; tint: number; hue: number };
 const facetPath = (c: CanvasRenderingContext2D, pts: [number, number][]) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
 
 /** 판 둘레의 여백 — 두께·그림자·밖으로 피어오르는 안개가 들어갈 자리(안개는 판 높이의 한 배 남짓까지 간다) */
-const margin = (p: Plate) => (p >= 4 ? 28 : 4);
+const margin = (p: Plate) => (p >= 4 ? 28 : p === 3 ? 9 : 4); // 금은 금빛 번짐 자리
 
 // ── 빛 — 포인터(데스크톱)·기울기(폰)를 -1..1 로. 모듈에 하나, 태그마다 제 자리로 천천히 따라간다(lx)
 const light = { x: 0, y: 0 };
@@ -115,6 +122,38 @@ function hairlines(c: CanvasRenderingContext2D, W: number, H: number, dpr: numbe
     let x = -rand() * W * 0.5;
     while (x < W) { const len = W * (0.3 + rand() * 0.9), lightLine = rand() < 0.55; c.fillStyle = lightLine ? `rgba(255,255,255,${(0.03 + rand() * 0.09) * k})` : `rgba(0,0,0,${(0.012 + rand() * 0.04) * k})`; c.fillRect(x, y, len, step); x += len + rand() * W * 0.15; }
   }
+}
+/** 판과 같은 크기의 빈 캔버스 — 좌표는 판 기준(CSS px) */
+function layer(t: Tag): [HTMLCanvasElement, CanvasRenderingContext2D] {
+  const cv = document.createElement('canvas'); cv.width = Math.ceil((t.W + t.M * 2) * t.dpr); cv.height = Math.ceil((t.H + t.M * 2) * t.dpr);
+  const c = cv.getContext('2d')!; c.setTransform(t.dpr, 0, 0, t.dpr, t.M * t.dpr, t.M * t.dpr); return [cv, c];
+}
+/** path 를 안쪽으로 d 만큼 줄인 영역 — 채운 뒤 굵기 2d 로 가장자리를 지운다(톱니·홈 모양 그대로 줄어든다) */
+function inset(t: Tag, path: Path2D, d: number) { const [cv, c] = layer(t); c.fill(path); c.globalCompositeOperation = 'destination-out'; c.lineJoin = 'round'; c.lineWidth = d * 2; c.stroke(path); return cv; }
+/** 마스크(알파)를 한 색으로 */
+function tinted(t: Tag, mask: HTMLCanvasElement, color: string) { const [cv, c] = layer(t); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(mask, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = color; c.fillRect(0, 0, cv.width, cv.height); return cv; }
+/**
+ * 광택 금속의 새김 층(한 번만 그린다) — 기요셰 무늬(테두리 안쪽에만), 새긴 테두리 선(어두운 홈 + 아래로 비낀 밝은 턱), 모서리 빛.
+ * 새김은 전부 '어두운 선 + 0.5px 아래 밝은 선' 한 쌍이라 파인 홈처럼 보인다
+ */
+function engraving(t: Tag, path: Path2D, P: Polish) {
+  const { W, H } = t, [cv, c] = layer(t);
+  // 기요셰 — 가는 선을 빽빽하게. 은: 두 박자 물결이 겹쳐 흐르는 무늬, 금: 홈 쪽에서 퍼지는 햇살
+  const [pat, pc] = layer(t); pc.lineWidth = 0.4;
+  const stroke = (dy: number, col: string) => {
+    pc.strokeStyle = col; pc.beginPath();
+    if (P.engrave === 'wave') for (let y0 = -H * 0.5; y0 < H * 1.5; y0 += 1.3) { for (let x = -2; x <= W + 2; x += 1) { const y = y0 + dy + 0.8 * Math.sin(x * 0.42 + y0 * 0.55) + 0.45 * Math.sin(x * 0.11 - y0 * 0.9); x < -1 ? pc.moveTo(x, y) : pc.lineTo(x, y); } }
+    else { const ox = -H * 0.35, oy = H * 0.5 + dy, L = W * 1.6; for (let a = -1.45; a <= 1.45; a += 0.032) { pc.moveTo(ox, oy); pc.lineTo(ox + Math.cos(a) * L, oy + Math.sin(a) * L); } }
+    pc.stroke();
+  };
+  stroke(0, `rgba(${P.ink},.16)`); stroke(0.5, 'rgba(255,255,255,.2)');
+  const field = inset(t, path, 2.6), fc = field.getContext('2d')!; fc.globalCompositeOperation = 'source-in'; fc.setTransform(1, 0, 0, 1, 0, 0); fc.drawImage(pat, 0, 0);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(field, 0, 0); c.setTransform(t.dpr, 0, 0, t.dpr, t.M * t.dpr, t.M * t.dpr);
+  // 새긴 테두리 — 1.6px 안쪽에 0.7px 폭의 홈
+  const ring = inset(t, path, 1.6), rc = ring.getContext('2d')!; rc.globalCompositeOperation = 'destination-out'; rc.setTransform(1, 0, 0, 1, 0, 0); rc.drawImage(inset(t, path, 2.3), 0, 0);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(tinted(t, ring, `rgba(${P.ink},.55)`), 0, 0); c.drawImage(tinted(t, ring, 'rgba(255,255,255,.55)'), 0, Math.round(0.6 * t.dpr)); c.setTransform(t.dpr, 0, 0, t.dpr, t.M * t.dpr, t.M * t.dpr);
+  bevel(c, path, 0.85, 0.25, P.rim);
+  return cv;
 }
 /** 비스듬한 반사 띠 — 조명이 비친 자리. 가운데가 밝고 양옆으로 길게 옅어지며, at(0..1)을 따라 왼쪽 위에서 오른쪽 아래로 옮겨 간다 */
 function sheen(c: CanvasRenderingContext2D, W: number, H: number, at: number, a: number, width = 0.26) {
@@ -164,11 +203,16 @@ function paintBase(t: Tag) {
   const c = cv.getContext('2d')!; c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
   const path = (t.path = platePath(W, H)), rand = rng(t.seed);
   if (plate === 0) cardboard(c, path, W, H, rand);
-  else if (plate <= 3) {
-    const m = METAL[plate as 1 | 2 | 3];
+  else if (plate === 1) {
+    const m = BRONZE;
     body(c, path, m.side, 'rgba(40,24,6,.28)');
     c.save(); c.clip(path); c.fillStyle = vgrad(c, H, m.face); c.fillRect(0, 0, W, H); hairlines(c, W, H, dpr, rand, m.hair); c.restore();
     bevel(c, path, m.hi, m.lo, m.rim);
+  } else if (plate <= 3) {
+    const P = POLISH[plate as 2 | 3];
+    if (P.glow) { c.save(); c.shadowColor = P.glow; c.shadowBlur = 8; c.fillStyle = P.side; c.fill(path); c.restore(); } // 금빛 번짐 — 판 둘레로
+    body(c, path, P.side, 'rgba(40,24,6,.3)');
+    t.over = engraving(t, path, P);
   } else if (plate === 4) {
     body(c, path, '#8fb0cc', 'rgba(30,60,100,.25)');
     t.facets = makeFacets(W, H, rand);
@@ -187,11 +231,15 @@ function paint(t: Tag, now: number) {
   if (plate >= 4) haze(c, t, now, still);
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(t.base, 0, 0); c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
   if (plate === 0) return; // 판지는 빛을 먹는다 — 반사 띠 없음
+  if (plate === 1) { c.save(); c.clip(path); sheen(c, W, H, at, BRONZE.spec); c.restore(); return; }
   if (plate <= 3) {
-    const m = METAL[plate as 1 | 2 | 3];
-    c.save(); c.clip(path); sheen(c, W, H, at, m.spec);
-    // 금은 이따금 빛이 한 번 판을 스친다(5.2초마다)
-    if (plate === 3 && !still) { const u = ((now + (t.seed % 5200)) % 5200) / 900; if (u <= 1) { const x = -H + (W + H * 2) * (u * u * (3 - 2 * u)); const g = c.createLinearGradient(x - H * 0.7, 0, x + H * 0.2, H); g.addColorStop(0, 'rgba(255,246,220,0)'); g.addColorStop(0.5, 'rgba(255,248,226,.32)'); g.addColorStop(1, 'rgba(255,246,220,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); } }
+    const P = POLISH[plate as 2 | 3];
+    // 닦은 면 — 수평선(가운데 아래 어두운 띠)이 빛의 자리를 따라 위아래로
+    c.save(); c.clip(path); c.fillStyle = vgrad(c, H, P.stops((at - 0.5) * 0.16)); c.fillRect(0, 0, W, H); c.restore();
+    c.setTransform(1, 0, 0, 1, 0, 0); if (t.over) c.drawImage(t.over, 0, 0); c.setTransform(dpr, 0, 0, dpr, M * dpr, M * dpr);
+    c.save(); c.clip(path); sheen(c, W, H, at, 0.34, 0.2);
+    // 스치는 빛 — every 마다 한 번, 좁고 또렷한 띠가 왼쪽에서 오른쪽으로(더해 그려 면이 하얗게 달아오른다)
+    if (!still) { const u = ((now + (t.seed % P.every)) % P.every) / 760; if (u <= 1) { const e = u * u * (3 - 2 * u), x = -H + (W + H * 2.2) * e, g = c.createLinearGradient(x - H * 0.45, 0, x + H * 0.1, H); g.addColorStop(0, `rgba(${P.sweep},0)`); g.addColorStop(0.5, `rgba(${P.sweep},${0.75 * Math.sin(u * Math.PI)})`); g.addColorStop(1, `rgba(${P.sweep},0)`); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.fillRect(0, 0, W, H); } }
     c.restore(); return;
   }
   if (plate === 4) paintCrystal(c, t, now, at, still); else paintPearl(c, t, now, at, still);
@@ -318,7 +366,7 @@ function tagOnly(nick: string, level?: number | null): HTMLSpanElement {
   const p = plateOf(level) as Plate;
   el.dataset.plate = String(p);
   const cv = document.createElement('canvas'); cv.className = 'nt-cv'; cv.setAttribute('aria-hidden', 'true'); el.insertBefore(cv, el.firstChild);
-  const t: Tag = { el, cv, plate: p, W: 0, H: 0, M: margin(p), dpr: 1, base: null, path: null, facets: [], puffs: [], acc: 0, last: 0, lx: -1, vis: true, seed: hashStr(`${nick}:${p}`) };
+  const t: Tag = { el, cv, plate: p, W: 0, H: 0, M: margin(p), dpr: 1, base: null, over: null, path: null, facets: [], puffs: [], acc: 0, last: 0, lx: -1, vis: true, seed: hashStr(`${nick}:${p}`) };
   tags.set(el, t); ro?.observe(el); io?.observe(el);
   requestAnimationFrame(() => layout(t));
   return el;

@@ -75,4 +75,14 @@ for (const [o, show] of [[-1, true], [-3, false]]) { const { ctx, page } = await
   ok(/\/done\/\?at=\d+/.test(page.url()) && (await page.$eval('#dv-play', (b) => b.hidden)) && (await page.$eval('#dv-msg', (e) => e.hidden)), 'done page: 완성본만, 타임랩스 버튼 없음', page.url());
   await page.goto(BASE + '/done/?at=1'); await page.waitForFunction(() => !document.getElementById('dv-msg').hidden && document.getElementById('dv-msg').textContent.length > 0 && !document.getElementById('dv-msg').textContent.includes('%'), null, { timeout: 8000 }); ok(true, 'done page: 없는 기록은 안내');
   await ctx.close(); }
+// 랭킹의 네임태그 견본 — 정적으로는 이름·글자만(색인), 스크립트가 판 여섯 가지(판지 0 … 진주빛 5)를 그린다. 비회원은 견본 이름·내 명판 표시 없음,
+// 회원은 내 닉네임으로 그리고 지금 내 명판(테스트 회원은 레벨이 낮아 판지)을 짚는다
+{ const { ctx, page } = await newPage(br); await page.goto(BASE + '/rank/', { waitUntil: 'networkidle' }); await page.waitForSelector('#rk-plates .ntag[data-plate]', { timeout: 15000 });
+  const g = await page.$$eval('#rk-plates .plate', (cs) => cs.map((c) => ({ p: c.querySelector('.ntag')?.getAttribute('data-plate'), t: c.querySelector('.nt-t')?.textContent, mine: c.classList.contains('mine') })));
+  ok(g.map((x) => x.p).join() === '0,1,2,3,4,5' && g.every((x) => x.t === '퍼즐러' && !x.mine), 'rank plates(비회원): 판 여섯 가지, 견본 이름, 내 명판 없음', JSON.stringify(g));
+  await ctx.close(); }
+{ const { ctx, page } = await newPage(br, { member: true }); await page.goto(BASE + '/rank/', { waitUntil: 'networkidle' }); await page.waitForSelector('#rk-plates .ntag[data-plate]', { timeout: 15000 });
+  const g = await page.$$eval('#rk-plates .plate', (cs) => cs.map((c) => ({ t: c.querySelector('.nt-t')?.textContent, mine: c.classList.contains('mine') })));
+  ok(g.every((x) => x.t === 'tester') && g.filter((x) => x.mine).length === 1 && g[0].mine, 'rank plates(회원): 내 닉네임, 지금 내 명판(판지) 하나', JSON.stringify(g));
+  await ctx.close(); }
 await br.close(); finish();

@@ -3,10 +3,12 @@
 // 표는 클라이언트가 /api/rank 로 받아 그리고, XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인되게 둔다
 import Base from '../layouts/Base.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
-import { BADGES, TIERS, xpAtLevel } from '../lib/level';
+import { BADGES, TIERS, PLATE_AT, xpAtLevel } from '../lib/level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
+// 네임태그 견본 — 판지(회원 1레벨부터) + 10레벨마다(level.ts 의 PLATE_AT). 판은 스크립트가 nametag.ts 로 그리고, 여기서는 글자만 찍어 둔다(색인·JS 없을 때)
+const PLATE_LV = [1, ...PLATE_AT];
 ---
 <Base title={V.seoTitle} desc={V.seoDesc} lang={lang} alts={altsFor('/rank/')} path={`${P}/rank/`}>
   <div class="wrap rk">
@@ -28,6 +30,12 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     <section class="rk-blk">
       <h2>{V.rulesTitle}</h2>
       <ul class="rk-rules">{V.rules.map((r) => <li>{r}</li>)}</ul>
+    </section>
+
+    <section class="rk-blk">
+      <h2>{V.platesTitle}</h2>
+      <p class="muted rk-sub">{V.platesLead}</p>
+      <div class="plates" id="rk-plates">{PLATE_LV.map((l, i) => <div class="plate" data-lv={l}><span class="plate-tag"><span class="ntag"><span class="nt-t">{V.plateSample}</span></span></span><b>{V.plateNames[i]}</b><small>{V.fromLv(l)}</small></div>)}</div>
     </section>
 
     <section class="rk-blk">
@@ -63,13 +71,20 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     .rk-list { margin: 0; }
     .rk-list :global(.b-n) { color: var(--muted); font-size: .78rem; font-weight: 600; margin-left: 8px; flex: none; white-space: nowrap; }
     @media (max-width: 420px) { .rk-list :global(.b-n) { display: none; } } /* 좁은 폰에서는 업적 수를 접어 네임태그에 자리를 준다 */
-    .rk-list :global(li.you) { background: var(--accent-soft, var(--bg-3)); border-radius: 10px; padding-inline: 10px; }
     /* 설명 블록 */
     .rk-blk { padding-top: clamp(30px, 5vw, 52px); } .rk-blk h2 { font-size: 1.3rem; margin: 0 0 10px; } .rk-sub { margin: 0 0 16px; font-size: .92rem; }
     .rk-rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
     .rk-rules li { position: relative; padding-left: 20px; color: var(--ink-2); line-height: 1.6; }
     .rk-rules li::before { content: ''; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; background: var(--accent); border-radius: 2px; }
     .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    /* 네임태그 견본 — 태그 둘레로 안개가 피어오를 자리를 넉넉히(위아래 22px) */
+    .plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .plate { padding: 22px 12px 14px; border-radius: var(--r-sm); background: var(--bg-2); display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; min-width: 0; }
+    .plate-tag { display: flex; justify-content: center; max-width: 100%; min-width: 0; font-size: 1.05rem; margin-bottom: 14px; }
+    .plate b { font-size: .95rem; letter-spacing: -.02em; } .plate small { color: var(--accent); font-weight: 700; font-size: .8rem; }
+    .plate.mine { background: var(--bg); box-shadow: inset 0 0 0 2px var(--ink); } /* 지금 내 명판 */
+    .plate :global(.plate-me) { margin-top: 6px; padding: 2px 9px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .68rem; font-weight: 800; white-space: nowrap; } /* 카드 위에 띄우면 폰에서 태그와 붙었다 — 흐름 안 맨 아래에 */
+    @media (max-width: 420px) { .plates { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plate-tag { font-size: .98rem; } }
     .tier { padding: 14px; border-radius: var(--r-sm); background: var(--bg-2); display: flex; flex-direction: column; gap: 3px; }
     .tier b { font-size: 1rem; letter-spacing: -.02em; } .tier small { color: var(--accent); font-weight: 700; font-size: .8rem; } .tier span { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
     .bdg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
@@ -85,15 +100,27 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
     import { openLogin } from '../lib/authui';
     import { docLang, UI } from '../i18n/ui';
     import { nameTag } from '../lib/nametag';
+    import { me } from '../lib/account';
+    import { plateOf } from '../lib/level';
     const LANG = docLang(), V = UI[LANG].lv;
+    // 네임태그 견본 — 회원이면 내 닉네임으로 그리고 지금 내 명판을 짚어 준다(내 이름이 이렇게 된다는 게 보여야 갖고 싶다). 비회원은 견본 이름
+    me().then((u) => {
+      const mine = u?.level != null ? plateOf(u.level) : -1;
+      for (const card of document.querySelectorAll<HTMLElement>('#rk-plates .plate')) {
+        const lv = Number(card.dataset.lv), slot = card.querySelector('.plate-tag')!; slot.textContent = '';
+        slot.appendChild(nameTag(u?.nick || V.plateSample, lv));
+        if (plateOf(lv) === mine) { card.classList.add('mine'); const m = document.createElement('span'); m.className = 'plate-me'; m.textContent = V.plateMine; card.appendChild(m); }
+      }
+    });
     const $ = (id: string) => document.getElementById(id)!;
     const list = $('rk-list'), meBox = $('rk-me');
     let tab: 'week' | 'all' = 'week';
     const cache: Partial<Record<'week' | 'all', RankInfo>> = {};
 
     const el = (tag: string, cls?: string, text?: string) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-    function row(r: { r: number; nick: string; xp: number; level: number; badges: number }, you: boolean) {
-      const li = el('li', you ? 'you' : '');
+    // 표 안의 내 줄은 따로 칠하지 않는다 — 내 순위는 위 상자(rk-me)가 이미 보여 준다
+    function row(r: { r: number; nick: string; xp: number; level: number; badges: number }) {
+      const li = el('li');
       li.appendChild(el('span', 'rank', String(r.r)));
       const nick = el('span', 'nick'); nick.appendChild(nameTag(r.nick, r.level));
       if (r.badges > 0) { const b = el('span', 'b-n', `🏅 ${r.badges}`); nick.appendChild(b); }
@@ -126,8 +153,7 @@ const T = UI[lang], li = LI[lang], P = prefix(lang), V = T.lv;
       $('rk-week').textContent = d.tab === 'week' ? V.weekOf(d.week) : '';
       renderMe(d);
       if (!d.top.length) { list.appendChild(el('li', 'empty', d.tab === 'week' ? V.empty : V.emptyAll)); return; }
-      const mine = d.me?.nick;
-      for (const r of d.top) list.appendChild(row(r, !!mine && r.nick === mine && !!d.me?.listed && r.r === d.me.rank));
+      for (const r of d.top) list.appendChild(row(r));
     }
     async function load() {
       const want = tab;

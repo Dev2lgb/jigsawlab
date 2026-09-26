@@ -1,7 +1,7 @@
 // 방 프로토콜 — 클라이언트(Jigsaw.astro)와 Durable Object(room.ts)가 주고받는 메시지의 모양. 의존 없이 타입만(양쪽 번들에 다 실린다).
 // 서버는 ClientMsg 의 값을 믿지 않는다 — 모양은 여기, 검증은 room.ts 의 case 마다
 /** 방에서 보낼 수 있는 이모지. 자유 문자열이 아니라 이 목록의 번호만 오간다 — 공개 판이 낙서판이 되지 않게. 서버(room.ts)·판(Jigsaw.astro) 공용 */
-export const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏', '😮', '🙏', '👋', '❓', '🤔', '👀', '😅', '🎉', '💪', '😭', '✨'] as const; // 번호가 곧 프로토콜 — 늘릴 때는 뒤에만 붙인다(앞에 끼우면 묵은 탭과 뜻이 어긋난다)
+export const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏', '😮', '🙏', '👋', '❓', '🤔', '👀', '😅', '🎉', '👉', '😭', '✨'] as const; // 번호가 곧 프로토콜 — 늘릴 때는 뒤에만 붙인다(앞에 끼우면 묵은 탭과 뜻이 어긋난다)
 export interface RoomGroup { dx: number; dy: number; idx: number[]; by?: string; t?: number } // by = 지금 잡고 있는 사람, t = 잡은 시각
 export interface RoomState { id: string; key: string; n: number; cols: number; rows: number; total: number; W: number; H: number; seed: number; groups: Record<string, RoomGroup>; locked: number[]; createdAt: number; doneAt?: number; hostLeftAt?: number; dead?: boolean; live?: boolean; round?: number; lastAt?: number }
 export interface Player { id: string; nick: string; color: string; lv?: number } // lv = 회원 레벨(서버가 쿠키로 확인) — 네임태그 판과 조각을 놓을 때 먼지 색. 비회원은 없음

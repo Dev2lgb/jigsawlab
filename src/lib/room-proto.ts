@@ -29,7 +29,7 @@ export type ServerMsg =
   | { t: 'join'; p: Player } | { t: 'leave'; id: string } | { t: 'nick'; id: string; nick: string }
   | { t: 'emo'; id: string; e: number }
   | { t: 'take'; id: string; g: string; dx: number; dy: number } | { t: 'untake'; g: string }
-  | { t: 'grab'; id: string; g: string } | { t: 'deny'; g: string } | { t: 'release'; g: string }
+  | { t: 'grab'; id: string; g: string } | { t: 'deny'; g: string; by?: string; dx?: number; dy?: number } | { t: 'release'; g: string } // deny 의 by·dx·dy = 판 위 뭉치 잡기 거절일 때 지금 잡은 사람·서버 위치 — 받은 쪽은 그리로 되돌리기만 한다(재동기화 없이)
   | { t: 'mv'; g: string; dx: number; dy: number } | { t: 'drop'; g: string; dx: number; dy: number }
   | { t: 'merge'; g: string; into: string; dx: number; dy: number; by: string } | { t: 'lock'; g: string; idx: number[]; by: string } // by = 놓은 사람 — 받는 쪽이 그 사람 판의 먼지를 피운다
   | { t: 'done'; at: number } | { t: 'next'; state: RoomState; done: boolean; prevKey: string }

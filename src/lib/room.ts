@@ -99,6 +99,8 @@ export class Room extends DurableObject<Cloudflare.Env> {
   holderMap() { const o: Record<string, string> = {}; const st = this.state; if (!st) return o; for (const [g, gr] of Object.entries(st.groups)) { const h = this.holder(gr, g); if (h) o[g] = h; } return o; }
   photoHere(except?: WebSocket) { return this.socks().some((w) => w !== except && !!(w.deserializeAttachment() as Att)?.photo); }
   /** 서버와 판이 어긋났을 때: 이 사람만 전체 상태를 다시 받아 가게 한다 (조용히 무시하면 영영 어긋난 채로 남는다) */
+  /** 남이 잡고 있는 뭉치를 잡으려 했다 — 누가 잡았는지와 서버 위치를 알려 준다. 판이 어긋난 게 아니므로 resync(판 전체)는 안 보낸다 */
+  denyHeld(ws: WebSocket, g: string, gr: RoomGroup) { this.sendTo(ws, { t: 'deny', g, by: gr.by, dx: gr.dx, dy: gr.dy }); }
   resync(ws: WebSocket) { this.sendTo(ws, { t: 'resync' }); }
   sendTo(ws: WebSocket, msg: ServerMsg) { try { ws.send(JSON.stringify(msg)); } catch {} }
   initMsg(st: RoomState, att: Att): ServerMsg { return { t: 'init', state: st, you: { id: att.id, nick: att.nick, color: att.color, lv: att.lv }, players: this.players(), holders: this.holderMap(), hasPhoto: this.photoHere(), dead: !!st.dead }; }
@@ -113,9 +115,10 @@ export class Room extends DurableObject<Cloudflare.Env> {
       case 'untake': { const c = this.claim(st, m, att); if (!c || c.gr.idx.length !== 1) return; if (!c.mine) return this.resync(ws); delete st.groups[c.g]; this.broadcast({ t: 'untake', g: c.g }, ws); this.scheduleSave(); return; }
       // 이모지 — 상태 없이 중계만. 목록 밖 번호·연타는 조용히 버린다(클라이언트가 먼저 막으니 여기 걸리는 건 콘솔로 보낸 것뿐)
       case 'emo': { const e = Number(m.e); if (!Number.isInteger(e) || e < 0 || e >= EMOJIS.length) return; const now = Date.now(); if (att.emoAt && now - att.emoAt < EMO_MIN) return; att.emoAt = now; ws.serializeAttachment(att); this.broadcast({ t: 'emo', id: att.id, e }, ws); return; }
-      case 'grab': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) { this.sendTo(ws, { t: 'deny', g: c.g }); return; } c.gr.by = att.id; c.gr.t = Date.now(); this.broadcast({ t: 'grab', id: att.id, g: c.g }, ws); return; }
+      case 'grab': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.denyHeld(ws, c.g, c.gr); c.gr.by = att.id; c.gr.t = Date.now(); this.broadcast({ t: 'grab', id: att.id, g: c.g }, ws); return; }
       case 'mv': { const c = this.claim(st, m, att); if (!c || !c.mine) return; const { g, gr } = c; gr.by = att.id; gr.t = Date.now(); gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); this.broadcast({ t: 'mv', g, dx: gr.dx, dy: gr.dy }, ws); return; }
-      case 'drop': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.resync(ws); const { g, gr } = c; gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); release(gr); this.broadcast({ t: 'drop', g, dx: gr.dx, dy: gr.dy }, ws); this.scheduleSave(); return; }
+      // 남이 잡은 뭉치의 drop 은 거절된 grab 의 뒤끝(톡 치고 뗌)이라 판 전체를 다시 보낼 일이 아니다 — 서버 위치만 알려 준다
+      case 'drop': { const c = this.claim(st, m, att); if (!c) return; if (!c.mine) return this.denyHeld(ws, c.g, c.gr); const { g, gr } = c; gr.dx = num(m.dx, gr.dx); gr.dy = num(m.dy, gr.dy); release(gr); this.broadcast({ t: 'drop', g, dx: gr.dx, dy: gr.dy }, ws); this.scheduleSave(); return; }
       // 붙이기·잠그기는 놓은 순간의 좌표를 같이 받는다. mv 는 40ms 마다라 서버 좌표가 조금 뒤처지는데,
       // 예전엔 그 뒤처진 좌표로 판정하다 조용히 거절되어 "한쪽은 맞춰졌는데 다른 쪽은 남의 손에 잡힌 채 굳는" 어긋남이 생겼다
       case 'merge': { const c = this.claim(st, m, att); const into = String(m.into); const B = st.groups[into]; if (!c || !B || c.g === into) return; // 다른 사람이 이미 붙인 뒤 도착한 중복 요청

@@ -38,13 +38,15 @@ await A.ctx.close(); await B.ctx.close();
 //  ② 스냅(140ms)이 서버 lock 확인보다 먼저 끝나면 뭉치가 bySid 에서 빠져 확인이 와도 내 조각으로 안 셌다(서버와 먼 접속은 거의 매번)
 { const level = (page) => page.evaluate(() => fetch('/api/level').then((r) => r.json()));
   const mine = (page) => page.evaluate(() => window.__jigsaw.state().mine);
-  const reconnect = async (page) => { await page.evaluate(() => window.__jigsaw.drop()); await page.waitForFunction(() => document.querySelector('.toast')?.textContent === '다시 연결됐어요', null, { timeout: 30000 }); await page.waitForTimeout(300); };
+  const reconnect = async (page) => { const n0 = await page.evaluate(() => window.__jigsaw.state().inits); await page.evaluate(() => window.__jigsaw.drop()); await page.waitForFunction((n) => { const s = window.__jigsaw.state(); return s.ws && s.inits > n; }, n0, { timeout: 30000 }); await page.waitForTimeout(300); };
+  // 곧바로 다시 붙으면 '끊겼어요/다시 연결됐어요' 알림을 띄우지 않는다(배포로 방이 재시작될 때 전원에게 뜨던 것)
   const r2 = await fetch(`${BASE}/api/room`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'wave', n: 48 }) }); const { id: id2 } = await r2.json(); const made = Date.now();
   // 모두의 퍼즐(1000조각, 조각당 3): 4개 → 재접속 → 늦은 확인 2개 → 나가기. 조각 XP 18 과 기여 보고 6조각이 둘 다 서버에
   { const { ctx, page } = await newPage(br, { member: true });
     await page.goto(`${BASE}/board/?room=live`); await waitPlay(page); const lv0 = await level(page);
     await page.evaluate(() => window.__jigsaw.demo(4)); await page.waitForTimeout(800); ok((await mine(page)) === 4, 'live: 4개 놓음 → mine 4', String(await mine(page)));
     await reconnect(page); ok((await mine(page)) === 4, 'live: 재접속해도 mine 4', String(await mine(page)));
+    ok(!(await page.evaluate(() => [...document.querySelectorAll('.toast')].some((e) => /끊겼|다시 연결/.test(e.textContent || '')))), 'live: 곧바로 다시 붙으면 끊김 알림 없음');
     await page.evaluate(() => window.__jigsaw.demo(2, true)); await page.waitForTimeout(800); ok((await mine(page)) === 6, 'live: 스냅이 서버 확인보다 먼저 끝나도 mine 6', String(await mine(page)));
     await page.click('#jg-quit'); await page.waitForURL(/\/play\//, { timeout: 15000 }); await page.waitForTimeout(800);
     const lv1 = await level(page); const d = { xp: lv1.xp - lv0.xp, pieces: lv1.stats.pieces - lv0.stats.pieces, live: lv1.stats.live_n - lv0.stats.live_n };

@@ -73,8 +73,10 @@ try {
   send(B, { t: 'hello', nick: 'B' }); await next(B, 'init'); const j = await next(A, 'join'); ok(j.p?.nick === 'B', 'ws: join 브로드캐스트');
   send(A, { t: 'take', g: 0, dx: 10.4, dy: 20.6 }); const tk = await next(B, 'take'); ok(tk.g === '0' && tk.dx === 10 && tk.dy === 21 && tk.id === init.you.id, 'ws: take (좌표 반올림)', JSON.stringify(tk));
   send(A, { t: 'mv', g: '0', dx: 15, dy: 25 }); const mv = await next(B, 'mv'); ok(mv.g === '0' && mv.dx === 15 && mv.dy === 25, 'ws: mv');
-  send(B, { t: 'grab', g: '0' }); const dn = await next(B, 'deny'); ok(dn.g === '0', 'ws: 남이 잡은 뭉치 grab → deny');
+  send(B, { t: 'grab', g: '0' }); const dn = await next(B, 'deny'); ok(dn.g === '0' && dn.by === init.you.id && dn.dx === 15 && dn.dy === 25, 'ws: 남이 잡은 뭉치 grab → deny (잡은 사람·서버 위치)', JSON.stringify(dn));
   send(B, { t: 'mv', g: '0', dx: 99, dy: 99 }); ok(await none(A, 'mv'), 'ws: 남이 잡은 뭉치 mv 는 무시');
+  // 톡 치고 뗀 drop — 재동기화(resync) 대신 같은 deny 로 위치만 돌려준다
+  send(B, { t: 'drop', g: '0', dx: 99, dy: 99 }); const dn2 = await next(B, 'deny'); ok(dn2.g === '0' && dn2.dx === 15 && !B.inbox.some((m) => m.t === 'resync') && (await none(A, 'drop')), 'ws: 남이 잡은 뭉치 drop → deny (resync·중계 없음)', JSON.stringify(dn2));
   // 커서 중계는 뺐다(2026-09-21) — 묵은 탭이 보내는 cur 은 default 없는 switch 를 그냥 빠져나가야 한다
   send(A, { t: 'cur', x: 1, y: 2 }); ok(await none(B, 'cur'), 'ws: 옛 클라이언트의 cur 은 조용히 무시');
   // 이모지 — 목록 번호만 중계, 보낸 사람에겐 안 돌려주고(클라이언트가 바로 띄운다), 600ms 안 연타·범위 밖은 조용히 버린다

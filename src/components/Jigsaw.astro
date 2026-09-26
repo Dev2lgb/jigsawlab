@@ -1104,14 +1104,17 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   function connectRoom(bail?: () => void) {
     if (!room) return; const id = room.id; const gen = ++wsGen; clearTimeout(reconT);
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'; let ws: WebSocket; try { ws = new WebSocket(`${proto}://${location.host}/api/room/${id}/ws`); } catch { retryWs(bail); return; } room.ws = ws;
-    const alive = () => !!room && gen === wsGen;
+    const alive = () => !!room && gen === wsGen; clearInterval(pingT); clearTimeout(pongT); pongT = 0; // 옛 소켓의 pong 기다림은 새 소켓과 상관없다
     ws.addEventListener('open', () => { if (!alive()) return; wsTries = 0; send({ t: 'hello', nick: getNick(), photo: !!photoBlob, pid: PID }); clearInterval(pingT); pingT = window.setInterval(() => pingWs(), 15000); });
     // 'replaced' 는 같은 pid 의 새 소켓이 붙어 서버가 이 소켓을 닫은 것 — 같은 탭의 재접속이면 옛 소켓은 이미 alive() 가 아니라 여기 안 온다.
     // 여기 왔다면 pid 가 같은 다른 탭(탭 복제는 sessionStorage 를 복사한다)이 살아 있다는 뜻이라, 그대로 다시 붙으면 둘이 서로를 끊는 고리가 돈다 — 이 탭이 pid 를 새로 받는다
-    ws.addEventListener('close', (ev) => { if (!alive()) return; wsOk = false; clearInterval(pingT); clearTimeout(pongT); if (ev.code === 4000 && ev.reason === 'replaced') { PID = Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem('jl:pid', PID); } catch {} } if (!room!.me && !running) return bail?.(); retryWs(bail); });
+    ws.addEventListener('close', (ev) => { if (!alive()) return; wsOk = false; clearInterval(pingT); clearTimeout(pongT); pongT = 0; if (ev.code === 4000 && ev.reason === 'replaced') { PID = Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem('jl:pid', PID); } catch {} } if (!room!.me && !running) return bail?.(); retryWs(bail); });
     ws.addEventListener('message', (ev) => { if (!alive()) return; let m: ServerMsg; try { m = JSON.parse(ev.data); } catch { return; } if (m.t === 'pong') { clearTimeout(pongT); pongT = 0; return; } onRoomMsg(m); });
   }
-  function pingWs() { if (!room?.ws || room.ws.readyState !== 1 || pongT) return; send({ t: 'ping' }); pongT = window.setTimeout(() => { pongT = 0; try { room?.ws?.close(); } catch {} }, 8000); }
+  // pongT 는 닫힐 때·새로 붙을 때 0 으로 되돌린다 — 전에는 pong 을 기다리는 중에 소켓이 닫히면 clearTimeout 만 하고 값이 남아, 다시 붙은 뒤로 ping 을 한 번도 안 보냈다.
+  // 조각을 안 만지고 있으면 서버가 45초 만에 죽은 소켓으로 보고 닫고(sweep), 다시 붙어도 또 — 그런 사람들이 누군가의 ping 에 맞춰 한꺼번에 끊겼다.
+  // 타이머는 그 ping 을 보낸 소켓만 닫는다 — 화면 복귀(wakeWs)로 새 소켓을 연 뒤에 옛 타이머가 터져 갓 붙은 소켓을 닫던 것
+  function pingWs() { const w = room?.ws; if (!w || w.readyState !== 1 || pongT) return; send({ t: 'ping' }); pongT = window.setTimeout(() => { pongT = 0; if (room?.ws === w) { try { w.close(); } catch {} } }, 8000); }
   // 끊겼다는 알림은 곧바로 다시 붙지 못할 때만 — 배포하면 방(DO)이 재시작돼 접속자 전원의 소켓이 한꺼번에 닫히는데, 대부분 1초 안에 다시 붙는다.
   // 전에는 그때마다 모두에게 '끊겼어요 → 다시 연결됐어요' 가 떠서 판이 자주 끊기는 것처럼 보였다. 첫 재시도는 흩어서(전원이 같은 순간에 몰리지 않게) 빨리
   let wsDropped = false, dropT = 0, wsOk = false, inits = 0; // wsOk = 이번 소켓으로 init 까지 받았다, inits = 받은 init 수(테스트 훅)

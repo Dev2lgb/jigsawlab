@@ -2,6 +2,7 @@
 // 공통 틀 — 화면 전체 폭, Pretendard, 큰 라운드·부드러운 그림자, 스크롤 리빌, 3D 퍼즐 상자 공통 스타일
 import { icon } from '../lib/icons';
 import { OG_LOCALE, UI, LANGS, prefix, stripLang, type Lang } from '../i18n/ui';
+import ServerNotice from '../components/ServerNotice.astro';
 interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
 const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
 const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigsawlab.app');
@@ -240,6 +241,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
       }
     } catch {}
   </script>
+  <ServerNotice lang={lang} />
 </body>
 </html>
 

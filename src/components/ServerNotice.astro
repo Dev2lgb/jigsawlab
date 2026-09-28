@@ -1,0 +1,57 @@
+---
+// 2026-09-29 D1 무료 읽기 한도(하루 500만 행, 계정 합산) 초과 안내 — 한도는 UTC 자정(한국 오전 9시)에 풀린다.
+// 넘긴 쪽은 같은 계정의 캔통(cantong-db)이지만 한도가 계정 전체라 여기 회원 XP·랭킹·동기화도 같이 막혔다.
+// 퍼즐·방(DO)은 D1 이 실패해도 넘어가게 돼 있어 그대로 된다. END 가 지나면 스스로 안 뜨니, 다음 배포 때 이 파일과 Base.astro 의 한 줄을 걷어낼 것.
+import type { Lang } from '../i18n/langs';
+interface Props { lang?: Lang }
+const { lang = 'ko' } = Astro.props;
+const TX = {
+  ko: { title: '잠시 안내드려요', pre: '', post: '까지 회원 기록 저장이 멈춰요', body: '서버 하루 사용량이 한도를 넘어서, 그때까지 로그인 회원의 XP·레벨·랭킹·기록 동기화가 멈춰 있어요. 퍼즐은 평소처럼 맞출 수 있어요. 불편을 드려 죄송해요.', ok: '확인' },
+  en: { title: 'A quick heads-up', pre: 'Member progress is paused until ', post: '', body: 'Our server hit its daily usage limit, so XP, levels, rankings and record sync for signed-in members are paused until then. Puzzles work as usual. Sorry for the trouble.', ok: 'OK' },
+  ja: { title: 'お知らせ', pre: '', post: 'まで会員の記録保存を一時停止しています', body: 'サーバーの1日の使用量が上限を超えたため、それまでログイン会員のXP・レベル・ランキング・記録の同期が止まっています。パズルはいつも通り遊べます。ご不便をおかけしてすみません。', ok: 'OK' },
+  de: { title: 'Kurzer Hinweis', pre: 'Fortschritt für Mitglieder pausiert bis ', post: '', body: 'Unser Server hat sein Tageslimit erreicht. Bis dahin sind XP, Level, Ranglisten und die Synchronisierung für angemeldete Mitglieder pausiert. Puzzeln funktioniert wie gewohnt. Sorry für die Umstände.', ok: 'OK' },
+  es: { title: 'Aviso rápido', pre: 'Progreso de miembros en pausa hasta las ', post: '', body: 'Nuestro servidor alcanzó su límite diario de uso. Hasta entonces, la XP, los niveles, las clasificaciones y la sincronización de los miembros están en pausa. Los puzles funcionan con normalidad. Perdona las molestias.', ok: 'Entendido' },
+}[lang] ?? null;
+---
+{TX && (
+  <div class="snote" id="snote" role="dialog" aria-modal="true" aria-labelledby="snote-t" hidden>
+    <div class="snote-card">
+      <h2 id="snote-t">{TX.title}</h2>
+      <p class="snote-lead">{TX.pre}<b data-time></b>{TX.post} <span data-rel></span></p>
+      <p class="snote-body">{TX.body}</p>
+      <button type="button" data-ok>{TX.ok}</button>
+    </div>
+  </div>
+)}
+<script is:inline>
+  (() => {
+    const END = Date.UTC(2026, 8, 29, 0, 0, 0), KEY = 'snote:2026-09-29';
+    const el = document.getElementById('snote');
+    if (!el || Date.now() >= END) return;
+    try { if (localStorage.getItem(KEY)) return; } catch {}
+    const lang = document.documentElement.lang || 'ko', end = new Date(END);
+    // 보는 사람 시간대로 — 한국이면 '오전 9시'
+    el.querySelector('[data-time]').textContent = end.toLocaleTimeString(lang, end.getMinutes() ? { hour: 'numeric', minute: '2-digit' } : { hour: 'numeric' });
+    const min = Math.max(1, Math.round((END - Date.now()) / 60000));
+    try { el.querySelector('[data-rel]').textContent = '(' + new Intl.RelativeTimeFormat(lang).format(min >= 90 ? Math.round(min / 60) : min, min >= 90 ? 'hour' : 'minute') + ')'; } catch {}
+    const close = () => { el.hidden = true; try { localStorage.setItem(KEY, '1'); } catch {} removeEventListener('keydown', esc); };
+    const esc = (e) => { if (e.key === 'Escape') close(); };
+    el.querySelector('[data-ok]').addEventListener('click', close);
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+    addEventListener('keydown', esc);
+    el.hidden = false;
+  })();
+</script>
+<style>
+  .snote { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px; background: rgba(15,18,34,.45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: snote-in .2s ease both; }
+  .snote[hidden] { display: none; }
+  .snote-card { width: min(380px, 100%); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r); padding: 26px 24px 20px; box-shadow: 0 30px 60px -30px rgba(15,18,34,.5); }
+  .snote h2 { margin: 0 0 10px; font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
+  .snote-lead { margin: 0 0 10px; font-weight: 700; color: var(--ink); }
+  .snote-lead span { color: var(--muted); font-weight: 500; font-size: .9em; }
+  .snote-body { margin: 0 0 20px; color: var(--ink-2); font-size: .92rem; line-height: 1.6; word-break: keep-all; }
+  .snote button { width: 100%; min-height: 48px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .snote button:hover { background: #000; }
+  @keyframes snote-in { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .snote { animation: none; } }
+</style>

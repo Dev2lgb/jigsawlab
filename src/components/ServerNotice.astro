@@ -6,11 +6,11 @@ import type { Lang } from '../i18n/langs';
 interface Props { lang?: Lang }
 const { lang = 'ko' } = Astro.props;
 const TX = {
-  ko: { title: '잠시 안내드려요', pre: '', post: '까지 회원 기록 저장이 멈춰요', body: '서버 하루 사용량이 한도를 넘어서, 그때까지 로그인 회원의 XP·레벨·랭킹·기록 동기화가 멈춰 있어요. 퍼즐은 평소처럼 맞출 수 있어요. 불편을 드려 죄송해요.', ok: '확인' },
-  en: { title: 'A quick heads-up', pre: 'Member progress is paused until ', post: '', body: 'Our server hit its daily usage limit, so XP, levels, rankings and record sync for signed-in members are paused until then. Puzzles work as usual. Sorry for the trouble.', ok: 'OK' },
-  ja: { title: 'お知らせ', pre: '', post: 'まで会員の記録保存を一時停止しています', body: 'サーバーの1日の使用量が上限を超えたため、それまでログイン会員のXP・レベル・ランキング・記録の同期が止まっています。パズルはいつも通り遊べます。ご不便をおかけしてすみません。', ok: 'OK' },
-  de: { title: 'Kurzer Hinweis', pre: 'Fortschritt für Mitglieder pausiert bis ', post: '', body: 'Unser Server hat sein Tageslimit erreicht. Bis dahin sind XP, Level, Ranglisten und die Synchronisierung für angemeldete Mitglieder pausiert. Puzzeln funktioniert wie gewohnt. Sorry für die Umstände.', ok: 'OK' },
-  es: { title: 'Aviso rápido', pre: 'Progreso de miembros en pausa hasta las ', post: '', body: 'Nuestro servidor alcanzó su límite diario de uso. Hasta entonces, la XP, los niveles, las clasificaciones y la sincronización de los miembros están en pausa. Los puzles funcionan con normalidad. Perdona las molestias.', ok: 'Entendido' },
+  ko: { title: '잠시 안내드려요', pre: '', post: '까지 회원 기록 저장이 멈춰요', body: '서버 하루 사용량이 한도를 넘어서, 그때까지 로그인 회원의 XP·레벨·랭킹·기록 동기화가 멈춰 있어요. 퍼즐은 평소처럼 맞출 수 있어요. 불편을 드려 죄송해요.', ok: '확인', safe: '지금까지의 레벨·XP·랭킹·기록은 그대로 남아 있어요. 초기화되지 않아요.' },
+  en: { title: 'A quick heads-up', pre: 'Member progress is paused until ', post: '', body: 'Our server hit its daily usage limit, so XP, levels, rankings and record sync for signed-in members are paused until then. Puzzles work as usual. Sorry for the trouble.', ok: 'OK', safe: 'Your existing levels, XP, rankings and records are safe — nothing gets reset.' },
+  ja: { title: 'お知らせ', pre: '', post: 'まで会員の記録保存を一時停止しています', body: 'サーバーの1日の使用量が上限を超えたため、それまでログイン会員のXP・レベル・ランキング・記録の同期が止まっています。パズルはいつも通り遊べます。ご不便をおかけしてすみません。', ok: 'OK', safe: 'これまでのレベル・XP・ランキング・記録はそのまま残ります。リセットはされません。' },
+  de: { title: 'Kurzer Hinweis', pre: 'Fortschritt für Mitglieder pausiert bis ', post: '', body: 'Unser Server hat sein Tageslimit erreicht. Bis dahin sind XP, Level, Ranglisten und die Synchronisierung für angemeldete Mitglieder pausiert. Puzzeln funktioniert wie gewohnt. Sorry für die Umstände.', ok: 'OK', safe: 'Deine bisherigen Level, XP, Ranglisten und Ergebnisse bleiben erhalten — nichts wird zurückgesetzt.' },
+  es: { title: 'Aviso rápido', pre: 'Progreso de miembros en pausa hasta las ', post: '', body: 'Nuestro servidor alcanzó su límite diario de uso. Hasta entonces, la XP, los niveles, las clasificaciones y la sincronización de los miembros están en pausa. Los puzles funcionan con normalidad. Perdona las molestias.', ok: 'Entendido', safe: 'Tus niveles, XP, clasificaciones y récords se conservan: no se reinicia nada.' },
 }[lang] ?? null;
 ---
 {TX && (
@@ -19,6 +19,7 @@ const TX = {
       <h2 id="snote-t">{TX.title}</h2>
       <p class="snote-lead">{TX.pre}<b data-time></b>{TX.post} <span data-rel></span></p>
       <p class="snote-body">{TX.body}</p>
+      <p class="snote-safe">✅ {TX.safe}</p>
       <button type="button" data-ok>{TX.ok}</button>
     </div>
   </div>
@@ -49,7 +50,8 @@ const TX = {
   .snote h2 { margin: 0 0 10px; font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
   .snote-lead { margin: 0 0 10px; font-weight: 700; color: var(--ink); }
   .snote-lead span { color: var(--muted); font-weight: 500; font-size: .9em; }
-  .snote-body { margin: 0 0 20px; color: var(--ink-2); font-size: .92rem; line-height: 1.6; word-break: keep-all; }
+  .snote-body { margin: 0 0 12px; color: var(--ink-2); font-size: .92rem; line-height: 1.6; word-break: keep-all; }
+  .snote-safe { margin: 0 0 18px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--bg-2); color: var(--ink); font-size: .88rem; font-weight: 700; line-height: 1.5; word-break: keep-all; }
   .snote button { width: 100%; min-height: 48px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .snote button:hover { background: #000; }
   @keyframes snote-in { from { opacity: 0; } }

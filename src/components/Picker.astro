@@ -45,6 +45,7 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(
     </div>}
     {!here && <section class="resume" id="pk-resume" hidden><h2 class="gal-h">{U.play.resumeTitle}</h2><div class="resume-list" id="pk-resume-list"></div></section>}
 
+    <AdSlot place="play" lang={lang} />
     <div class="browse">
       <aside class="cats">
         <div class="cats-h">{U.catalog.cats}</div>

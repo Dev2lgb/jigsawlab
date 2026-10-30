@@ -104,7 +104,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
     // 시작 버튼에 손이 가면 /board/ 문서와 원본 이미지를 미리 받아 두고, 누르면 새 페이지가 뜨기 전에도 로딩 화면을 바로 보여 준다(/board/ 는 첫 페인트부터 같은 로딩 화면으로 이어짐)
     let warmed = false; const warm = () => { if (warmed) return; warmed = true; for (const [href, as] of [[artUrl(key), 'image'], [`${P}/board/`, 'document']] as const) { const l = document.createElement('link'); l.rel = 'prefetch'; l.as = as; l.href = href; if (as === 'image') l.crossOrigin = 'anonymous'; document.head.appendChild(l); } };
     for (const ev of ['pointerenter', 'touchstart', 'focus'] as const) solo.addEventListener(ev, warm, { passive: true });
-    solo.addEventListener('click', (e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; flTxt.textContent = flTxt.dataset.opening!; fl.classList.add('on'); });
+    // 전면 광고(비네트)가 이 클릭을 붙잡으면(기본 동작을 막는다) 로딩 화면을 띄우지 않는다 — 광고를 뒤로가기로 닫아 이동이 취소되면 로딩 화면이 걸린 채 남았다.
+    // 판정은 모든 클릭 처리가 끝난 뒤(setTimeout)에, 혹시 못 잡았으면 광고가 열릴 때 붙는 #google_vignette 로 걷는다
+    solo.addEventListener('click', (e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; setTimeout(() => { if (e.defaultPrevented) return; flTxt.textContent = flTxt.dataset.opening!; fl.classList.add('on'); }); });
+    addEventListener('hashchange', () => { if (location.hash.includes('google_vignette')) fl.classList.remove('on'); });
     const asp = () => (img.naturalWidth || 1200) / (img.naturalHeight || 950);
     const select = (n: number) => { picked = n; try { localStorage.setItem('pieces', String(n)); } catch {} document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n))); solo.href = `${P}/board/?k=${key}&n=${n}`; const g = gridFor(n, asp()); const b = getBest(`${key}:${g.cols * g.rows}`); bestEl.textContent = b ? T.detail.best(fmtSec(b)) : T.detail.noBest; const nn = g.cols * g.rows, pn = bestDoneN(key), xp = Math.round(nn * rateFor('gallery', nn, pn)).toLocaleString(); xpTip.textContent = pn !== null && nn <= pn ? T.lv.earnRepeat(xp) : T.lv.earn(xp); };
     document.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.addEventListener('click', () => select(Number(b.dataset.n))));

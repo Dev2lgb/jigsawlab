@@ -73,6 +73,7 @@ export const DE: UIStrings = {
     homeRank: 'Diese Woche', homeMe: (r: number, lv: number) => `Du: Nr. ${r} · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,
     earn: (n: string) => `+${n} XP, wenn du fertig wirst`, earnRepeat: (n: string) => `+${n} XP, wenn du fertig wirst · ein Viertel, da schon gelöst`, earnDaily: (n: string) => `+${n} XP, wenn du fertig wirst · Tagespuzzle zählt 1,5×`, earnLive: (r: number) => `${r} XP für jedes Teil, das du legst`,
   },
+  ad: 'Anzeige', // 광고 칸 위 표시 — 애드센스가 허용하는 라벨은 '광고(Advertisements)'·'스폰서 링크' 뿐
   guide: 'Anleitung',
   about: { seoTitle: 'Online puzzeln — Teilezahl wählen, Fotopuzzles · jigsawlab', title: 'jigsawlab', lead: 'Das Gefühl eines echten Puzzles, auf dem Handy. Ohne Anmeldung, und dein Foto bleibt auf deinem Gerät.', points: (n: number) => [['Teile rasten zusammen', 'Leg passende Teile nebeneinander, dann klicken sie ein und wandern als Gruppe weiter. So schafft man 1000 Teile.'], ['Dein Brett bleibt erhalten', 'Geh weg und komm wieder: Stapel, Sortierung, alles liegt da, wo du es gelassen hast.'], ['Dein Foto, auf deinem Handy', 'Fotos gehen nie an einen Server. Familienbilder sind sicher.'], [`${n} Bilder`, 'Van Gogh, Monet, Hokusai, Kim Hong-do, Morris. Zu jedem gibt es die Geschichte dahinter.']], guide: 'Mehr' },
   foot: { privacy: 'Datenschutz', terms: 'AGB', termsTitle: 'Nutzungsbedingungen', contact: 'Kontakt', rights: 'Alle Gemälde sind gemeinfrei', copied: 'Link kopiert', shareFail: 'Teilen hat nicht geklappt', privacyTitle: 'Datenschutzerklärung', toHome: 'Startseite' },

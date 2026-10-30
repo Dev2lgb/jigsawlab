@@ -74,6 +74,7 @@ export const KO = {
     homeRank: '이번 주 랭킹', homeMe: (r: number, lv: number) => `내 순위 ${r}위 · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,
     earn: (n: string) => `다 맞추면 +${n} XP`, earnRepeat: (n: string) => `다 맞추면 +${n} XP · 이미 깬 그림이라 ¼`, earnDaily: (n: string) => `다 맞추면 +${n} XP · 오늘의 퍼즐은 1.5배`, earnLive: (r: number) => `내가 놓은 조각 하나에 ${r} XP`,
   },
+  ad: '광고', // 광고 칸 위 표시 — 애드센스가 허용하는 라벨은 '광고(Advertisements)'·'스폰서 링크' 뿐
   guide: '가이드',
   about: { seoTitle: '직소 퍼즐 하는 법 — 조각 수 고르기부터 내 사진 퍼즐까지 · 직소랩', title: 'jigsawlab', lead: '직소랩(jigsawlab)은 실물 퍼즐 하던 손맛을 그대로 옮긴 온라인 직소 퍼즐이에요. 가입 없이, 사진은 폰 밖으로 안 나가요.', points: (n: number) => [['조각끼리 붙어요', '맞는 조각을 맞대면 딸깍 붙고, 뭉치째 움직여요. 1000조각도 그렇게 끝까지.'], ['하던 판은 저장', '나갔다 와도 그대로. 더미 나눠둔 것, 정렬해둔 순서까지.'], ['내 사진, 내 폰 안에서', '사진은 서버로 안 가요. 가족 사진도 마음 놓고.'], [`그림과 사진 ${n}점`, '고흐, 모네, 호쿠사이, 김홍도, 모리스. 그림 이야기도 같이 읽어요.']], guide: '자세히' },
   foot: { privacy: '개인정보처리방침', terms: '이용약관', termsTitle: '이용약관', contact: '문의', rights: '그림은 모두 퍼블릭 도메인입니다', copied: '링크를 복사했어요', shareFail: '공유가 안 됐어요', privacyTitle: '개인정보처리방침', toHome: '홈으로' },

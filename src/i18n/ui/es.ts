@@ -74,6 +74,7 @@ export const ES: UIStrings = {
     homeRank: 'Esta semana', homeMe: (r: number, lv: number) => `Tú: n.º ${r} · Nv ${lv}`, homeMeNone: (lv: number) => `Nv ${lv}`,
     earn: (n: string) => `+${n} XP al terminarlo`, earnRepeat: (n: string) => `+${n} XP al terminarlo · un cuarto, ya lo habías resuelto`, earnDaily: (n: string) => `+${n} XP al terminarlo · el reto de hoy cuenta ×1,5`, earnLive: (r: number) => `${r} XP por cada pieza que coloques`,
   },
+  ad: 'Publicidad', // 광고 칸 위 표시 — 애드센스가 허용하는 라벨은 '광고(Advertisements)'·'스폰서 링크' 뿐
   guide: 'Guía',
   about: { seoTitle: 'Cómo armar rompecabezas en línea — piezas y puzles con fotos · jigsawlab', title: 'jigsawlab', lead: 'La sensación de un rompecabezas de verdad, en el móvil. Sin registro, y tu foto se queda en tu dispositivo.', points: (n: number) => [['Las piezas se unen', 'Pon dos piezas que encajan una al lado de otra y hacen clic; luego se mueven en bloque. Así se terminan 1000 piezas.'], ['Tu tablero se guarda', 'Vete y vuelve: montones, orden, todo sigue donde lo dejaste.'], ['Tu foto, en tu móvil', 'Las fotos nunca van a un servidor. Las de familia están a salvo.'], [`${n} imágenes`, 'Van Gogh, Monet, Hokusai, Kim Hong-do, Morris. Con la historia de cada una.']], guide: 'Más' },
   foot: { privacy: 'Privacidad', terms: 'Condiciones', termsTitle: 'Condiciones de uso', contact: 'Contacto', rights: 'Todos los cuadros son de dominio público', copied: 'Enlace copiado', shareFail: 'No se pudo compartir', privacyTitle: 'Política de privacidad', toHome: 'Inicio' },

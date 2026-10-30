@@ -72,6 +72,7 @@ export const JA: UIStrings = {
     homeRank: '今週のランキング', homeMe: (r: number, lv: number) => `あなた ${r}位 · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,
     earn: (n: string) => `仕上げると +${n} XP`, earnRepeat: (n: string) => `仕上げると +${n} XP・クリア済みの絵なので1/4`, earnDaily: (n: string) => `仕上げると +${n} XP · 今日のパズルは1.5倍`, earnLive: (r: number) => `自分がはめたピース1つにつき ${r} XP`,
   },
+  ad: '広告', // 광고 칸 위 표시 — 애드센스가 허용하는 라벨은 '광고(Advertisements)'·'스폰서 링크' 뿐
   guide: 'ガイド',
   about: { seoTitle: 'ジグソーパズルの遊び方 — ピース数の選び方から写真パズルまで · jigsawlab', title: 'jigsawlab', lead: '本物のジグソーの手ざわりを、スマホでも。登録不要、写真は端末の外に出ません。', points: (n: number) => [['ピースがくっつく', '合うピースを並べるとカチッとくっつき、塊ごと動きます。1000ピースもそうやって最後まで。'], ['途中の盤面は保存', '離れて戻ってもそのまま。分けた山も、並べた順番も。'], ['写真は端末の中だけ', 'サーバーには送りません。家族写真も安心。'], [`絵と写真${n}点`, 'ゴッホ、モネ、北斎、金弘道、モリス。絵の話も一緒に読めます。']], guide: 'くわしく' },
   foot: { privacy: 'プライバシー', terms: '利用規約', termsTitle: '利用規約', contact: 'お問い合わせ', rights: '絵はすべてパブリックドメインです', copied: 'リンクをコピーしました', shareFail: '共有できませんでした', privacyTitle: 'プライバシーポリシー', toHome: 'ホームへ' },

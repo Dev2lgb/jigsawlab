@@ -5,6 +5,7 @@ import { JIGSAW } from '../i18n/jigsaw';
 import { UI, prefix, type Lang } from '../i18n/ui';
 import { icon } from '../lib/icons';
 import PieceLoader from './PieceLoader.astro';
+import AdSlot from './AdSlot.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const t = JIGSAW[lang], P = prefix(lang), U = UI[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000];
@@ -110,6 +111,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
         <a class="btn" href={`${P}/play/`}>{t.another}</a>
         <a class="btn ghost" href={`${P}/`}>{U.foot.toHome}</a>
       </div>
+      <AdSlot place="result" lang={lang} shape="rect" />
     </div>
   </div>
 </section>
@@ -267,6 +269,7 @@ const PRESETS = [48, 100, 200, 300, 500, 1000];
   .res-xp :global(.bg) { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 10px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); font-weight: 700; font-size: .88rem; }
   .res-xp :global(.note) { color: var(--muted); font-size: .86rem; font-weight: 600; }
   .res-xp :global(.btn) { font-size: .85rem; }
+  .res-info :global(.ad) { margin-top: 56px; margin-bottom: 0; } /* 버튼 줄과 광고 사이를 넉넉히 — 다른 그림·홈으로를 누르다 광고를 잘못 누르지 않게(폰에서는 버튼이 여러 줄로 접힌다) */
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   .result .row { justify-content: flex-start; margin-top: 18px; }
 </style>

@@ -2,6 +2,7 @@
 // 랭킹(/rank/) — 이번 주 XP · 전체 누적 XP 두 탭. 읽기는 누구나, 등재는 구글 로그인 회원만.
 // 표는 클라이언트가 /api/rank 로 받아 그리고, XP 규칙·레벨 구간·업적 목록은 정적으로 찍어 색인되게 둔다
 import Base from '../layouts/Base.astro';
+import AdSlot from './AdSlot.astro';
 import { altsFor, UI, LI, prefix, type Lang } from '../i18n/ui';
 import { BADGES, TIERS, PLATE_AT, xpAtLevel } from '../lib/level';
 import { BADGE_TEXT, TIER_NAMES } from '../i18n/badges';
@@ -26,6 +27,7 @@ const PLATE_LV = [1, ...PLATE_AT];
     <section class="rk-me" id="rk-me" hidden></section>
 
     <ol class="lb rk-list" id="rk-list"><li class="empty">{V.loading}</li></ol>
+    <AdSlot place="etc" lang={lang} />
 
     <section class="rk-blk">
       <h2>{V.rulesTitle}</h2>

@@ -1,0 +1,24 @@
+---
+// 광고 칸 하나 — 크기는 화면이 아니라 칸이 놓인 자리의 폭으로 정해 미리 잡아 둔다(광고가 떠도 화면이 안 밀린다).
+// band: 넓으면 728×90 띠, 좁으면 사각 / rect: 늘 사각. 사각은 336×280, 자리가 336 보다 좁으면 300×250
+// 채우기는 src/lib/ads.ts 의 initAds() (Base 가 부른다). 못 채운 칸(unfilled)은 접는다
+import { AD_CLIENT, AD_SLOTS, type AdPlace } from '../lib/ads';
+import { UI, type Lang } from '../i18n/ui';
+interface Props { place: AdPlace; lang: Lang; shape?: 'band' | 'rect' }
+const { place, lang, shape = 'band' } = Astro.props;
+---
+<aside class="ad" data-shape={shape} data-place={place}>
+  <span class="ad-lb">{UI[lang].ad}</span>
+  <ins class="ad-ins" data-ad-client={AD_CLIENT} data-ad-slot={AD_SLOTS[place]}></ins>
+</aside>
+
+<style>
+  .ad { container-type: inline-size; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: clamp(28px, 4vw, 44px) 0; }
+  /* 폰에서는 좌우 여백까지 써서 320px 폰에도 300 사각이 들어가게 */
+  @media (max-width: 600px) { .ad { margin-left: calc(var(--gutter) * -1); margin-right: calc(var(--gutter) * -1); } }
+  .ad-lb { font-size: .7rem; font-weight: 600; letter-spacing: .04em; color: var(--muted); opacity: .8; }
+  .ad-ins { display: inline-block; width: 300px; height: 250px; background: var(--bg-2); border-radius: 8px; } /* 둥근 바탕은 채우기 전 자리 표시 — 광고 자체는 자르지 않는다(overflow 로 모서리를 깎으면 광고 변형) */
+  @container (min-width: 336px) { .ad-ins { width: 336px; height: 280px; } }
+  @container (min-width: 728px) { .ad[data-shape='band'] .ad-ins { width: 728px; height: 90px; } }
+  .ad:has(.ad-ins[data-ad-status='unfilled']) { display: none; }
+</style>

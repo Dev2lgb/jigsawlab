@@ -1,6 +1,7 @@
 ---
 // 랜딩 홈 — 풀블리드 히어로(오늘 그림의 색이 배경으로 번짐 + 조각 빠진 그림) → 흐르는 상자 마퀴 → 카테고리별 3D 상자 진열대 → 내 사진
 import Box from './Box.astro';
+import AdSlot from './AdSlot.astro';
 import { UI, LI, prefix, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, LIVE_ID, todayKST, dailyPick } from '../lib/jigsaw';
 import { dailyPool, WORKS } from '../data/works';
@@ -80,12 +81,12 @@ const marquee = all.filter((_, i) => i % 6 === 0).slice(0, 26);
   <div class="wrap">
     <div class="sec-head" data-reveal><div><h2 class="sec-h">{T.catalog.title}</h2>{T.catalog.sub && <p class="sec-sub">{T.catalog.sub}</p>}</div><div class="tools"><a class="btn" href={`${P}/play/`}>{T.catalog.all(total)} →</a></div></div>
   </div>
-  {shelves.map((sh, i) => <div class="shelf wrap" data-reveal={String(Math.min(i, 3))}>
+  {shelves.map((sh, i) => <><div class="shelf wrap" data-reveal={String(Math.min(i, 3))}>
     <h3><span>{sh.name}</span><small>{sh.items.length}</small></h3>
     <div class="shelf-grid" id={`shelf-${sh.id}`}>{sh.items.slice(0, sh.top).map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>
     <div class="plank" aria-hidden="true"></div>
     {sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{T.catalog.showAll(sh.items.length)}</a>}
-  </div>)}
+  </div>{i === 2 && <div class="wrap"><AdSlot place="home" lang={lang} /></div>}</>)}
 </section>
 
 <style>

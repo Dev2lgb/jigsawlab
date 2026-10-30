@@ -9,6 +9,7 @@ import { JIGSAW } from '../i18n/jigsaw';
 import { WORKS } from '../data/works';
 import { icon } from '../lib/icons';
 import Guide from './Guide.astro';
+import AdSlot from './AdSlot.astro';
 const { lang = 'ko' } = Astro.props as { lang?: Lang };
 const T = UI[lang], P = prefix(lang), F = T.photo, J = JIGSAW[lang];
 const PRESETS = [48, 100, 200, 300, 500, 1000], DEFAULT_N = 100;
@@ -48,6 +49,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'HowTo', name: F.seoTitl
     </div>
   </section>
 
+  <div class="wrap"><AdSlot place="etc" lang={lang} /></div>
   <Guide html={BODY[lang].photo} prefix="p" />
 
   <section class="sec"><div class="wrap end">

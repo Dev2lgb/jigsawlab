@@ -3,6 +3,7 @@
 import { icon } from '../lib/icons';
 import { OG_LOCALE, UI, LANGS, prefix, stripLang, type Lang } from '../i18n/ui';
 import ServerNotice from '../components/ServerNotice.astro';
+import { AD_SRC } from '../lib/ads';
 interface Props { title: string; desc: string; lang?: Lang; ogImage?: string; alts?: Partial<Record<Lang, string>>; noindex?: boolean; path?: string; ads?: boolean }
 const { title, desc, lang = 'ko', ogImage = '/og.png', alts, noindex = false, path = Astro.url.pathname, ads = true } = Astro.props;
 const T = UI[lang], P = prefix(lang), site = Astro.site ?? new URL('https://jigsawlab.app');
@@ -56,7 +57,7 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   <link rel="stylesheet" href={fontCss} />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" />
-  {ads && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5830650963828895" crossorigin="anonymous" is:inline></script>}
+  {ads && <script async src={AD_SRC} crossorigin="anonymous" is:inline></script>}
   {CF_BEACON && import.meta.env.PROD && <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: CF_BEACON })} is:inline></script>}
   <slot name="head" />
   <script is:inline define:vars={{ i18n: { copied: T.foot.copied, shareFail: T.foot.shareFail, prev: T.catalog.prev, next: T.catalog.next } }}>window.__i18n = i18n;</script>
@@ -162,8 +163,10 @@ const homeSchema = { '@context': 'https://schema.org', '@graph': [
   </footer>
   <script>
     import { initShelves } from '../lib/shelf';
+    import { initAds } from '../lib/ads';
     import { LANGS, docLang } from '../i18n/langs'; // 언어 목록·판별만 — i18n/ui 를 물면 언어팩 5개가 모든 페이지에 실린다
     initShelves(); // 가로 진열대: PC 화살표·드래그
+    initAds(); // 광고 칸(AdSlot)을 화면 가까이 올 때 채운다 — 칸이 없는 페이지는 아무것도 안 한다
     // 스크롤 리빌: [data-reveal] 요소가 화면에 들어오면 .in — 모션 최소화 설정이면 즉시 표시
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) els.forEach((e) => e.classList.add('in'));

@@ -3,6 +3,7 @@
 import Base from '../layouts/Base.astro';
 import Box from './Box.astro';
 import PieceLoader from './PieceLoader.astro';
+import AdSlot from './AdSlot.astro';
 import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { JIGSAW } from '../i18n/jigsaw';
 import { WORK_BY_KEY, WORKS, dailyPool } from '../data/works';
@@ -49,6 +50,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'VisualArtwork', name: t
         <div class="fullload" id="fullload" role="status"><PieceLoader /><p id="fullload-txt" data-creating={T.play.creating} data-opening={J.opening}>{J.opening}</p></div>
       </div>
     </div>
+    <AdSlot place="detail" lang={lang} />
     {others.length > 0 && <section class="more"><h2 class="sec-h">{T.detail.more}</h2><div class="shelf-row">{others.map((o) => <Box p={o} href={`${P}/puzzle/${o.key}/`} />)}</div></section>}
   </div>
   <style>

@@ -72,6 +72,7 @@ export const EN: UIStrings = {
     homeRank: 'This week', homeMe: (r: number, lv: number) => `You: #${r} · Lv ${lv}`, homeMeNone: (lv: number) => `Lv ${lv}`,
     earn: (n: string) => `+${n} XP when you finish`, earnRepeat: (n: string) => `+${n} XP when you finish · a quarter, since you already cleared this one`, earnDaily: (n: string) => `+${n} XP when you finish · daily counts 1.5×`, earnLive: (r: number) => `${r} XP for every piece you place`,
   },
+  ad: 'Advertisement', // 광고 칸 위 표시 — 애드센스가 허용하는 라벨은 '광고(Advertisements)'·'스폰서 링크' 뿐
   guide: 'Guide',
   about: { seoTitle: 'How to play jigsaw puzzles online — piece counts, photo puzzles · jigsawlab', title: 'jigsawlab', lead: 'The feel of a real jigsaw, on your phone. No sign-up, and your photo stays on your device.', points: (n: number) => [['Pieces snap together', 'Put matching pieces side by side and they click, then move as one cluster. That is how you finish 1000 pieces.'], ['Your board is saved', 'Leave and come back: piles, sort order, everything is where you left it.'], ['Your photo, on your phone', 'Photos never go to a server. Family pictures are safe.'], [`${n} pictures`, 'Van Gogh, Monet, Hokusai, Kim Hong-do, Morris. Read the story behind each one.']], guide: 'More' },
   foot: { privacy: 'Privacy', terms: 'Terms', termsTitle: 'Terms of Service', contact: 'Contact', rights: 'All paintings are in the public domain', copied: 'Link copied', shareFail: "Couldn't share", privacyTitle: 'Privacy policy', toHome: 'Home' },

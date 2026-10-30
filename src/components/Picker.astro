@@ -5,6 +5,7 @@
 //                 내 사진은 헤더 나비·바닥글에 있어 여기서 뺐다 — 이 화면은 '뭘 맞출까' 를 고르는 자리고, 다 같이 맞추는 판이 더 눈에 띄어야 한다
 //   /play/<cat>/  그 카테고리만 전부. 상자는 어느 쪽이든 /puzzle/<key>/ 상세로 간다
 import Base from '../layouts/Base.astro';
+import AdSlot from './AdSlot.astro';
 import { JIGSAW } from '../i18n/jigsaw';
 import { UI, LI, prefix, altsFor, type Lang } from '../i18n/ui';
 import { DAILY_PIECES, todayKST, dailyPick } from '../lib/jigsaw';
@@ -25,7 +26,7 @@ const win = here ? null : dailyWindow(dailyPool, lang); // 오늘의 퍼즐 칸�
 const title = here ? `${U.catalog.catTitle(here.name, here.items.length)} · jigsawlab` : `${t.seoTitle(WORKS.length)} · jigsawlab`;
 const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(WORKS.length);
 ---
-<Base title={title} desc={desc} lang={lang} alts={altsFor(rel)} path={`${P}${rel}`} ads={false}>
+<Base title={title} desc={desc} lang={lang} alts={altsFor(rel)} path={`${P}${rel}`}>
   <div class="wrap picker">
     <h1 class="pick-title">{here ? U.catalog.catH1(here.name) : t.title}</h1>
     <p class="pick-sub">{here ? desc : t.sub}</p>
@@ -65,11 +66,11 @@ const desc = here ? U.catalog.catDesc(here.name, here.items.length) : t.seoDesc(
         <p class="none muted" id="pk-none" hidden>{U.catalog.none}{here && <> · <a id="pk-none-all" href={`${P}/play/`}>{U.catalog.noneAll}</a></>}</p>
         <div id="pk-gallery">
           {!here && <div class="shelf" id="fav-shelf" hidden><h3>{`♥ ${U.catalog.fav}`}<span class="muted fav-count">0</span></h3><div class="shelf-grid" id="fav-row"></div></div>}
-          {shelves.map((sh) => <div class="shelf">
+          {shelves.map((sh, i) => <><div class="shelf">
             {!here && <h3>{sh.name}<span class="muted">{sh.items.length}</span></h3>}
             <div class:list={['shelf-grid', { capped: !here }]} id={`shelf-${sh.id}`}>{sh.items.map((p) => <Box p={p} href={`${P}/puzzle/${p.key}/`} />)}</div>
             {!here && sh.items.length > sh.top && <a class="shelf-all" href={`${P}/play/${sh.id}/`}>{U.catalog.showAll(sh.items.length)}</a>}
-          </div>)}
+          </div>{i === Math.min(1, shelves.length - 1) && <AdSlot place="play" lang={lang} />}</>)}
         </div>
       </div>
     </div>
